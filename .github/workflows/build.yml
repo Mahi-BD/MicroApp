@@ -20,14 +20,17 @@ jobs:
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
 
+    # The app only. Setup\MicroApp-Setup.wixproj is left out on purpose: WiX v6
+    # needs a FireGiant license that hosted runners do not have, so building the
+    # whole solution here would always fail. Build the MSI locally.
     - name: Restore NuGet packages
-      run: nuget restore MicroApp.sln
+      run: nuget restore MicroApp.csproj -SolutionDirectory .
 
     - name: Build Debug
-      run: msbuild MicroApp.sln /p:Configuration=Debug /p:SkipCodeSigning=true
+      run: msbuild MicroApp.csproj /p:Configuration=Debug /p:SkipCodeSigning=true
 
     - name: Build Release
-      run: msbuild MicroApp.sln /p:Configuration=Release /p:SkipCodeSigning=true
+      run: msbuild MicroApp.csproj /p:Configuration=Release /p:SkipCodeSigning=true
 
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v4
