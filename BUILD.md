@@ -35,9 +35,31 @@ are all you need to run it — it is xcopy-portable.
 
 ## Installer
 
-`Setup\MicroApp-Setup.wixproj` builds an MSI with WiX. It needs the WiX toolset installed; the MSI puts
-the app in `Program Files`, which is what makes `uiAccess` (typing into elevated windows) possible for a
-signed build.
+The shipped installer is NSIS (`Setup\nsis\MicroApp.nsi`). It needs only `makensis`, which runs on
+Windows **and** Linux, so it can be built anywhere:
+
+```sh
+cd Setup/nsis
+makensis -DVERSION=4.2.1 -DSRC=../../bin/Release MicroApp.nsi            # all users, Program Files, admin
+makensis -DPERUSER -DVERSION=4.2.1 -DSRC=../../bin/Release MicroApp.nsi  # just me, %LOCALAPPDATA%, no admin
+```
+
+`SRC` points at the folder holding the built app. The result is
+`MicroApp-<version>[-peruser]-setup.exe`, which offers a **Run MicroApp when Windows starts** checkbox
+on its last page (a Startup-folder shortcut, not an HKCU Run value, because the installer runs elevated).
+
+Silent use:
+
+```
+MicroApp-4.2.1-setup.exe /S            # install, no startup entry
+MicroApp-4.2.1-setup.exe /S /STARTUP   # install and start with Windows
+MicroApp-4.2.1-setup.exe /S /D=C:\Tools\MicroApp
+"C:\Program Files\MicroApp\Uninstall.exe" /S
+```
+
+`Setup\MicroApp-Setup.wixproj` is the older WiX/MSI project inherited from upstream. It still builds an
+MSI locally if you have the WiX toolset, but CI skips it: WiX v6 wants a FireGiant license that hosted
+runners do not have.
 
 ## Layout
 

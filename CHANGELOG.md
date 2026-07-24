@@ -16,6 +16,9 @@ First release under the MicroApp name. Everything below is new relative to the C
   limit, selection lock and output folder. Frames stream to disk while recording; a red badge outside
   the recorded area shows elapsed time and stops on click.
 - **About window** with author and contact details.
+- **Installer** (`Setup\nsis\MicroApp.nsi`) with a **Run MicroApp when Windows starts** checkbox,
+  Start Menu and optional desktop shortcuts, an uninstaller, Add/Remove Programs entry, and silent
+  switches (`/S`, `/STARTUP`). Builds for all users (Program Files) or per user (no admin needed).
 
 ### Changed
 

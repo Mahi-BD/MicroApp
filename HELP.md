@@ -194,10 +194,28 @@ Clearing a hot key's key box (Delete or Backspace) disables that hot key.
 
 ---
 
+## Starting with Windows
+
+The installer's last page has a **Run MicroApp when Windows starts** checkbox, ticked by default. It
+creates a MicroApp shortcut in the Startup folder — for all users when you use the standard installer,
+for you alone with the per-user one.
+
+To change your mind later, without reinstalling:
+
+- **Turn it on** — press `Win+R`, type `shell:startup`, and drop a shortcut to `MicroApp.exe` in the
+  folder that opens.
+- **Turn it off** — delete the MicroApp shortcut from that folder. `shell:common startup` is the
+  all-users equivalent.
+- Task Manager's **Startup apps** tab can also disable it without deleting anything.
+
+Uninstalling removes the shortcut either way.
+
 ## Where files go
 
 - **Screenshots** — `Pictures\MicroApp\MicroApp-YYYYMMDD-HHMMSS.png`, or the folder you set in Capture Setting.
 - **GIFs** — `MicroApp-YYYYMMDD-HHMMSS.gif` in the GIF folder; if that is blank, the image folder is used.
+- **The app itself** — `C:\Program Files\MicroApp` (standard installer),
+  `%LOCALAPPDATA%\Programs\MicroApp` (per-user installer), or wherever you unzipped the portable build.
 - **Your settings** — the standard per-user .NET settings file under
   `%LOCALAPPDATA%\MicroApp\...\user.config`. Uninstalling the app does not delete it.
 
