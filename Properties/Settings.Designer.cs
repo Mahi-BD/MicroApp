@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ClickPaste.Properties {
+namespace MicroApp.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
@@ -116,6 +116,306 @@ namespace ClickPaste.Properties {
             }
             set {
                 this["Confirm"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GifLockRatio {
+            get {
+                return ((bool)(this["GifLockRatio"]));
+            }
+            set {
+                this["GifLockRatio"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("16:9")]
+        public string GifRatioPreset {
+            get {
+                return ((string)(this["GifRatioPreset"]));
+            }
+            set {
+                this["GifRatioPreset"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GifLockPixel {
+            get {
+                return ((bool)(this["GifLockPixel"]));
+            }
+            set {
+                this["GifLockPixel"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("800")]
+        public int GifPixelWidth {
+            get {
+                return ((int)(this["GifPixelWidth"]));
+            }
+            set {
+                this["GifPixelWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("600")]
+        public int GifPixelHeight {
+            get {
+                return ((int)(this["GifPixelHeight"]));
+            }
+            set {
+                this["GifPixelHeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int GifOutput {
+            get {
+                return ((int)(this["GifOutput"]));
+            }
+            set {
+                this["GifOutput"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GifFolder {
+            get {
+                return ((string)(this["GifFolder"]));
+            }
+            set {
+                this["GifFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("G")]
+        public string GifHotKey {
+            get {
+                return ((string)(this["GifHotKey"]));
+            }
+            set {
+                this["GifHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int GifHotKeyModifier {
+            get {
+                return ((int)(this["GifHotKeyModifier"]));
+            }
+            set {
+                this["GifHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int GifFps {
+            get {
+                return ((int)(this["GifFps"]));
+            }
+            set {
+                this["GifFps"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int GifSeconds {
+            get {
+                return ((int)(this["GifSeconds"]));
+            }
+            set {
+                this["GifSeconds"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("S")]
+        public string CaptureHotKey {
+            get {
+                return ((string)(this["CaptureHotKey"]));
+            }
+            set {
+                this["CaptureHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int CaptureHotKeyModifier {
+            get {
+                return ((int)(this["CaptureHotKeyModifier"]));
+            }
+            set {
+                this["CaptureHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int CaptureOutput {
+            get {
+                return ((int)(this["CaptureOutput"]));
+            }
+            set {
+                this["CaptureOutput"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CaptureFolder {
+            get {
+                return ((string)(this["CaptureFolder"]));
+            }
+            set {
+                this["CaptureFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LockRatio {
+            get {
+                return ((bool)(this["LockRatio"]));
+            }
+            set {
+                this["LockRatio"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("16:9")]
+        public string RatioPreset {
+            get {
+                return ((string)(this["RatioPreset"]));
+            }
+            set {
+                this["RatioPreset"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LockPixel {
+            get {
+                return ((bool)(this["LockPixel"]));
+            }
+            set {
+                this["LockPixel"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1920")]
+        public int PixelWidth {
+            get {
+                return ((int)(this["PixelWidth"]));
+            }
+            set {
+                this["PixelWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1080")]
+        public int PixelHeight {
+            get {
+                return ((int)(this["PixelHeight"]));
+            }
+            set {
+                this["PixelHeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("O")]
+        public string OcrHotKey {
+            get {
+                return ((string)(this["OcrHotKey"]));
+            }
+            set {
+                this["OcrHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int OcrHotKeyModifier {
+            get {
+                return ((int)(this["OcrHotKeyModifier"]));
+            }
+            set {
+                this["OcrHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string OcrLanguage {
+            get {
+                return ((string)(this["OcrLanguage"]));
+            }
+            set {
+                this["OcrLanguage"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int OcrOutput {
+            get {
+                return ((int)(this["OcrOutput"]));
+            }
+            set {
+                this["OcrOutput"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool OcrKeepLines {
+            get {
+                return ((bool)(this["OcrKeepLines"]));
+            }
+            set {
+                this["OcrKeepLines"] = value;
             }
         }
         

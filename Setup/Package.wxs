@@ -1,7 +1,7 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Id="CollectiveSoftware.ClickPaste_installer" Name="ClickPaste" Manufacturer="Collective Software" Language="1033" 
+  <Package Id="CollectiveSoftware.MicroApp_installer" Name="MicroApp" Manufacturer="Collective Software" Language="1033" 
            UpgradeCode="{9717164F-7F5C-4F28-B289-59BD60627FA3}"
-           Version="!(bind.fileVersion.ClickPaste.exe)">
+           Version="!(bind.fileVersion.MicroApp.exe)">
     <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
     
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" />
@@ -10,9 +10,9 @@
     
     <Feature Id="Main" Title="!(loc.MainFeatureTitle)" Description="!(loc.MainFeatureDescription)" Level="1" Display="expand" AllowAbsent="no">
       <Component Id="Files" Directory="INSTALLFOLDER" Guid="{664B747C-5457-4981-B429-EE816E125EE6}">
-        <?define FileNames = "AutoIt_License.html;AutoItX3.Assembly.dll;AutoItX3.Assembly.xml;AutoItX3.dll;AutoItX3_x64.dll;ClickPaste.exe;ClickPaste.exe.config;Gma.System.MouseKeyHook.dll"?>
+        <?define FileNames = "AutoIt_License.html;AutoItX3.Assembly.dll;AutoItX3.Assembly.xml;AutoItX3.dll;AutoItX3_x64.dll;MicroApp.exe;MicroApp.exe.config;Gma.System.MouseKeyHook.dll"?>
         <?foreach FILE in $(var.FileNames)?>
-          <File Id="$(var.FILE)" Source="$(var.ClickPaste.TargetDir)\$(var.FILE)" />
+          <File Id="$(var.FILE)" Source="$(var.MicroApp.TargetDir)\$(var.FILE)" />
         <?endforeach?>
       </Component>
       
@@ -41,14 +41,14 @@
                 <Component Id="Shortcut" Guid="{070355B6-3BEF-4031-A9D0-6CA39C1228FF}">
                   <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
                   <RegistryValue Root="HKLM" Key="Software\!(bind.Property.Manufacturer)\!(bind.Property.ProductName)\Settings" Name="Shortcut" Type="integer" Value="1" KeyPath="yes" />
-                  <Shortcut Id="ClickPasteShortcut" Name="!(bind.Property.ProductName)" Target="[INSTALLFOLDER]ClickPaste.exe" WorkingDirectory="INSTALLFOLDER" />
+                  <Shortcut Id="MicroAppShortcut" Name="!(bind.Property.ProductName)" Target="[INSTALLFOLDER]MicroApp.exe" WorkingDirectory="INSTALLFOLDER" />
                 </Component>
               </Directory>
               
               <Directory Name="Startup">
                 <Component Id="Startup" Guid="{7566C782-0EC2-4F0D-8810-B3DD6709E200}">
                   <RegistryValue Root="HKLM" Key="Software\!(bind.Property.Manufacturer)\!(bind.Property.ProductName)\Settings" Name="Startup" Type="integer" Value="1" KeyPath="yes" />
-                  <Shortcut Id="ClickPasteStartup" Name="!(bind.Property.ProductName)" Target="[INSTALLFOLDER]ClickPaste.exe" WorkingDirectory="INSTALLFOLDER" />
+                  <Shortcut Id="MicroAppStartup" Name="!(bind.Property.ProductName)" Target="[INSTALLFOLDER]MicroApp.exe" WorkingDirectory="INSTALLFOLDER" />
                 </Component>              
               </Directory>
               

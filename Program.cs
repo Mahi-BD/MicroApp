@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ClickPaste
+namespace MicroApp
 {
     /// <summary>
     /// Provides Windows dark/light theme detection and colors.
@@ -71,118 +71,13 @@ namespace ClickPaste
         }
 
         /// <summary>
-        /// Applies dark or light theme colors to a form and all its controls.
-        /// </summary>
-        public static void ApplyTheme(Control control, bool dark)
-        {
-            if (dark)
-            {
-                if (control is Form)
-                {
-                    control.BackColor = DarkBackground;
-                    control.ForeColor = DarkText;
-                }
-                else if (control is TextBox textBox)
-                {
-                    textBox.BackColor = DarkBackground;
-                    textBox.ForeColor = DarkText;
-                    textBox.BorderStyle = BorderStyle.FixedSingle;
-                }
-                else if (control is GroupBox groupBox)
-                {
-                    groupBox.BackColor = DarkBackground;
-                    groupBox.ForeColor = DarkText;
-                }
-                else if (control is Button button)
-                {
-                    button.BackColor = DarkSurface;
-                    button.ForeColor = DarkText;
-                    button.FlatStyle = FlatStyle.Flat;
-                    button.FlatAppearance.BorderColor = DarkBorder;
-                }
-                else if (control is Label label)
-                {
-                    // Labels inherit parent background
-                    label.BackColor = Color.Transparent;
-                    label.ForeColor = DarkText;
-                }
-                else if (control is RadioButton || control is CheckBox)
-                {
-                    control.BackColor = Color.Transparent;
-                    control.ForeColor = DarkText;
-                }
-                else
-                {
-                    control.BackColor = DarkBackground;
-                    control.ForeColor = DarkText;
-                }
-            }
-            else
-            {
-                control.BackColor = SystemColors.Control;
-                control.ForeColor = SystemColors.ControlText;
-
-                if (control is TextBox textBox)
-                {
-                    textBox.BackColor = SystemColors.Window;
-                    textBox.BorderStyle = BorderStyle.Fixed3D;
-                }
-                else if (control is Button button)
-                {
-                    button.BackColor = SystemColors.Control;
-                    button.FlatStyle = FlatStyle.System;
-                    button.UseVisualStyleBackColor = true;
-                }
-            }
-
-            foreach (Control child in control.Controls)
-            {
-                ApplyTheme(child, dark);
-            }
-        }
-
-        /// <summary>
-        /// Gets a dark mode renderer for ContextMenuStrip if dark mode is enabled.
+        /// Renderer for the tray menu; colours come from <see cref="Theme"/>.
         /// </summary>
         public static ToolStripRenderer GetMenuRenderer(bool dark)
         {
-            return dark ? new DarkMenuRenderer() : new ToolStripProfessionalRenderer();
+            Theme.Init(dark);
+            return new ModernMenuRenderer();
         }
-    }
-
-    /// <summary>
-    /// Custom renderer for dark mode context menus.
-    /// </summary>
-    public class DarkMenuRenderer : ToolStripProfessionalRenderer
-    {
-        public DarkMenuRenderer() : base(new DarkMenuColors()) { }
-
-        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
-        {
-            e.TextColor = ThemeHelper.DarkText;
-            base.OnRenderItemText(e);
-        }
-
-        protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
-        {
-            e.ArrowColor = ThemeHelper.DarkText;
-            base.OnRenderArrow(e);
-        }
-    }
-
-    public class DarkMenuColors : ProfessionalColorTable
-    {
-        public override Color MenuItemSelected => ThemeHelper.DarkSurface;
-        public override Color MenuItemSelectedGradientBegin => ThemeHelper.DarkSurface;
-        public override Color MenuItemSelectedGradientEnd => ThemeHelper.DarkSurface;
-        public override Color MenuItemBorder => ThemeHelper.DarkBorder;
-        public override Color MenuBorder => ThemeHelper.DarkBorder;
-        public override Color ToolStripDropDownBackground => ThemeHelper.DarkBackground;
-        public override Color ImageMarginGradientBegin => ThemeHelper.DarkBackground;
-        public override Color ImageMarginGradientMiddle => ThemeHelper.DarkBackground;
-        public override Color ImageMarginGradientEnd => ThemeHelper.DarkBackground;
-        public override Color SeparatorDark => ThemeHelper.DarkBorder;
-        public override Color SeparatorLight => ThemeHelper.DarkBorder;
     }
 
     static class Program
@@ -206,6 +101,9 @@ namespace ClickPaste
 
             // Enable dark mode for context menus (must be before any menus are created)
             Native.SetAppDarkMode(ThemeHelper.IsDarkMode);
+
+            // Load the palette once, up front: every form and the tray menu read from it
+            Theme.Init(ThemeHelper.IsDarkMode);
 
             // try to make sure we don't die leaving the cursor in "+" state
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -258,10 +156,36 @@ namespace ClickPaste
         EventHandler<HotKeyEventArgs> _currentHotKeyHandler = null;
         CancellationTokenSource _stop = new CancellationTokenSource();
 
+        // OCR hot key lives alongside the typing one, so both are registered at once
+        int? _ocrHotKey;
+        EventHandler<HotKeyEventArgs> _ocrHotKeyHandler = null;
+        bool _ocrBusy = false;
+
+        // screen capture: same overlay, but the picture is the product
+        int? _captureHotKey;
+        EventHandler<HotKeyEventArgs> _captureHotKeyHandler = null;
+
+        // GIF recording
+        int? _gifHotKey;
+        EventHandler<HotKeyEventArgs> _gifHotKeyHandler = null;
+        GifRecorder _recorder;
+        RecordingIndicator _indicator;
+        IKeyboardMouseEvents _recordHook;
+
+        // hot keys are raised on HotKeyManager's own message loop; this marshals the
+        // UI work (overlay, dialogs, clipboard) back onto the tray thread
+        Control _sync;
+
         bool _settingsOpen = false;
         public TrayApplicationContext()
         {
+            _sync = new Control();
+            _sync.CreateControl();
+
             StartHotKey();
+            StartOcrHotKey();
+            StartCaptureHotKey();
+            StartGifHotKey();
             bool darkTray = true;
             using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
             {
@@ -277,21 +201,52 @@ namespace ClickPaste
             {
                 Icon = new System.Drawing.Icon(darkTray ? Properties.Resources.Target : Properties.Resources.TargetDark, traySize.Width, traySize.Height),
                 Visible = true,
-                ContextMenu = 
-                new ContextMenu(
-                    new MenuItem[] 
-                    {
-                        new MenuItem("Settings", Settings),
-                        new MenuItem("-"),
-                        new MenuItem("Exit", Exit),
-                    }
-                ),
-                Text = "ClickPaste: Click to choose a target"
+                ContextMenuStrip = BuildTrayMenu(),
+                Text = "MicroApp: Click to choose a target"
             };
             _notify.MouseDown += _notify_MouseDown;
         }
+
+        /// <summary>Tray menu, themed to match the rest of the app.</summary>
+        ContextMenuStrip BuildTrayMenu()
+        {
+            var menu = new ContextMenuStrip
+            {
+                Renderer = new ModernMenuRenderer(),
+                BackColor = Theme.Surface,
+                ForeColor = Theme.Text,
+                Font = Theme.Base,
+                ShowImageMargin = false,
+                Padding = new Padding(4)
+            };
+
+            var grab = new ToolStripMenuItem("Grab text (OCR)", null, GrabText) { Padding = new Padding(4, 3, 4, 3) };
+            var capture = new ToolStripMenuItem("Screen Capture", null, ScreenCapture) { Padding = new Padding(4, 3, 4, 3) };
+            var gif = new ToolStripMenuItem("Record GIF", null, RecordGif) { Padding = new Padding(4, 3, 4, 3) };
+            var keySettings = new ToolStripMenuItem("Key Setting", null, Settings) { Padding = new Padding(4, 3, 4, 3) };
+            var ocrSettings = new ToolStripMenuItem("OCR Setting", null, OcrSettings) { Padding = new Padding(4, 3, 4, 3) };
+            var captureSettings = new ToolStripMenuItem("Capture Setting", null, CaptureSettings) { Padding = new Padding(4, 3, 4, 3) };
+            var gifSettings = new ToolStripMenuItem("GIF Setting", null, GifSettings) { Padding = new Padding(4, 3, 4, 3) };
+            var about = new ToolStripMenuItem("About", null, About) { Padding = new Padding(4, 3, 4, 3) };
+            var exit = new ToolStripMenuItem("Exit", null, Exit) { Padding = new Padding(4, 3, 4, 3) };
+            menu.Items.Add(grab);
+            menu.Items.Add(capture);
+            menu.Items.Add(gif);
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(keySettings);
+            menu.Items.Add(ocrSettings);
+            menu.Items.Add(captureSettings);
+            menu.Items.Add(gifSettings);
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(about);
+            menu.Items.Add(exit);
+            return menu;
+        }
         private void HotKeyManager_HotKeyPressed(object sender, HotKeyEventArgs e)
         {
+            // both hot keys raise this event: only react to the typing one
+            if (!Matches(e, Properties.Settings.Default.HotKey, Properties.Settings.Default.HotKeyModifier)) return;
+
             StopHotKey();
             // wait until control keys are no longer pressed
             while (Native.IsModifierKeyPressed())
@@ -310,6 +265,7 @@ namespace ClickPaste
         }
         private void HotKeyManager_EscapePressed(object sender, HotKeyEventArgs e)
         {
+            if (e.Key != Keys.Escape) return;
             StopHotKey();
             lock (this)
             {
@@ -402,7 +358,10 @@ namespace ClickPaste
             {
                 SystemSounds.Beep.Play();
                 var w = Native.GetForegroundWindow();
-                if (DialogResult.Yes != MessageBox.Show($"Confirm typing {clip.Length} characters to window '{Native.GetText(w).First(50)}'?", "ClickPaste Confirm Typing", MessageBoxButtons.YesNo))
+                if (!ModernDialog.Confirm(
+                        "Type this into the target?",
+                        $"{clip.Length:N0} characters will be typed into\r\n\"{Native.GetText(w).First(50)}\".\r\n\r\nPress Esc at any time to stop.",
+                        "Type it", "Cancel"))
                 {
                     StartHotKey();// resume normal hotkey listening
                     Native.SetForegroundWindow(w);
@@ -410,6 +369,15 @@ namespace ClickPaste
                 }
                 Native.SetForegroundWindow(w);
             }
+            TypeText(clip);
+        }
+
+        /// <summary>
+        /// Types a string into whatever window has focus, using the configured method.
+        /// Shared by clipboard pasting and by the OCR "type it out" output.
+        /// </summary>
+        void TypeText(string clip)
+        {
             // capture cancel token and vars before running task in case they change
             // this doesn't matter for _notify because we don't change it, but it's good practice
             CancellationToken cancel;
@@ -520,7 +488,7 @@ namespace ClickPaste
                 }
                 catch(Exception e)
                 {
-                    MessageBox.Show("Could not register hot key: " + e.Message);
+                    ModernDialog.Info("Hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
                 }
             }
         }
@@ -535,9 +503,528 @@ namespace ClickPaste
             }
             catch (Exception e)
             {
-                MessageBox.Show("Could not register hot key: " + e.Message);
+                ModernDialog.Info("Hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
             }
         }
+        /// <summary>True when this hot key event matches the given configured hot key.</summary>
+        static bool Matches(HotKeyEventArgs e, string letter, int modifiers)
+        {
+            if (string.IsNullOrEmpty(letter)) return false;
+            Keys key;
+            if (!Enum.TryParse(letter, out key)) return false;
+            return e.Key == key && ((int)e.Modifiers & 0xF) == (modifiers & 0xF);
+        }
+
+        void StartOcrHotKey()
+        {
+            StopOcrHotKey();
+            var letter = Properties.Settings.Default.OcrHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _ocrHotKey = HotKeyManager.RegisterHotKey(key, (KeyModifiers)Properties.Settings.Default.OcrHotKeyModifier);
+                _ocrHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_OcrHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _ocrHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("OCR hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopOcrHotKey()
+        {
+            if (_ocrHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _ocrHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_ocrHotKey.Value);
+            }
+            _ocrHotKey = null;
+            _ocrHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_OcrHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.OcrHotKey, Properties.Settings.Default.OcrHotKeyModifier)) return;
+
+            // let go of Ctrl/Alt/Shift before the overlay takes over the screen
+            while (Native.IsModifierKeyPressed())
+            {
+                Thread.Sleep(150);
+            }
+            BeginOcrCapture();
+        }
+
+        void GrabText(object sender, EventArgs e)
+        {
+            BeginOcrCapture();
+        }
+
+        /// <summary>Runs the capture on the tray thread, wherever it was triggered from.</summary>
+        void BeginOcrCapture()
+        {
+            if (_ocrBusy) return;
+            if (_sync.InvokeRequired)
+            {
+                _sync.BeginInvoke(new Action(RunOcrCapture));
+            }
+            else
+            {
+                RunOcrCapture();
+            }
+        }
+
+        /// <summary>
+        /// Crosshair -> drag a region -> read it -> hand the text off per the OCR settings.
+        /// </summary>
+        void RunOcrCapture()
+        {
+            if (_ocrBusy) return;
+            _ocrBusy = true;
+
+            // remember where the user was, so "type it out" lands in the right window
+            IntPtr target = Native.GetForegroundWindow();
+            try
+            {
+                Bitmap region = RegionCaptureOverlay.SelectRegion();
+                if (region == null) return;   // cancelled
+
+                string text;
+                var previous = _notify.Icon;
+                using (region)
+                {
+                    try
+                    {
+                        var traySize = SystemInformation.SmallIconSize;
+                        _notify.Icon = new System.Drawing.Icon(Properties.Resources.Typing, traySize.Width, traySize.Height);
+                        text = OcrService.Recognize(region,
+                                                    Properties.Settings.Default.OcrLanguage,
+                                                    Properties.Settings.Default.OcrKeepLines);
+                    }
+                    catch (Exception ex)
+                    {
+                        SystemSounds.Beep.Play();
+                        ModernDialog.Info("Could not read that", ex.Message);
+                        return;
+                    }
+                    finally
+                    {
+                        _notify.Icon = previous;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    SystemSounds.Beep.Play();
+                    Toast.Show("No text found in that selection.");
+                    return;
+                }
+
+                DeliverOcrText(text, target);
+            }
+            finally
+            {
+                _ocrBusy = false;
+            }
+        }
+
+        void DeliverOcrText(string text, IntPtr target)
+        {
+            switch ((OcrOutput)Properties.Settings.Default.OcrOutput)
+            {
+                case OcrOutput.Preview:
+                    using (var preview = new OcrResultForm(text))
+                    {
+                        preview.ShowDialog();
+                        if (preview.TypeRequested)
+                        {
+                            Native.SetForegroundWindow(target);
+                            Thread.Sleep(120);
+                            TypeText(preview.CapturedText);
+                        }
+                    }
+                    break;
+
+                case OcrOutput.Type:
+                    Native.SetForegroundWindow(target);
+                    Thread.Sleep(120);
+                    TypeText(text);
+                    break;
+
+                default:
+                    if (SetClipboard(text))
+                    {
+                        Toast.Show($"Copied {text.Length:N0} characters to the clipboard.");
+                    }
+                    else
+                    {
+                        SystemSounds.Beep.Play();
+                        ModernDialog.Info("Clipboard is busy", "Another app is holding the clipboard. Try again.");
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>Clipboard writes fail while another app holds it; retry briefly.</summary>
+        static bool SetClipboard(string text)
+        {
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    Clipboard.SetText(text);
+                    return true;
+                }
+                catch (System.Runtime.InteropServices.ExternalException)
+                {
+                    Thread.Sleep(80);
+                }
+            }
+            return false;
+        }
+
+        void StartCaptureHotKey()
+        {
+            StopCaptureHotKey();
+            var letter = Properties.Settings.Default.CaptureHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _captureHotKey = HotKeyManager.RegisterHotKey(key, (KeyModifiers)Properties.Settings.Default.CaptureHotKeyModifier);
+                _captureHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_CaptureHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _captureHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Capture hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopCaptureHotKey()
+        {
+            if (_captureHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _captureHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_captureHotKey.Value);
+            }
+            _captureHotKey = null;
+            _captureHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_CaptureHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.CaptureHotKey, Properties.Settings.Default.CaptureHotKeyModifier)) return;
+
+            while (Native.IsModifierKeyPressed())
+            {
+                Thread.Sleep(150);
+            }
+            BeginScreenCapture();
+        }
+
+        void ScreenCapture(object sender, EventArgs e)
+        {
+            BeginScreenCapture();
+        }
+
+        void BeginScreenCapture()
+        {
+            if (_ocrBusy) return;
+            if (_sync.InvokeRequired)
+            {
+                _sync.BeginInvoke(new Action(RunScreenCapture));
+            }
+            else
+            {
+                RunScreenCapture();
+            }
+        }
+
+        /// <summary>
+        /// Crosshair -> drag (or click, with a pixel lock) -> the picture goes to the
+        /// clipboard, to a PNG, or both.
+        /// </summary>
+        void RunScreenCapture()
+        {
+            if (_ocrBusy) return;
+            _ocrBusy = true;
+            try
+            {
+                var constraint = CaptureConstraint.FromSettings();
+                string hint = constraint.LockPixel
+                    ? $"Click to grab a {constraint.PixelSize.Width} x {constraint.PixelSize.Height} shot.   Esc cancels."
+                    : constraint.LockRatio
+                        ? $"Drag a {constraint.RatioName} box.   Esc cancels."
+                        : "Drag the area you want to capture.   Esc cancels.";
+
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint))
+                {
+                    if (shot == null) return;   // cancelled
+                    DeliverCapture(shot);
+                }
+            }
+            finally
+            {
+                _ocrBusy = false;
+            }
+        }
+
+        void DeliverCapture(Bitmap shot)
+        {
+            var output = (CaptureOutput)Properties.Settings.Default.CaptureOutput;
+            bool copied = false;
+            string savedPath = null;
+
+            if (output == CaptureOutput.Clipboard || output == CaptureOutput.Both)
+            {
+                copied = SetClipboardImage(shot);
+            }
+
+            if (output == CaptureOutput.File || output == CaptureOutput.Both)
+            {
+                try
+                {
+                    string folder = CaptureSettingsForm.DefaultFolder();
+                    System.IO.Directory.CreateDirectory(folder);
+                    savedPath = System.IO.Path.Combine(
+                        folder, "MicroApp-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
+                    shot.Save(savedPath, System.Drawing.Imaging.ImageFormat.Png);
+                }
+                catch (Exception ex)
+                {
+                    SystemSounds.Beep.Play();
+                    ModernDialog.Info("Could not save the capture", ex.Message);
+                    savedPath = null;
+                }
+            }
+
+            string what = $"{shot.Width} x {shot.Height}";
+            if (savedPath != null && copied)
+            {
+                Toast.Show($"{what} copied and saved to\r\n{savedPath}");
+            }
+            else if (savedPath != null)
+            {
+                Toast.Show($"{what} saved to\r\n{savedPath}");
+            }
+            else if (copied)
+            {
+                Toast.Show($"{what} image copied to the clipboard.");
+            }
+            else
+            {
+                SystemSounds.Beep.Play();
+                ModernDialog.Info("Clipboard is busy", "Another app is holding the clipboard. Try again.");
+            }
+        }
+
+        static bool SetClipboardImage(Bitmap image)
+        {
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    Clipboard.SetImage(image);
+                    return true;
+                }
+                catch (System.Runtime.InteropServices.ExternalException)
+                {
+                    Thread.Sleep(80);
+                }
+            }
+            return false;
+        }
+
+        void StartGifHotKey()
+        {
+            StopGifHotKey();
+            var letter = Properties.Settings.Default.GifHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _gifHotKey = HotKeyManager.RegisterHotKey(key, (KeyModifiers)Properties.Settings.Default.GifHotKeyModifier);
+                _gifHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_GifHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _gifHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("GIF hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopGifHotKey()
+        {
+            if (_gifHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _gifHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_gifHotKey.Value);
+            }
+            _gifHotKey = null;
+            _gifHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_GifHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.GifHotKey, Properties.Settings.Default.GifHotKeyModifier)) return;
+
+            // pressing the hot key again while recording is the natural way to stop
+            if (_recorder != null)
+            {
+                BeginStopRecording();
+                return;
+            }
+            while (Native.IsModifierKeyPressed())
+            {
+                Thread.Sleep(150);
+            }
+            BeginGifRecording();
+        }
+
+        void RecordGif(object sender, EventArgs e)
+        {
+            if (_recorder != null) { BeginStopRecording(); return; }
+            BeginGifRecording();
+        }
+
+        void BeginGifRecording()
+        {
+            if (_ocrBusy || _recorder != null) return;
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(StartGifRecording));
+            else StartGifRecording();
+        }
+
+        void BeginStopRecording()
+        {
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(FinishGifRecording));
+            else FinishGifRecording();
+        }
+
+        /// <summary>Pick a region, then roll: frames stream to disk until Esc or the time limit.</summary>
+        void StartGifRecording()
+        {
+            if (_ocrBusy || _recorder != null) return;
+            _ocrBusy = true;
+
+            Rectangle region;
+            try
+            {
+                var constraint = CaptureConstraint.FromGifSettings();
+                string hint = constraint.LockPixel
+                    ? $"Click to record a {constraint.PixelSize.Width} x {constraint.PixelSize.Height} GIF.   Esc cancels."
+                    : constraint.LockRatio
+                        ? $"Drag a {constraint.RatioName} area to record.   Esc cancels."
+                        : "Drag the area to record as a GIF.   Esc cancels.";
+
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint))
+                {
+                    if (shot == null) return;                       // cancelled
+                    region = RegionCaptureOverlay.LastRegion;
+                }
+            }
+            finally
+            {
+                _ocrBusy = false;
+            }
+            if (region.Width < 8 || region.Height < 8) return;
+
+            int fps = Properties.Settings.Default.GifFps;
+            int seconds = Properties.Settings.Default.GifSeconds;
+            string folder = GifSettingsForm.DefaultFolder();
+            string path;
+            try
+            {
+                System.IO.Directory.CreateDirectory(folder);
+                path = System.IO.Path.Combine(folder, "MicroApp-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".gif");
+            }
+            catch (Exception ex)
+            {
+                ModernDialog.Info("Could not start recording", ex.Message);
+                return;
+            }
+
+            _recorder = new GifRecorder(region, path, fps, seconds);
+            _indicator = new RecordingIndicator(region, seconds);
+            _indicator.StopRequested += (s, e) => BeginStopRecording();
+            _indicator.Show();
+
+            // Esc anywhere stops the recording
+            _recordHook = Hook.GlobalEvents();
+            _recordHook.KeyDown += _recordHook_KeyDown;
+
+            var traySize = SystemInformation.SmallIconSize;
+            _notify.Icon = new System.Drawing.Icon(Properties.Resources.Typing, traySize.Width, traySize.Height);
+
+            _recorder.Start();
+            Toast.Show($"Recording {region.Width} x {region.Height} at {fps} fps. Esc to stop.");
+
+            // stop by itself once the time limit is up
+            var limit = new System.Windows.Forms.Timer { Interval = Math.Max(1000, seconds * 1000 + 400) };
+            limit.Tick += (s, e) => { limit.Stop(); limit.Dispose(); FinishGifRecording(); };
+            limit.Start();
+        }
+
+        private void _recordHook_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape) BeginStopRecording();
+        }
+
+        void FinishGifRecording()
+        {
+            var recorder = _recorder;
+            if (recorder == null) return;
+            _recorder = null;
+
+            if (_recordHook != null)
+            {
+                _recordHook.KeyDown -= _recordHook_KeyDown;
+                _recordHook.Dispose();
+                _recordHook = null;
+            }
+            if (_indicator != null)
+            {
+                _indicator.Close();
+                _indicator.Dispose();
+                _indicator = null;
+            }
+
+            recorder.Stop();
+            int frames = recorder.FrameCount;
+            string path = recorder.Path;
+            recorder.Dispose();
+
+            var traySize = SystemInformation.SmallIconSize;
+            bool darkTray = ThemeHelper.IsSystemDark;
+            _notify.Icon = new System.Drawing.Icon(
+                darkTray ? Properties.Resources.Target : Properties.Resources.TargetDark,
+                traySize.Width, traySize.Height);
+
+            if (frames == 0)
+            {
+                SystemSounds.Beep.Play();
+                Toast.Show("Nothing was recorded.");
+                return;
+            }
+
+            long size = 0;
+            try { size = new System.IO.FileInfo(path).Length; } catch (Exception) { }
+            string note = $"GIF saved: {frames} frames, {size / 1024:N0} KB\r\n{System.IO.Path.GetFileName(path)}";
+
+            switch ((GifOutput)Properties.Settings.Default.GifOutput)
+            {
+                case GifOutput.SaveAndCopyPath:
+                    if (SetClipboard(path)) note += "\r\nPath copied.";
+                    break;
+                case GifOutput.SaveAndOpen:
+                    try { System.Diagnostics.Process.Start(path); }
+                    catch (Exception ex) { note += "\r\nCould not open it: " + ex.Message; }
+                    break;
+            }
+            Toast.Show(note);
+        }
+
         void StopHotKey()
         {
             if(_usingHotKey.HasValue)
@@ -556,20 +1043,95 @@ namespace ClickPaste
                 return;
             }
             _settingsOpen = true;
-            StopHotKey();
+            StopAllHotKeys();
             var settings = new SettingsForm();
             settings.ShowDialog();
             _settingsOpen = false;
-            StartHotKey();            
+            StartAllHotKeys();
+        }
+
+        void OcrSettings(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new OcrSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+        }
+
+        void About(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            using (var about = new AboutForm())
+            {
+                about.ShowDialog();
+            }
+            _settingsOpen = false;
+            StartAllHotKeys();
+        }
+
+        void GifSettings(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new GifSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+        }
+
+        void CaptureSettings(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new CaptureSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+        }
+
+        void StopAllHotKeys()
+        {
+            StopHotKey();
+            StopOcrHotKey();
+            StopCaptureHotKey();
+            StopGifHotKey();
+        }
+
+        void StartAllHotKeys()
+        {
+            StartHotKey();
+            StartOcrHotKey();
+            StartCaptureHotKey();
+            StartGifHotKey();
         }
 
         void Exit(object sender, EventArgs e)
         {
+            if (_recorder != null) FinishGifRecording();
             EndTrack();
             // Hide tray icon, otherwise it will remain shown until user mouses over it
             _notify.Visible = false;
             _notify.Dispose();
-            StopHotKey();
+            StopAllHotKeys();
             Application.Exit();
         }
     }

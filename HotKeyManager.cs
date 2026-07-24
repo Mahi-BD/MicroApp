@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace ClickPaste
+namespace MicroApp
 {
     public static class HotKeyManager
     {

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36603.0 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClickPaste", "ClickPaste.csproj", "{DDA255E3-86CE-4C76-9417-B3778774412A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroApp", "MicroApp.csproj", "{DDA255E3-86CE-4C76-9417-B3778774412A}"
 EndProject
-Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "ClickPaste-Setup", "Setup\ClickPaste-Setup.wixproj", "{30F8A3AE-89ED-4139-A7EC-315C78E56D75}"
+Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "MicroApp-Setup", "Setup\MicroApp-Setup.wixproj", "{30F8A3AE-89ED-4139-A7EC-315C78E56D75}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -13,7 +13,7 @@
     <PackageReference Include="WixToolset.Util.wixext" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ClickPaste.csproj"  />
+    <ProjectReference Include="..\MicroApp.csproj"  />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="call $(SolutionDir)\sign.bat $(TargetPath)" />

@@ -82,7 +82,7 @@
     <UIRef Id="WixUI_Common" />
     
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch !(bind.Property.ProductName) now" />
-    <Property Id="WixShellExecTarget" Value="[#ClickPaste.exe]" />
+    <Property Id="WixShellExecTarget" Value="[#MicroApp.exe]" />
     <CustomAction Id="LaunchApplication" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" DllEntry="WixShellExec" Impersonate="yes" />
 
   </Fragment>

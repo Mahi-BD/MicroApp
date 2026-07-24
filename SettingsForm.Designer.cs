@@ -1,16 +1,12 @@
-﻿namespace ClickPaste
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace MicroApp
 {
     partial class SettingsForm
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -20,360 +16,484 @@
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
+        #region Designer generated code
 
         /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
+        /// Modern two-column settings layout: header band, cards for each group of
+        /// settings, and a footer with the primary action.
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsForm));
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.Method_ScanCode = new System.Windows.Forms.RadioButton();
-            this.Method_AutoIt = new System.Windows.Forms.RadioButton();
-            this.Method_Forms = new System.Windows.Forms.RadioButton();
-            this.versionLabel = new System.Windows.Forms.Label();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.startDelayMS = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.DelayMS = new System.Windows.Forms.TextBox();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.hotKeyModeType = new System.Windows.Forms.RadioButton();
-            this.hotKeyModeTarget = new System.Windows.Forms.RadioButton();
-            this.HotKey_Windows = new System.Windows.Forms.CheckBox();
-            this.HotKey_Shift = new System.Windows.Forms.CheckBox();
-            this.HotKey_Control = new System.Windows.Forms.CheckBox();
-            this.HotKey_Alt = new System.Windows.Forms.CheckBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.HotKey_Letter = new System.Windows.Forms.TextBox();
-            this.Done = new System.Windows.Forms.Button();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.confirmOverActive = new System.Windows.Forms.CheckBox();
-            this.label4 = new System.Windows.Forms.Label();
-            this.confirmOver = new System.Windows.Forms.TextBox();
-            this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            this.groupBox3.SuspendLayout();
-            this.groupBox4.SuspendLayout();
+            this.headerBar = new HeaderBar();
+            this.iconBox = new PictureBox();
+            this.titleLabel = new Label();
+            this.subtitleLabel = new Label();
+            this.versionLabel = new Pill();
+
+            this.cardMethod = new Card();
+            this.Method_Forms = new ModernRadioButton();
+            this.Method_AutoIt = new ModernRadioButton();
+            this.Method_ScanCode = new ModernRadioButton();
+
+            this.cardDelays = new Card();
+            this.startDelayHost = new FieldHost();
+            this.startDelayMS = new TextBox();
+            this.label1 = new Label();
+            this.delayHost = new FieldHost();
+            this.DelayMS = new TextBox();
+            this.label3 = new Label();
+
+            this.cardSafety = new Card();
+            this.confirmOverActive = new ModernCheckBox();
+            this.confirmOverHost = new FieldHost();
+            this.confirmOver = new TextBox();
+            this.label4 = new Label();
+
+            this.cardHotKey = new Card();
+            this.hotKeyHost = new FieldHost();
+            this.HotKey_Letter = new TextBox();
+            this.label2 = new Label();
+            this.modifiersLabel = new Label();
+            this.HotKey_Alt = new ModernCheckBox();
+            this.HotKey_Control = new ModernCheckBox();
+            this.HotKey_Shift = new ModernCheckBox();
+            this.HotKey_Windows = new ModernCheckBox();
+            this.modeLabel = new Label();
+            this.hotKeyModeTarget = new ModernRadioButton();
+            this.hotKeyModeType = new ModernRadioButton();
+
+            this.cardTips = new Card();
+            this.tipsLabel = new Label();
+
+            this.cancelButton = new ModernButton();
+            this.Done = new ModernButton();
+
+            ((System.ComponentModel.ISupportInitialize)(this.iconBox)).BeginInit();
+            this.headerBar.SuspendLayout();
+            this.cardMethod.SuspendLayout();
+            this.cardDelays.SuspendLayout();
+            this.cardSafety.SuspendLayout();
+            this.cardHotKey.SuspendLayout();
+            this.cardTips.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.Method_ScanCode);
-            this.groupBox1.Controls.Add(this.Method_AutoIt);
-            this.groupBox1.Controls.Add(this.Method_Forms);
-            this.groupBox1.Location = new System.Drawing.Point(12, 12);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(204, 89);
-            this.groupBox1.TabIndex = 1;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Typing Method:";
-            // 
-            // Method_ScanCode
-            // 
-            this.Method_ScanCode.AutoSize = true;
-            this.Method_ScanCode.Location = new System.Drawing.Point(6, 65);
-            this.Method_ScanCode.Name = "Method_ScanCode";
-            this.Method_ScanCode.Size = new System.Drawing.Size(74, 17);
-            this.Method_ScanCode.TabIndex = 4;
-            this.Method_ScanCode.Tag = "3";
-            this.Method_ScanCode.Text = "SendInput";
-            this.Method_ScanCode.UseVisualStyleBackColor = true;
-            // 
-            // Method_AutoIt
-            // 
-            this.Method_AutoIt.AutoSize = true;
-            this.Method_AutoIt.Location = new System.Drawing.Point(6, 42);
-            this.Method_AutoIt.Name = "Method_AutoIt";
-            this.Method_AutoIt.Size = new System.Drawing.Size(81, 17);
-            this.Method_AutoIt.TabIndex = 2;
-            this.Method_AutoIt.TabStop = true;
-            this.Method_AutoIt.Tag = "1";
-            this.Method_AutoIt.Text = "AutoIt Send";
-            this.Method_AutoIt.UseVisualStyleBackColor = true;
-            // 
+
+            //
+            // headerBar
+            //
+            this.headerBar.Controls.Add(this.iconBox);
+            this.headerBar.Controls.Add(this.titleLabel);
+            this.headerBar.Controls.Add(this.subtitleLabel);
+            this.headerBar.Controls.Add(this.versionLabel);
+            this.headerBar.Dock = DockStyle.Top;
+            this.headerBar.Name = "headerBar";
+            this.headerBar.Size = new Size(640, 84);
+            this.headerBar.TabIndex = 0;
+            this.headerBar.TabStop = false;
+            //
+            // iconBox
+            //
+            this.iconBox.BackColor = Color.Transparent;
+            this.iconBox.Location = new Point(24, 22);
+            this.iconBox.Name = "iconBox";
+            this.iconBox.Size = new Size(40, 40);
+            this.iconBox.SizeMode = PictureBoxSizeMode.Zoom;
+            this.iconBox.TabStop = false;
+            //
+            // titleLabel
+            //
+            this.titleLabel.AutoSize = true;
+            this.titleLabel.BackColor = Color.Transparent;
+            this.titleLabel.Location = new Point(76, 19);
+            this.titleLabel.Name = "titleLabel";
+            this.titleLabel.Text = "MicroApp";
+            //
+            // subtitleLabel
+            //
+            this.subtitleLabel.AutoSize = true;
+            this.subtitleLabel.BackColor = Color.Transparent;
+            this.subtitleLabel.Location = new Point(78, 47);
+            this.subtitleLabel.Name = "subtitleLabel";
+            this.subtitleLabel.Text = "Types the clipboard wherever you click";
+            //
+            // versionLabel
+            //
+            this.versionLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.versionLabel.BackColor = Color.Transparent;
+            this.versionLabel.Location = new Point(548, 30);
+            this.versionLabel.Name = "versionLabel";
+            this.versionLabel.Size = new Size(68, 24);
+            this.versionLabel.Text = "v0.0.0";
+            //
+            // cardMethod
+            //
+            this.cardMethod.Controls.Add(this.Method_Forms);
+            this.cardMethod.Controls.Add(this.Method_AutoIt);
+            this.cardMethod.Controls.Add(this.Method_ScanCode);
+            this.cardMethod.Location = new Point(24, 104);
+            this.cardMethod.Name = "cardMethod";
+            this.cardMethod.Size = new Size(356, 152);
+            this.cardMethod.TabIndex = 1;
+            this.cardMethod.Title = "Typing method";
+            this.cardMethod.Description = "How characters reach the target window";
+            //
             // Method_Forms
-            // 
-            this.Method_Forms.AutoSize = true;
-            this.Method_Forms.Location = new System.Drawing.Point(6, 19);
+            //
+            this.Method_Forms.Location = new Point(16, 64);
             this.Method_Forms.Name = "Method_Forms";
-            this.Method_Forms.Size = new System.Drawing.Size(104, 17);
-            this.Method_Forms.TabIndex = 1;
+            this.Method_Forms.Size = new Size(324, 24);
+            this.Method_Forms.TabIndex = 0;
             this.Method_Forms.TabStop = true;
             this.Method_Forms.Tag = "0";
-            this.Method_Forms.Text = "Forms.SendKeys";
-            this.Method_Forms.UseVisualStyleBackColor = true;
-            // 
-            // versionLabel
-            // 
-            this.versionLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.versionLabel.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.versionLabel.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.versionLabel.Location = new System.Drawing.Point(12, 298);
-            this.versionLabel.Name = "versionLabel";
-            this.versionLabel.Size = new System.Drawing.Size(100, 15);
-            this.versionLabel.TabIndex = 5;
-            this.versionLabel.Text = "v0.0.0";
-            this.versionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Controls.Add(this.startDelayMS);
-            this.groupBox2.Controls.Add(this.label1);
-            this.groupBox2.Controls.Add(this.DelayMS);
-            this.groupBox2.Location = new System.Drawing.Point(12, 107);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(204, 79);
-            this.groupBox2.TabIndex = 2;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Delays:";
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(59, 48);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(132, 13);
-            this.label3.TabIndex = 6;
-            this.label3.Text = "milliseconds between keys";
-            // 
+            this.Method_Forms.Text = "SendKeys  (classic, fastest)";
+            //
+            // Method_AutoIt
+            //
+            this.Method_AutoIt.Location = new Point(16, 92);
+            this.Method_AutoIt.Name = "Method_AutoIt";
+            this.Method_AutoIt.Size = new Size(324, 24);
+            this.Method_AutoIt.TabIndex = 1;
+            this.Method_AutoIt.TabStop = true;
+            this.Method_AutoIt.Tag = "1";
+            this.Method_AutoIt.Text = "AutoIt Send  (handles more layouts)";
+            //
+            // Method_ScanCode
+            //
+            this.Method_ScanCode.Location = new Point(16, 120);
+            this.Method_ScanCode.Name = "Method_ScanCode";
+            this.Method_ScanCode.Size = new Size(324, 24);
+            this.Method_ScanCode.TabIndex = 2;
+            this.Method_ScanCode.Tag = "3";
+            this.Method_ScanCode.Text = "SendInput  (works in VM consoles)";
+            //
+            // cardDelays
+            //
+            this.cardDelays.Controls.Add(this.startDelayHost);
+            this.cardDelays.Controls.Add(this.label1);
+            this.cardDelays.Controls.Add(this.delayHost);
+            this.cardDelays.Controls.Add(this.label3);
+            this.cardDelays.Location = new Point(24, 272);
+            this.cardDelays.Name = "cardDelays";
+            this.cardDelays.Size = new Size(356, 140);
+            this.cardDelays.TabIndex = 2;
+            this.cardDelays.Title = "Delays";
+            this.cardDelays.Description = "Give the target window time to keep up";
+            //
+            // startDelayHost
+            //
+            this.startDelayHost.Controls.Add(this.startDelayMS);
+            this.startDelayHost.Location = new Point(16, 60);
+            this.startDelayHost.Name = "startDelayHost";
+            this.startDelayHost.Size = new Size(84, 32);
+            this.startDelayHost.TabIndex = 0;
+            //
             // startDelayMS
-            // 
-            this.startDelayMS.Location = new System.Drawing.Point(6, 19);
+            //
+            this.startDelayMS.Location = new Point(10, 8);
             this.startDelayMS.Name = "startDelayMS";
-            this.startDelayMS.Size = new System.Drawing.Size(47, 20);
-            this.startDelayMS.TabIndex = 1;
-            // 
+            this.startDelayMS.Size = new Size(64, 16);
+            this.startDelayMS.TabIndex = 0;
+            //
             // label1
-            // 
+            //
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(59, 22);
+            this.label1.Location = new Point(110, 69);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(119, 13);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "milliseconds before start";
-            // 
+            this.label1.Text = "milliseconds before typing starts";
+            //
+            // delayHost
+            //
+            this.delayHost.Controls.Add(this.DelayMS);
+            this.delayHost.Location = new Point(16, 98);
+            this.delayHost.Name = "delayHost";
+            this.delayHost.Size = new Size(84, 32);
+            this.delayHost.TabIndex = 1;
+            //
             // DelayMS
-            // 
-            this.DelayMS.Location = new System.Drawing.Point(6, 45);
+            //
+            this.DelayMS.Location = new Point(10, 8);
             this.DelayMS.Name = "DelayMS";
-            this.DelayMS.Size = new System.Drawing.Size(47, 20);
-            this.DelayMS.TabIndex = 2;
-            // 
-            // groupBox3
-            // 
-            this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox3.Controls.Add(this.hotKeyModeType);
-            this.groupBox3.Controls.Add(this.hotKeyModeTarget);
-            this.groupBox3.Controls.Add(this.HotKey_Windows);
-            this.groupBox3.Controls.Add(this.HotKey_Shift);
-            this.groupBox3.Controls.Add(this.HotKey_Control);
-            this.groupBox3.Controls.Add(this.HotKey_Alt);
-            this.groupBox3.Controls.Add(this.label2);
-            this.groupBox3.Controls.Add(this.HotKey_Letter);
-            this.groupBox3.Location = new System.Drawing.Point(227, 12);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(153, 155);
-            this.groupBox3.TabIndex = 4;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Hot Key:";
-            // 
-            // hotKeyModeType
-            // 
-            this.hotKeyModeType.AutoSize = true;
-            this.hotKeyModeType.Location = new System.Drawing.Point(6, 124);
-            this.hotKeyModeType.Name = "hotKeyModeType";
-            this.hotKeyModeType.Size = new System.Drawing.Size(98, 17);
-            this.hotKeyModeType.TabIndex = 7;
-            this.hotKeyModeType.TabStop = true;
-            this.hotKeyModeType.Tag = "1";
-            this.hotKeyModeType.Text = "Just start typing";
-            this.hotKeyModeType.UseVisualStyleBackColor = true;
-            // 
-            // hotKeyModeTarget
-            // 
-            this.hotKeyModeTarget.AutoSize = true;
-            this.hotKeyModeTarget.Location = new System.Drawing.Point(6, 101);
-            this.hotKeyModeTarget.Name = "hotKeyModeTarget";
-            this.hotKeyModeTarget.Size = new System.Drawing.Size(122, 17);
-            this.hotKeyModeTarget.TabIndex = 6;
-            this.hotKeyModeTarget.TabStop = true;
-            this.hotKeyModeTarget.Tag = "0";
-            this.hotKeyModeTarget.Text = "Go into Target mode";
-            this.hotKeyModeTarget.UseVisualStyleBackColor = true;
-            // 
-            // HotKey_Windows
-            // 
-            this.HotKey_Windows.AutoSize = true;
-            this.HotKey_Windows.Location = new System.Drawing.Point(58, 69);
-            this.HotKey_Windows.Name = "HotKey_Windows";
-            this.HotKey_Windows.Size = new System.Drawing.Size(70, 17);
-            this.HotKey_Windows.TabIndex = 5;
-            this.HotKey_Windows.Tag = "8";
-            this.HotKey_Windows.Text = "Windows";
-            this.HotKey_Windows.UseVisualStyleBackColor = true;
-            // 
-            // HotKey_Shift
-            // 
-            this.HotKey_Shift.AutoSize = true;
-            this.HotKey_Shift.Location = new System.Drawing.Point(6, 69);
-            this.HotKey_Shift.Name = "HotKey_Shift";
-            this.HotKey_Shift.Size = new System.Drawing.Size(47, 17);
-            this.HotKey_Shift.TabIndex = 4;
-            this.HotKey_Shift.Tag = "4";
-            this.HotKey_Shift.Text = "Shift";
-            this.HotKey_Shift.UseVisualStyleBackColor = true;
-            // 
-            // HotKey_Control
-            // 
-            this.HotKey_Control.AutoSize = true;
-            this.HotKey_Control.Location = new System.Drawing.Point(58, 46);
-            this.HotKey_Control.Name = "HotKey_Control";
-            this.HotKey_Control.Size = new System.Drawing.Size(59, 17);
-            this.HotKey_Control.TabIndex = 3;
-            this.HotKey_Control.Tag = "2";
-            this.HotKey_Control.Text = "Control";
-            this.HotKey_Control.UseVisualStyleBackColor = true;
-            // 
+            this.DelayMS.Size = new Size(64, 16);
+            this.DelayMS.TabIndex = 0;
+            //
+            // label3
+            //
+            this.label3.AutoSize = true;
+            this.label3.Location = new Point(110, 107);
+            this.label3.Name = "label3";
+            this.label3.Text = "milliseconds between keystrokes";
+            //
+            // cardSafety
+            //
+            this.cardSafety.Controls.Add(this.confirmOverActive);
+            this.cardSafety.Controls.Add(this.confirmOverHost);
+            this.cardSafety.Controls.Add(this.label4);
+            this.cardSafety.Location = new Point(24, 428);
+            this.cardSafety.Name = "cardSafety";
+            this.cardSafety.Size = new Size(356, 124);
+            this.cardSafety.TabIndex = 3;
+            this.cardSafety.Title = "Safety";
+            //
+            // confirmOverActive
+            //
+            this.confirmOverActive.Location = new Point(16, 44);
+            this.confirmOverActive.Name = "confirmOverActive";
+            this.confirmOverActive.Size = new Size(324, 24);
+            this.confirmOverActive.TabIndex = 0;
+            this.confirmOverActive.Text = "Ask me first when pasting more than";
+            this.confirmOverActive.CheckedChanged += new System.EventHandler(this.confirmOverActive_CheckedChanged);
+            //
+            // confirmOverHost
+            //
+            this.confirmOverHost.Controls.Add(this.confirmOver);
+            this.confirmOverHost.Location = new Point(16, 76);
+            this.confirmOverHost.Name = "confirmOverHost";
+            this.confirmOverHost.Size = new Size(84, 32);
+            this.confirmOverHost.TabIndex = 1;
+            //
+            // confirmOver
+            //
+            this.confirmOver.Location = new Point(10, 8);
+            this.confirmOver.Name = "confirmOver";
+            this.confirmOver.Size = new Size(64, 16);
+            this.confirmOver.TabIndex = 0;
+            //
+            // label4
+            //
+            this.label4.AutoSize = true;
+            this.label4.Location = new Point(110, 85);
+            this.label4.Name = "label4";
+            this.label4.Text = "keystrokes";
+            //
+            // cardHotKey
+            //
+            this.cardHotKey.Controls.Add(this.hotKeyHost);
+            this.cardHotKey.Controls.Add(this.label2);
+            this.cardHotKey.Controls.Add(this.modifiersLabel);
+            this.cardHotKey.Controls.Add(this.HotKey_Alt);
+            this.cardHotKey.Controls.Add(this.HotKey_Control);
+            this.cardHotKey.Controls.Add(this.HotKey_Shift);
+            this.cardHotKey.Controls.Add(this.HotKey_Windows);
+            this.cardHotKey.Controls.Add(this.modeLabel);
+            this.cardHotKey.Controls.Add(this.hotKeyModeTarget);
+            this.cardHotKey.Controls.Add(this.hotKeyModeType);
+            this.cardHotKey.Location = new Point(396, 104);
+            this.cardHotKey.Name = "cardHotKey";
+            this.cardHotKey.Size = new Size(220, 268);
+            this.cardHotKey.TabIndex = 4;
+            this.cardHotKey.Title = "Hot key";
+            this.cardHotKey.Description = "Trigger without the tray icon";
+            //
+            // hotKeyHost
+            //
+            this.hotKeyHost.Controls.Add(this.HotKey_Letter);
+            this.hotKeyHost.Location = new Point(16, 60);
+            this.hotKeyHost.Name = "hotKeyHost";
+            this.hotKeyHost.Size = new Size(96, 32);
+            this.hotKeyHost.TabIndex = 0;
+            //
+            // HotKey_Letter
+            //
+            this.HotKey_Letter.Location = new Point(10, 8);
+            this.HotKey_Letter.Name = "HotKey_Letter";
+            this.HotKey_Letter.Size = new Size(76, 16);
+            this.HotKey_Letter.TabIndex = 0;
+            this.HotKey_Letter.KeyDown += new KeyEventHandler(this.HotKey_Letter_KeyDown);
+            //
+            // label2
+            //
+            this.label2.AutoSize = true;
+            this.label2.Location = new Point(120, 69);
+            this.label2.Name = "label2";
+            this.label2.Text = "key";
+            //
+            // modifiersLabel
+            //
+            this.modifiersLabel.AutoSize = true;
+            this.modifiersLabel.Location = new Point(16, 104);
+            this.modifiersLabel.Name = "modifiersLabel";
+            this.modifiersLabel.Text = "HELD WITH";
+            //
             // HotKey_Alt
-            // 
-            this.HotKey_Alt.AutoSize = true;
-            this.HotKey_Alt.Location = new System.Drawing.Point(6, 46);
+            //
+            this.HotKey_Alt.Location = new Point(16, 124);
             this.HotKey_Alt.Name = "HotKey_Alt";
-            this.HotKey_Alt.Size = new System.Drawing.Size(38, 17);
-            this.HotKey_Alt.TabIndex = 2;
+            this.HotKey_Alt.Size = new Size(90, 24);
+            this.HotKey_Alt.TabIndex = 1;
             this.HotKey_Alt.Tag = "1";
             this.HotKey_Alt.Text = "Alt";
-            this.HotKey_Alt.UseVisualStyleBackColor = true;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(72, 22);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(46, 13);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "key with";
-            // 
-            // HotKey_Letter
-            // 
-            this.HotKey_Letter.Location = new System.Drawing.Point(6, 19);
-            this.HotKey_Letter.Name = "HotKey_Letter";
-            this.HotKey_Letter.Size = new System.Drawing.Size(60, 20);
-            this.HotKey_Letter.TabIndex = 1;
-            this.HotKey_Letter.KeyDown += new System.Windows.Forms.KeyEventHandler(this.HotKey_Letter_KeyDown);
-            // 
+            //
+            // HotKey_Control
+            //
+            this.HotKey_Control.Location = new Point(112, 124);
+            this.HotKey_Control.Name = "HotKey_Control";
+            this.HotKey_Control.Size = new Size(94, 24);
+            this.HotKey_Control.TabIndex = 2;
+            this.HotKey_Control.Tag = "2";
+            this.HotKey_Control.Text = "Ctrl";
+            //
+            // HotKey_Shift
+            //
+            this.HotKey_Shift.Location = new Point(16, 152);
+            this.HotKey_Shift.Name = "HotKey_Shift";
+            this.HotKey_Shift.Size = new Size(90, 24);
+            this.HotKey_Shift.TabIndex = 3;
+            this.HotKey_Shift.Tag = "4";
+            this.HotKey_Shift.Text = "Shift";
+            //
+            // HotKey_Windows
+            //
+            this.HotKey_Windows.Location = new Point(112, 152);
+            this.HotKey_Windows.Name = "HotKey_Windows";
+            this.HotKey_Windows.Size = new Size(94, 24);
+            this.HotKey_Windows.TabIndex = 4;
+            this.HotKey_Windows.Tag = "8";
+            this.HotKey_Windows.Text = "Win";
+            //
+            // modeLabel
+            //
+            this.modeLabel.AutoSize = true;
+            this.modeLabel.Location = new Point(16, 186);
+            this.modeLabel.Name = "modeLabel";
+            this.modeLabel.Text = "WHEN PRESSED";
+            //
+            // hotKeyModeTarget
+            //
+            this.hotKeyModeTarget.Location = new Point(16, 206);
+            this.hotKeyModeTarget.Name = "hotKeyModeTarget";
+            this.hotKeyModeTarget.Size = new Size(190, 24);
+            this.hotKeyModeTarget.TabIndex = 5;
+            this.hotKeyModeTarget.TabStop = true;
+            this.hotKeyModeTarget.Tag = "0";
+            this.hotKeyModeTarget.Text = "Let me click a target";
+            //
+            // hotKeyModeType
+            //
+            this.hotKeyModeType.Location = new Point(16, 232);
+            this.hotKeyModeType.Name = "hotKeyModeType";
+            this.hotKeyModeType.Size = new Size(190, 24);
+            this.hotKeyModeType.TabIndex = 6;
+            this.hotKeyModeType.TabStop = true;
+            this.hotKeyModeType.Tag = "1";
+            this.hotKeyModeType.Text = "Start typing right away";
+            //
+            // cardTips
+            //
+            this.cardTips.Controls.Add(this.tipsLabel);
+            this.cardTips.Location = new Point(396, 388);
+            this.cardTips.Name = "cardTips";
+            this.cardTips.Size = new Size(220, 164);
+            this.cardTips.TabIndex = 5;
+            this.cardTips.TabStop = false;
+            this.cardTips.Title = "How it works";
+            //
+            // tipsLabel
+            //
+            this.tipsLabel.Location = new Point(16, 44);
+            this.tipsLabel.Name = "tipsLabel";
+            this.tipsLabel.Size = new Size(190, 108);
+            this.tipsLabel.Text = "1.  Copy some text.\r\n2.  Click the tray icon, or press your hot key.\r\n3.  Click where it should be typed.\r\n\r\nPress Esc to stop typing.";
+            //
+            // cancelButton
+            //
+            this.cancelButton.DialogResult = DialogResult.Cancel;
+            this.cancelButton.Location = new Point(436, 564);
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Size = new Size(88, 36);
+            this.cancelButton.TabIndex = 6;
+            this.cancelButton.Text = "Cancel";
+            //
             // Done
-            // 
-            this.Done.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.Done.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.Done.Location = new System.Drawing.Point(159, 284);
+            //
+            this.Done.Accent = true;
+            this.Done.DialogResult = DialogResult.OK;
+            this.Done.Location = new Point(536, 564);
             this.Done.Name = "Done";
-            this.Done.Size = new System.Drawing.Size(75, 23);
-            this.Done.TabIndex = 5;
-            this.Done.Text = "Done";
-            this.Done.UseVisualStyleBackColor = true;
+            this.Done.Size = new Size(80, 36);
+            this.Done.TabIndex = 7;
+            this.Done.Text = "Save";
             this.Done.Click += new System.EventHandler(this.Done_Click);
-            // 
-            // groupBox4
-            // 
-            this.groupBox4.Controls.Add(this.confirmOverActive);
-            this.groupBox4.Controls.Add(this.label4);
-            this.groupBox4.Controls.Add(this.confirmOver);
-            this.groupBox4.Location = new System.Drawing.Point(12, 192);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(204, 75);
-            this.groupBox4.TabIndex = 3;
-            this.groupBox4.TabStop = false;
-            // 
-            // confirmOverActive
-            // 
-            this.confirmOverActive.AutoSize = true;
-            this.confirmOverActive.Location = new System.Drawing.Point(6, 19);
-            this.confirmOverActive.Name = "confirmOverActive";
-            this.confirmOverActive.Size = new System.Drawing.Size(159, 17);
-            this.confirmOverActive.TabIndex = 1;
-            this.confirmOverActive.Text = "Confirm if pasting more than:";
-            this.confirmOverActive.UseVisualStyleBackColor = true;
-            this.confirmOverActive.CheckedChanged += new System.EventHandler(this.confirmOverActive_CheckedChanged);
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(59, 45);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(58, 13);
-            this.label4.TabIndex = 6;
-            this.label4.Text = "keystrokes";
-            // 
-            // confirmOver
-            // 
-            this.confirmOver.Location = new System.Drawing.Point(6, 42);
-            this.confirmOver.Name = "confirmOver";
-            this.confirmOver.Size = new System.Drawing.Size(47, 20);
-            this.confirmOver.TabIndex = 2;
-            // 
+            //
             // SettingsForm
-            // 
+            //
             this.AcceptButton = this.Done;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoScroll = true;
-            this.ClientSize = new System.Drawing.Size(392, 319);
-            this.Controls.Add(this.groupBox4);
-            this.Controls.Add(this.versionLabel);
-            this.Controls.Add(this.groupBox3);
-            this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.groupBox1);
+            this.CancelButton = this.cancelButton;
+            this.AutoScaleDimensions = new SizeF(7F, 15F);
+            this.AutoScaleMode = AutoScaleMode.Font;
+            this.ClientSize = new Size(640, 612);
+            this.Controls.Add(this.cardMethod);
+            this.Controls.Add(this.cardDelays);
+            this.Controls.Add(this.cardSafety);
+            this.Controls.Add(this.cardHotKey);
+            this.Controls.Add(this.cardTips);
+            this.Controls.Add(this.cancelButton);
             this.Controls.Add(this.Done);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Controls.Add(this.headerBar);
+            this.Font = new Font("Segoe UI", 9F);
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "SettingsForm";
-            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "ClickPaste Settings";
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
-            this.groupBox4.ResumeLayout(false);
-            this.groupBox4.PerformLayout();
+            this.SizeGripStyle = SizeGripStyle.Hide;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Text = "MicroApp Settings";
+            ((System.ComponentModel.ISupportInitialize)(this.iconBox)).EndInit();
+            this.headerBar.ResumeLayout(false);
+            this.headerBar.PerformLayout();
+            this.cardMethod.ResumeLayout(false);
+            this.cardDelays.ResumeLayout(false);
+            this.cardDelays.PerformLayout();
+            this.cardSafety.ResumeLayout(false);
+            this.cardSafety.PerformLayout();
+            this.cardHotKey.ResumeLayout(false);
+            this.cardHotKey.PerformLayout();
+            this.cardTips.ResumeLayout(false);
             this.ResumeLayout(false);
-
         }
 
         #endregion
 
-        private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.RadioButton Method_AutoIt;
-        private System.Windows.Forms.RadioButton Method_Forms;
-        private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox DelayMS;
-        private System.Windows.Forms.GroupBox groupBox3;
-        private System.Windows.Forms.TextBox HotKey_Letter;
-        private System.Windows.Forms.CheckBox HotKey_Alt;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.CheckBox HotKey_Windows;
-        private System.Windows.Forms.CheckBox HotKey_Shift;
-        private System.Windows.Forms.CheckBox HotKey_Control;
-        private System.Windows.Forms.Button Done;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox startDelayMS;
-        private System.Windows.Forms.GroupBox groupBox4;
-        private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.TextBox confirmOver;
-        private System.Windows.Forms.CheckBox confirmOverActive;
-        private System.Windows.Forms.RadioButton hotKeyModeType;
-        private System.Windows.Forms.RadioButton hotKeyModeTarget;
-        private System.Windows.Forms.RadioButton Method_ScanCode;
-        private System.Windows.Forms.Label versionLabel;
+        private HeaderBar headerBar;
+        private PictureBox iconBox;
+        private Label titleLabel;
+        private Label subtitleLabel;
+        private Pill versionLabel;
+
+        private Card cardMethod;
+        private ModernRadioButton Method_Forms;
+        private ModernRadioButton Method_AutoIt;
+        private ModernRadioButton Method_ScanCode;
+
+        private Card cardDelays;
+        private FieldHost startDelayHost;
+        private TextBox startDelayMS;
+        private Label label1;
+        private FieldHost delayHost;
+        private TextBox DelayMS;
+        private Label label3;
+
+        private Card cardSafety;
+        private ModernCheckBox confirmOverActive;
+        private FieldHost confirmOverHost;
+        private TextBox confirmOver;
+        private Label label4;
+
+        private Card cardHotKey;
+        private FieldHost hotKeyHost;
+        private TextBox HotKey_Letter;
+        private Label label2;
+        private Label modifiersLabel;
+        private ModernCheckBox HotKey_Alt;
+        private ModernCheckBox HotKey_Control;
+        private ModernCheckBox HotKey_Shift;
+        private ModernCheckBox HotKey_Windows;
+        private Label modeLabel;
+        private ModernRadioButton hotKeyModeTarget;
+        private ModernRadioButton hotKeyModeType;
+
+        private Card cardTips;
+        private Label tipsLabel;
+
+        private ModernButton cancelButton;
+        private ModernButton Done;
     }
 }

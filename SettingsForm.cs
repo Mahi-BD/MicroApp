@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ClickPaste
+namespace MicroApp
 {
     public partial class SettingsForm : Form
     {
@@ -22,11 +22,18 @@ namespace ClickPaste
 
             // Apply theme (colors, icon, and dark titlebar)
             bool dark = ThemeHelper.IsDarkMode;
-            ThemeHelper.ApplyTheme(this, dark);
+            Theme.Init(dark);
+            Theme.Apply(this);
+            StyleText();
             Native.SetDarkModeForWindow(this.Handle, dark);
+            Theme.RoundWindowCorners(this.Handle);
 
-            // Set icon to match theme (light icon for dark mode, dark icon for light mode)
-            this.Icon = dark ? Properties.Resources.Target : Properties.Resources.TargetDark;
+            // App icon: the brand mark reads on both light and dark title bars
+            this.Icon = Properties.Resources.AppIcon;
+            using (var large = new Icon(Properties.Resources.AppIcon, 40, 40))
+            {
+                iconBox.Image = large.ToBitmap();
+            }
 
             // Set version label
             var version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -64,6 +71,31 @@ namespace ClickPaste
                 mode.Checked = (Properties.Settings.Default.HotKeyMode == int.Parse(mode.Tag.ToString()));
             }
         }
+        /// <summary>
+        /// Typography pass: the theme handles colours, this sets the type scale
+        /// (title, subtitle, section eyebrows, helper text).
+        /// </summary>
+        private void StyleText()
+        {
+            titleLabel.Font = Theme.Heading;
+            titleLabel.ForeColor = Theme.Text;
+
+            subtitleLabel.Font = Theme.Small;
+            subtitleLabel.ForeColor = Theme.TextDim;
+
+            foreach (var eyebrow in new[] { modifiersLabel, modeLabel })
+            {
+                eyebrow.Font = new Font(Theme.Small, FontStyle.Bold);
+                eyebrow.ForeColor = Theme.TextDim;
+            }
+
+            foreach (var helper in new[] { label1, label2, label3, label4, tipsLabel })
+            {
+                helper.Font = Theme.Base;
+                helper.ForeColor = Theme.TextDim;
+            }
+        }
+
         private void HotKey_Letter_KeyDown(object sender, KeyEventArgs e)
         {
             switch(e.KeyCode)
@@ -145,6 +177,7 @@ namespace ClickPaste
         private void SetConfirmControls()
         {
             confirmOver.Enabled = confirmOverActive.Checked;
+            confirmOverHost.Invalidate(); // repaint the field chrome in its disabled state
         }
         private void confirmOverActive_CheckedChanged(object sender, EventArgs e)
         {

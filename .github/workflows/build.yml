@@ -21,24 +21,24 @@ jobs:
       uses: nuget/setup-nuget@v2
 
     - name: Restore NuGet packages
-      run: nuget restore ClickPaste.sln
+      run: nuget restore MicroApp.sln
 
     - name: Build Debug
-      run: msbuild ClickPaste.sln /p:Configuration=Debug /p:SkipCodeSigning=true
+      run: msbuild MicroApp.sln /p:Configuration=Debug /p:SkipCodeSigning=true
 
     - name: Build Release
-      run: msbuild ClickPaste.sln /p:Configuration=Release /p:SkipCodeSigning=true
+      run: msbuild MicroApp.sln /p:Configuration=Release /p:SkipCodeSigning=true
 
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ClickPaste-Debug-${{ github.sha }}
+        name: MicroApp-Debug-${{ github.sha }}
         path: bin/Debug/
         retention-days: 7
 
     - name: Upload Release artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ClickPaste-Release-${{ github.sha }}
+        name: MicroApp-Release-${{ github.sha }}
         path: bin/Release/
         retention-days: 30

@@ -16,7 +16,11 @@
             Remove this element if your application requires this virtualization for backwards
             compatibility.
         -->
-        <requestedExecutionLevel level="asInvoker" uiAccess="true" />
+        <!-- uiAccess="true" requires the binary to be Authenticode-signed AND run from a
+             secure location (e.g. C:\Program Files). Unsigned builds fail to launch with
+             "A referral was returned from the server". Set to false so the app runs from
+             any folder; trade-off: it cannot send keystrokes to UAC-elevated windows. -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>
