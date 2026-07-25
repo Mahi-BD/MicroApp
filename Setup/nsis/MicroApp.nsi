@@ -1,7 +1,7 @@
 ; MicroApp installer (NSIS)
 ;
 ; Build:
-;   makensis -DSRC=../../bin/Release -DVERSION=4.2.1 MicroApp.nsi
+;   makensis -DSRC=../../bin/Release -DVERSION=4.2.2 MicroApp.nsi
 ;
 ; SRC is the folder holding the built app (MicroApp.exe and its DLLs). The
 ; installer asks, on its last page, whether MicroApp should start with Windows;
@@ -19,7 +19,7 @@ SetCompressor /SOLID lzma
 !include "x64.nsh"
 
 !ifndef VERSION
-  !define VERSION "4.2.1"
+  !define VERSION "4.2.2"
 !endif
 !ifndef SRC
   !define SRC "..\..\bin\Release"

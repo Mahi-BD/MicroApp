@@ -1,7 +1,7 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 4.2.1.
+Version 4.2.2.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)

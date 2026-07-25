@@ -40,8 +40,8 @@ Windows **and** Linux, so it can be built anywhere:
 
 ```sh
 cd Setup/nsis
-makensis -DVERSION=4.2.1 -DSRC=../../bin/Release MicroApp.nsi            # all users, Program Files, admin
-makensis -DPERUSER -DVERSION=4.2.1 -DSRC=../../bin/Release MicroApp.nsi  # just me, %LOCALAPPDATA%, no admin
+makensis -DVERSION=4.2.2 -DSRC=../../bin/Release MicroApp.nsi            # all users, Program Files, admin
+makensis -DPERUSER -DVERSION=4.2.2 -DSRC=../../bin/Release MicroApp.nsi  # just me, %LOCALAPPDATA%, no admin
 ```
 
 `SRC` points at the folder holding the built app. The result is
@@ -51,9 +51,9 @@ on its last page (a Startup-folder shortcut, not an HKCU Run value, because the 
 Silent use:
 
 ```
-MicroApp-4.2.1-setup.exe /S            # install, no startup entry
-MicroApp-4.2.1-setup.exe /S /STARTUP   # install and start with Windows
-MicroApp-4.2.1-setup.exe /S /D=C:\Tools\MicroApp
+MicroApp-4.2.2-setup.exe /S            # install, no startup entry
+MicroApp-4.2.2-setup.exe /S /STARTUP   # install and start with Windows
+MicroApp-4.2.2-setup.exe /S /D=C:\Tools\MicroApp
 "C:\Program Files\MicroApp\Uninstall.exe" /S
 ```
 
