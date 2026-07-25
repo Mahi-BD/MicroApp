@@ -473,6 +473,61 @@ namespace MicroApp
             return list;
         }
         
+        /// <summary>"Ctrl + Alt + V", for the dialogs below.</summary>
+        static string DescribeHotKey(Keys key, KeyModifiers modifiers)
+        {
+            var parts = new List<string>();
+            if ((modifiers & KeyModifiers.Control) != 0) parts.Add("Ctrl");
+            if ((modifiers & KeyModifiers.Alt) != 0) parts.Add("Alt");
+            if ((modifiers & KeyModifiers.Shift) != 0) parts.Add("Shift");
+            if ((modifiers & KeyModifiers.Windows) != 0) parts.Add("Win");
+            parts.Add(key.ToString());
+            return string.Join(" + ", parts);
+        }
+
+        /// <summary>
+        /// Registers a hot key, and when another application already owns the combination, asks whether
+        /// MicroApp should take it over. The answer is remembered per combination, so the question is
+        /// asked once and not on every re-registration. Returns null when nothing was registered.
+        /// </summary>
+        /// <param name="what">Feature name for the dialog heading, e.g. "Typing".</param>
+        /// <param name="takeOverSetting">Name of the setting holding the combination the user agreed to take over.</param>
+        static int? RegisterOrTakeOver(string what, Keys key, KeyModifiers modifiers, string takeOverSetting)
+        {
+            int id, error;
+            if (HotKeyManager.TryRegisterHotKey(key, modifiers, out id, out error)) return id;
+
+            string combo = DescribeHotKey(key, modifiers);
+            if (error != HotKeyManager.ERROR_HOTKEY_ALREADY_REGISTERED)
+            {
+                ModernDialog.Info(what + " hot key unavailable", combo + " could not be registered.\r\n\r\nWindows error " + error + ".");
+                return null;
+            }
+
+            bool alreadyAgreed = string.Equals((string)Properties.Settings.Default[takeOverSetting], combo, StringComparison.Ordinal);
+            if (!alreadyAgreed)
+            {
+                bool takeIt = ModernDialog.Confirm(
+                    what + " hot key is taken",
+                    combo + " is already registered by another application.\r\n\r\nUse it for MicroApp instead? MicroApp will see the key first, and the other app will stop receiving it.",
+                    "Yes, use it here",
+                    "Leave it");
+                if (!takeIt) return null;
+                Properties.Settings.Default[takeOverSetting] = combo;
+                Properties.Settings.Default.Save();
+            }
+
+            try
+            {
+                return HotKeyManager.RegisterHotKeyOverride(key, modifiers);
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info(what + " hot key unavailable", combo + " could not be taken over.\r\n\r\n" + e.Message);
+                return null;
+            }
+        }
+
         void StartHotKey()
         {
             StopHotKey();
@@ -482,9 +537,12 @@ namespace MicroApp
                 try
                 {
                     Keys HotKey = (Keys)Enum.Parse(typeof(Keys), hotkeyLetter);
-                    _usingHotKey = HotKeyManager.RegisterHotKey(HotKey, (KeyModifiers)Properties.Settings.Default.HotKeyModifier);
-                    _currentHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
-                    HotKeyManager.HotKeyPressed += _currentHotKeyHandler;
+                    _usingHotKey = RegisterOrTakeOver("Typing", HotKey, (KeyModifiers)Properties.Settings.Default.HotKeyModifier, "HotKeyTakeOver");
+                    if (_usingHotKey.HasValue)
+                    {
+                        _currentHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
+                        HotKeyManager.HotKeyPressed += _currentHotKeyHandler;
+                    }
                 }
                 catch(Exception e)
                 {
@@ -523,7 +581,8 @@ namespace MicroApp
             try
             {
                 Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
-                _ocrHotKey = HotKeyManager.RegisterHotKey(key, (KeyModifiers)Properties.Settings.Default.OcrHotKeyModifier);
+                _ocrHotKey = RegisterOrTakeOver("OCR", key, (KeyModifiers)Properties.Settings.Default.OcrHotKeyModifier, "OcrHotKeyTakeOver");
+                if (!_ocrHotKey.HasValue) return;
                 _ocrHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_OcrHotKeyPressed);
                 HotKeyManager.HotKeyPressed += _ocrHotKeyHandler;
             }
@@ -692,7 +751,8 @@ namespace MicroApp
             try
             {
                 Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
-                _captureHotKey = HotKeyManager.RegisterHotKey(key, (KeyModifiers)Properties.Settings.Default.CaptureHotKeyModifier);
+                _captureHotKey = RegisterOrTakeOver("Screen capture", key, (KeyModifiers)Properties.Settings.Default.CaptureHotKeyModifier, "CaptureHotKeyTakeOver");
+                if (!_captureHotKey.HasValue) return;
                 _captureHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_CaptureHotKeyPressed);
                 HotKeyManager.HotKeyPressed += _captureHotKeyHandler;
             }
@@ -845,7 +905,8 @@ namespace MicroApp
             try
             {
                 Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
-                _gifHotKey = HotKeyManager.RegisterHotKey(key, (KeyModifiers)Properties.Settings.Default.GifHotKeyModifier);
+                _gifHotKey = RegisterOrTakeOver("GIF", key, (KeyModifiers)Properties.Settings.Default.GifHotKeyModifier, "GifHotKeyTakeOver");
+                if (!_gifHotKey.HasValue) return;
                 _gifHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_GifHotKeyPressed);
                 HotKeyManager.HotKeyPressed += _gifHotKeyHandler;
             }

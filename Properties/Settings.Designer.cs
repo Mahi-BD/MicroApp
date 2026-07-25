@@ -430,5 +430,53 @@ namespace MicroApp.Properties {
                 this["HotKeyMode"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string HotKeyTakeOver {
+            get {
+                return ((string)(this["HotKeyTakeOver"]));
+            }
+            set {
+                this["HotKeyTakeOver"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string OcrHotKeyTakeOver {
+            get {
+                return ((string)(this["OcrHotKeyTakeOver"]));
+            }
+            set {
+                this["OcrHotKeyTakeOver"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CaptureHotKeyTakeOver {
+            get {
+                return ((string)(this["CaptureHotKeyTakeOver"]));
+            }
+            set {
+                this["CaptureHotKeyTakeOver"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GifHotKeyTakeOver {
+            get {
+                return ((string)(this["GifHotKeyTakeOver"]));
+            }
+            set {
+                this["GifHotKeyTakeOver"] = value;
+            }
+        }
     }
 }

@@ -192,6 +192,27 @@ The mouse pointer is drawn into the frames, since screen copies leave it out.
 
 Clearing a hot key's key box (Delete or Backspace) disables that hot key.
 
+### When another app already owns the hot key
+
+Global hot keys are first-come-first-served: whichever app registered the combination first keeps it.
+When MicroApp finds one taken it asks
+
+> **Ctrl + Alt + V is already registered by another application.**
+> Use it for MicroApp instead? MicroApp will see the key first, and the other app will stop receiving it.
+
+Answer **Yes, use it here** and MicroApp takes the combination over — it watches the keyboard directly,
+acts on the key, and swallows it, so the app holding the registration no longer sees it. **Leave it**
+leaves that MicroApp hot key switched off; the tray menu still works, and you can pick a different key
+in the settings window.
+
+The answer is remembered for that exact combination, so you are asked once, not at every start. Change
+the key and the next conflict asks again. If the other app is closed later, MicroApp goes back to a
+normal registration on its own.
+
+Two things a take-over cannot do: combinations Windows reserves for itself (`Ctrl+Alt+Del`, `Win+L`,
+`Win+Shift+S`) never reach any application, and an unsigned build outside `C:\Program Files` cannot
+take a key while a UAC-elevated window has the focus.
+
 ---
 
 ## Starting with Windows
@@ -229,9 +250,11 @@ from `C:\Program Files`. Either install it there and sign it, or build with `uiA
 default in this repository), which works everywhere except UAC-elevated windows.
 
 **Nothing happens when I press a hot key.**
-Another app already owns that combination — global hot keys are first-come-first-served, and MicroApp
-shows a "hot key unavailable" notice at startup when registration fails. Change it in the matching
-settings window. Note that Windows itself reserves some combinations (for example `Win+Shift+S`).
+Another app already owns that combination — global hot keys are first-come-first-served. MicroApp
+offers to take it over when it finds one taken (see *When another app already owns the hot key*); if
+you answered **Leave it**, that hot key stays off until you pick a different key in the matching
+settings window. Note that Windows itself reserves some combinations (for example `Win+Shift+S`) and
+those cannot be taken over by anything.
 
 **Typing skips or duplicates characters.**
 Raise *milliseconds between keystrokes* in Key Setting, and try the `SendInput` method. Remote desktops

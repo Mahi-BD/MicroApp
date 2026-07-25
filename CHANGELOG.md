@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Take a hot key over from another app** — when a combination is already registered elsewhere,
+  MicroApp now asks instead of only reporting the failure. Answering *Yes, use it here* claims the key
+  through a low-level keyboard hook: MicroApp acts on it and swallows it, so the app holding the
+  registration stops receiving it. The answer is remembered per combination, and MicroApp returns to a
+  normal registration once the combination is free again.
+
 ## 4.2.1 — 2026-07-25
 
 First release under the MicroApp name. Everything below is new relative to the ClickPaste fork point.
