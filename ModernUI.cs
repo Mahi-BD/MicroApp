@@ -620,8 +620,13 @@ namespace MicroApp
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            e.TextColor = e.Item.Selected ? Theme.Text : Theme.Text;
-            e.TextFont = Theme.Base;
+            // the same handler paints the label and, in a second call, the hot key hint
+            var menuItem = e.Item as ToolStripMenuItem;
+            bool isShortcut = menuItem != null &&
+                              !string.IsNullOrEmpty(menuItem.ShortcutKeyDisplayString) &&
+                              e.Text == menuItem.ShortcutKeyDisplayString;
+            e.TextColor = isShortcut ? Theme.TextDim : Theme.Text;
+            e.TextFont = isShortcut ? Theme.Small : Theme.Base;
             base.OnRenderItemText(e);
         }
 

@@ -146,6 +146,33 @@ The mouse pointer is drawn into the frames, since screen copies leave it out.
 
 ---
 
+## Record Video
+
+Like Record GIF, but the result is a small **MP4 (H.264 + AAC)** — a minute of screen costs
+megabytes rather than the hundreds a GIF would — and it can include **sound**.
+
+**How to use it**
+
+1. Press **Ctrl+Alt+R**, or tray → *Record Video*.
+2. Pick the region (same crosshair, same locks — video has its own lock settings).
+3. Recording starts, with the same red **REC** badge outside the recorded area.
+4. Stop with **Esc**, by pressing the hot key again, by clicking the badge, or by letting the time
+   limit expire.
+
+**Recording** (Video Setting) — frame rate 1–30 fps (20 by default), a maximum length in seconds
+(300 by default), a **quality** choice (*Small file* / *Balanced* / *Sharp*) that trades file size
+against picture crispness, and a **sound** source: *No sound*, *System sound* (whatever the machine
+is playing) or *Microphone*.
+
+Encoding uses the H.264 and AAC encoders built into Windows — nothing extra is installed, and the
+video streams to disk while it records. If no audio device is available the recording is silently
+made without a sound track. On Windows *N* editions the Media Feature Pack must be installed.
+
+**After recording** — the MP4 is always written (to `Videos\MicroApp` unless you pick another
+folder); you can additionally have the path copied or the file opened in your default player.
+
+---
+
 ## Settings reference
 
 ### Key Setting
@@ -189,6 +216,20 @@ The mouse pointer is drawn into the frames, since screen copies leave it out.
 | Lock pixel size | off, 800 × 600 |
 | After capture | Just save |
 | GIF folder | falls back to the image folder |
+
+### Video Setting
+
+| Setting | Default |
+|---|---|
+| Record video hot key | `Ctrl + Alt + R` |
+| Frames per second | 20 |
+| Seconds at most | 300 |
+| Quality | Balanced |
+| Sound | System sound |
+| Lock ratio | off, 16:9 |
+| Lock pixel size | off, 1280 × 720 |
+| After recording | Just save |
+| Video folder | `Videos\MicroApp` |
 
 Clearing a hot key's key box (Delete or Backspace) disables that hot key.
 

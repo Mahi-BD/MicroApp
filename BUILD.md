@@ -70,6 +70,8 @@ runners do not have.
 | `OcrSettingsForm.*` / `OcrService.cs` / `OcrResultForm.cs` | OCR settings, Windows OCR wrapper, result preview |
 | `CaptureSettingsForm.*` | Screen capture settings |
 | `GifSettingsForm.*` / `GifRecorder.cs` / `GifWriter.cs` | GIF settings, recorder, incremental GIF89a encoder |
+| `VideoSettingsForm.*` / `VideoRecorder.cs` | Video settings and the MP4 screen/sound recorder |
+| `Mp4Writer.cs` / `AudioCapture.cs` | Media Foundation sink writer (H.264+AAC) and WASAPI loopback/mic capture |
 | `RegionCaptureOverlay.cs` | The freeze-and-drag crosshair picker, plus the ratio/pixel locks |
 | `ModernUI.cs` | Theme (light/dark) and the custom-drawn controls every window uses |
 | `ModernDialog.cs` / `Toast.cs` | Themed message dialog and the one-second notification |

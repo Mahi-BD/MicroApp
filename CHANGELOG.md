@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.3.2 — 2026-07-27
+
+### Added
+
+- **Record Video** — record any screen region to a small MP4 (H.264 + AAC), with sound from the
+  system output or the microphone. Works exactly like GIF recording: a tray item or its own hot key
+  (default Ctrl + Alt + R), drag a region, a REC badge outside the frame, Esc or the hot key again to
+  stop. Encoding uses the Media Foundation encoders built into Windows, streamed straight to disk, so
+  a minute of screen costs megabytes rather than the hundreds a GIF would — and nothing new is
+  bundled. Video Setting has its own frame rate, length limit, file-size/quality trade, sound source,
+  selection lock and folder (defaults to Videos\MicroApp). When the system plays nothing, the sound
+  track is padded with silence so picture and audio stay in step. On audio-less machines the
+  recording simply has no sound track; on Windows N the Media Feature Pack is required.
+
+- **Hot keys shown in the tray menu** — *Grab text (OCR)*, *Screen Capture*, *Record GIF* and
+  *Record Video* now display their current hot key next to the item, and the labels update as soon
+  as a settings window is closed. Cleared hot keys show nothing.
+
 ## 4.2.2 — 2026-07-26
 
 ### Added

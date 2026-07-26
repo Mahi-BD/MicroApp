@@ -172,6 +172,13 @@ namespace MicroApp
         RecordingIndicator _indicator;
         IKeyboardMouseEvents _recordHook;
 
+        // video recording (MP4 with sound)
+        int? _videoHotKey;
+        EventHandler<HotKeyEventArgs> _videoHotKeyHandler = null;
+        VideoRecorder _videoRecorder;
+        RecordingIndicator _videoIndicator;
+        IKeyboardMouseEvents _videoHook;
+
         // hot keys are raised on HotKeyManager's own message loop; this marshals the
         // UI work (overlay, dialogs, clipboard) back onto the tray thread
         Control _sync;
@@ -186,6 +193,7 @@ namespace MicroApp
             StartOcrHotKey();
             StartCaptureHotKey();
             StartGifHotKey();
+            StartVideoHotKey();
             bool darkTray = true;
             using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
             {
@@ -223,20 +231,30 @@ namespace MicroApp
             var grab = new ToolStripMenuItem("Grab text (OCR)", null, GrabText) { Padding = new Padding(4, 3, 4, 3) };
             var capture = new ToolStripMenuItem("Screen Capture", null, ScreenCapture) { Padding = new Padding(4, 3, 4, 3) };
             var gif = new ToolStripMenuItem("Record GIF", null, RecordGif) { Padding = new Padding(4, 3, 4, 3) };
+            var video = new ToolStripMenuItem("Record Video", null, RecordVideo) { Padding = new Padding(4, 3, 4, 3) };
+
+            // each feature shows its current hot key, so the menu doubles as a cheat sheet
+            grab.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.OcrHotKey, Properties.Settings.Default.OcrHotKeyModifier);
+            capture.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.CaptureHotKey, Properties.Settings.Default.CaptureHotKeyModifier);
+            gif.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.GifHotKey, Properties.Settings.Default.GifHotKeyModifier);
+            video.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.VideoHotKey, Properties.Settings.Default.VideoHotKeyModifier);
             var keySettings = new ToolStripMenuItem("Key Setting", null, Settings) { Padding = new Padding(4, 3, 4, 3) };
             var ocrSettings = new ToolStripMenuItem("OCR Setting", null, OcrSettings) { Padding = new Padding(4, 3, 4, 3) };
             var captureSettings = new ToolStripMenuItem("Capture Setting", null, CaptureSettings) { Padding = new Padding(4, 3, 4, 3) };
             var gifSettings = new ToolStripMenuItem("GIF Setting", null, GifSettings) { Padding = new Padding(4, 3, 4, 3) };
+            var videoSettings = new ToolStripMenuItem("Video Setting", null, VideoSettings) { Padding = new Padding(4, 3, 4, 3) };
             var about = new ToolStripMenuItem("About", null, About) { Padding = new Padding(4, 3, 4, 3) };
             var exit = new ToolStripMenuItem("Exit", null, Exit) { Padding = new Padding(4, 3, 4, 3) };
             menu.Items.Add(grab);
             menu.Items.Add(capture);
             menu.Items.Add(gif);
+            menu.Items.Add(video);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(keySettings);
             menu.Items.Add(ocrSettings);
             menu.Items.Add(captureSettings);
             menu.Items.Add(gifSettings);
+            menu.Items.Add(videoSettings);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(about);
             menu.Items.Add(exit);
@@ -473,6 +491,23 @@ namespace MicroApp
             return list;
         }
         
+        /// <summary>"Ctrl+Alt+G" for the tray menu, or null when the hot key is unset or invalid.</summary>
+        static string HotKeyDisplay(string letter, int modifiers)
+        {
+            if (string.IsNullOrEmpty(letter)) return null;
+            Keys key;
+            if (!Enum.TryParse(letter, out key)) return null;
+            return DescribeHotKey(key, (KeyModifiers)(modifiers & 0xF)).Replace(" + ", "+");
+        }
+
+        /// <summary>Hot keys may have changed: rebuild the menu so the labels stay honest.</summary>
+        void RefreshTrayMenu()
+        {
+            var old = _notify.ContextMenuStrip;
+            _notify.ContextMenuStrip = BuildTrayMenu();
+            if (old != null) old.Dispose();
+        }
+
         /// <summary>"Ctrl + Alt + V", for the dialogs below.</summary>
         static string DescribeHotKey(Keys key, KeyModifiers modifiers)
         {
@@ -952,7 +987,7 @@ namespace MicroApp
 
         void BeginGifRecording()
         {
-            if (_ocrBusy || _recorder != null) return;
+            if (_ocrBusy || _recorder != null || _videoRecorder != null) return;
             if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(StartGifRecording));
             else StartGifRecording();
         }
@@ -966,7 +1001,7 @@ namespace MicroApp
         /// <summary>Pick a region, then roll: frames stream to disk until Esc or the time limit.</summary>
         void StartGifRecording()
         {
-            if (_ocrBusy || _recorder != null) return;
+            if (_ocrBusy || _recorder != null || _videoRecorder != null) return;
             _ocrBusy = true;
 
             Rectangle region;
@@ -1086,6 +1121,210 @@ namespace MicroApp
             Toast.Show(note);
         }
 
+        void StartVideoHotKey()
+        {
+            StopVideoHotKey();
+            var letter = Properties.Settings.Default.VideoHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _videoHotKey = RegisterOrTakeOver("Video", key, (KeyModifiers)Properties.Settings.Default.VideoHotKeyModifier, "VideoHotKeyTakeOver");
+                if (!_videoHotKey.HasValue) return;
+                _videoHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_VideoHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _videoHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Video hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopVideoHotKey()
+        {
+            if (_videoHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _videoHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_videoHotKey.Value);
+            }
+            _videoHotKey = null;
+            _videoHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_VideoHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.VideoHotKey, Properties.Settings.Default.VideoHotKeyModifier)) return;
+
+            // pressing the hot key again while recording is the natural way to stop
+            if (_videoRecorder != null)
+            {
+                BeginStopVideoRecording();
+                return;
+            }
+            while (Native.IsModifierKeyPressed())
+            {
+                Thread.Sleep(150);
+            }
+            BeginVideoRecording();
+        }
+
+        void RecordVideo(object sender, EventArgs e)
+        {
+            if (_videoRecorder != null) { BeginStopVideoRecording(); return; }
+            BeginVideoRecording();
+        }
+
+        void BeginVideoRecording()
+        {
+            if (_ocrBusy || _videoRecorder != null || _recorder != null) return;
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(StartVideoRecording));
+            else StartVideoRecording();
+        }
+
+        void BeginStopVideoRecording()
+        {
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(FinishVideoRecording));
+            else FinishVideoRecording();
+        }
+
+        /// <summary>Pick a region, then roll: an MP4 with sound streams to disk until Esc or the time limit.</summary>
+        void StartVideoRecording()
+        {
+            if (_ocrBusy || _videoRecorder != null || _recorder != null) return;
+            _ocrBusy = true;
+
+            Rectangle region;
+            try
+            {
+                var constraint = CaptureConstraint.FromVideoSettings();
+                string hint = constraint.LockPixel
+                    ? $"Click to record a {constraint.PixelSize.Width} x {constraint.PixelSize.Height} video.   Esc cancels."
+                    : constraint.LockRatio
+                        ? $"Drag a {constraint.RatioName} area to record.   Esc cancels."
+                        : "Drag the area to record as a video.   Esc cancels.";
+
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint))
+                {
+                    if (shot == null) return;                       // cancelled
+                    region = RegionCaptureOverlay.LastRegion;
+                }
+            }
+            finally
+            {
+                _ocrBusy = false;
+            }
+            if (region.Width < 8 || region.Height < 8) return;
+
+            int fps = Properties.Settings.Default.VideoFps;
+            int seconds = Properties.Settings.Default.VideoSeconds;
+            string folder = VideoSettingsForm.DefaultFolder();
+            string path;
+            try
+            {
+                System.IO.Directory.CreateDirectory(folder);
+                path = System.IO.Path.Combine(folder, "MicroApp-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".mp4");
+            }
+            catch (Exception ex)
+            {
+                ModernDialog.Info("Could not start recording", ex.Message);
+                return;
+            }
+
+            try
+            {
+                _videoRecorder = new VideoRecorder(region, path, fps, seconds,
+                    (VideoQuality)Properties.Settings.Default.VideoQuality,
+                    (VideoAudioSource)Properties.Settings.Default.VideoAudioSource);
+            }
+            catch (Exception ex)
+            {
+                ModernDialog.Info("Could not start recording",
+                    "The Windows video encoder is unavailable.\r\n(On Windows N, install the Media Feature Pack.)\r\n\r\n" + ex.Message);
+                return;
+            }
+
+            _videoIndicator = new RecordingIndicator(region, seconds);
+            _videoIndicator.StopRequested += (s, e) => BeginStopVideoRecording();
+            _videoIndicator.Show();
+
+            // Esc anywhere stops the recording
+            _videoHook = Hook.GlobalEvents();
+            _videoHook.KeyDown += _videoHook_KeyDown;
+
+            var traySize = SystemInformation.SmallIconSize;
+            _notify.Icon = new System.Drawing.Icon(Properties.Resources.Typing, traySize.Width, traySize.Height);
+
+            _videoRecorder.Start();
+            string note = $"Recording {region.Width & ~1} x {region.Height & ~1} at {fps} fps. Esc to stop.";
+            if (_videoRecorder.AudioMissing) note += "\r\nNo audio device found: recording without sound.";
+            Toast.Show(note);
+
+            // stop by itself once the time limit is up
+            var limit = new System.Windows.Forms.Timer { Interval = Math.Max(1000, seconds * 1000 + 400) };
+            limit.Tick += (s, e) => { limit.Stop(); limit.Dispose(); FinishVideoRecording(); };
+            limit.Start();
+        }
+
+        private void _videoHook_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape) BeginStopVideoRecording();
+        }
+
+        void FinishVideoRecording()
+        {
+            var recorder = _videoRecorder;
+            if (recorder == null) return;
+            _videoRecorder = null;
+
+            if (_videoHook != null)
+            {
+                _videoHook.KeyDown -= _videoHook_KeyDown;
+                _videoHook.Dispose();
+                _videoHook = null;
+            }
+            if (_videoIndicator != null)
+            {
+                _videoIndicator.Close();
+                _videoIndicator.Dispose();
+                _videoIndicator = null;
+            }
+
+            recorder.Stop();
+            int frames = recorder.FrameCount;
+            string path = recorder.Path;
+            recorder.Dispose();   // finalises the MP4 index; skipping it leaves the file unplayable
+
+            var traySize = SystemInformation.SmallIconSize;
+            bool darkTray = ThemeHelper.IsSystemDark;
+            _notify.Icon = new System.Drawing.Icon(
+                darkTray ? Properties.Resources.Target : Properties.Resources.TargetDark,
+                traySize.Width, traySize.Height);
+
+            if (frames == 0)
+            {
+                SystemSounds.Beep.Play();
+                Toast.Show("Nothing was recorded.");
+                try { System.IO.File.Delete(path); } catch (Exception) { }
+                return;
+            }
+
+            long size = 0;
+            try { size = new System.IO.FileInfo(path).Length; } catch (Exception) { }
+            string note = $"Video saved: {frames} frames, {size / 1024:N0} KB\r\n{System.IO.Path.GetFileName(path)}";
+
+            switch ((VideoOutput)Properties.Settings.Default.VideoOutput)
+            {
+                case VideoOutput.SaveAndCopyPath:
+                    if (SetClipboard(path)) note += "\r\nPath copied.";
+                    break;
+                case VideoOutput.SaveAndOpen:
+                    try { System.Diagnostics.Process.Start(path); }
+                    catch (Exception ex) { note += "\r\nCould not open it: " + ex.Message; }
+                    break;
+            }
+            Toast.Show(note);
+        }
+
         void StopHotKey()
         {
             if(_usingHotKey.HasValue)
@@ -1109,6 +1348,7 @@ namespace MicroApp
             settings.ShowDialog();
             _settingsOpen = false;
             StartAllHotKeys();
+            RefreshTrayMenu();
         }
 
         void OcrSettings(object sender, EventArgs e)
@@ -1123,6 +1363,7 @@ namespace MicroApp
             settings.ShowDialog();
             _settingsOpen = false;
             StartAllHotKeys();
+            RefreshTrayMenu();
         }
 
         void About(object sender, EventArgs e)
@@ -1139,6 +1380,7 @@ namespace MicroApp
             }
             _settingsOpen = false;
             StartAllHotKeys();
+            RefreshTrayMenu();
         }
 
         void GifSettings(object sender, EventArgs e)
@@ -1153,6 +1395,22 @@ namespace MicroApp
             settings.ShowDialog();
             _settingsOpen = false;
             StartAllHotKeys();
+            RefreshTrayMenu();
+        }
+
+        void VideoSettings(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new VideoSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+            RefreshTrayMenu();
         }
 
         void CaptureSettings(object sender, EventArgs e)
@@ -1167,6 +1425,7 @@ namespace MicroApp
             settings.ShowDialog();
             _settingsOpen = false;
             StartAllHotKeys();
+            RefreshTrayMenu();
         }
 
         void StopAllHotKeys()
@@ -1175,6 +1434,7 @@ namespace MicroApp
             StopOcrHotKey();
             StopCaptureHotKey();
             StopGifHotKey();
+            StopVideoHotKey();
         }
 
         void StartAllHotKeys()
@@ -1183,11 +1443,13 @@ namespace MicroApp
             StartOcrHotKey();
             StartCaptureHotKey();
             StartGifHotKey();
+            StartVideoHotKey();
         }
 
         void Exit(object sender, EventArgs e)
         {
             if (_recorder != null) FinishGifRecording();
+            if (_videoRecorder != null) FinishVideoRecording();
             EndTrack();
             // Hide tray icon, otherwise it will remain shown until user mouses over it
             _notify.Visible = false;

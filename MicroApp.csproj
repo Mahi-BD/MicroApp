@@ -73,6 +73,15 @@
       <DependentUpon>GifSettingsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="GifWriter.cs" />
+    <Compile Include="VideoRecorder.cs" />
+    <Compile Include="Mp4Writer.cs" />
+    <Compile Include="AudioCapture.cs" />
+    <Compile Include="VideoSettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="VideoSettingsForm.Designer.cs">
+      <DependentUpon>VideoSettingsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="ModernDialog.cs" />
     <Compile Include="Toast.cs">
       <SubType>Form</SubType>

@@ -59,6 +59,25 @@ namespace MicroApp
             return c;
         }
 
+        /// <summary>The constraint configured for video recording, which is kept separate.</summary>
+        public static CaptureConstraint FromVideoSettings()
+        {
+            var c = new CaptureConstraint
+            {
+                LockPixel = Properties.Settings.Default.VideoLockPixel,
+                PixelSize = new Size(Math.Max(8, Properties.Settings.Default.VideoPixelWidth),
+                                     Math.Max(8, Properties.Settings.Default.VideoPixelHeight)),
+                LockRatio = Properties.Settings.Default.VideoLockRatio,
+                RatioName = Properties.Settings.Default.VideoRatioPreset
+            };
+            c.Ratio = ParseRatio(c.RatioName);
+            if (c.Ratio <= 0)
+            {
+                c.LockRatio = false;
+            }
+            return c;
+        }
+
         /// <summary>Parses "16:9" (or "16x9", "1.5") into a width/height factor.</summary>
         public static double ParseRatio(string text)
         {

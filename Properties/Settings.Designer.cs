@@ -205,6 +205,162 @@ namespace MicroApp.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("R")]
+        public string VideoHotKey {
+            get {
+                return ((string)(this["VideoHotKey"]));
+            }
+            set {
+                this["VideoHotKey"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int VideoHotKeyModifier {
+            get {
+                return ((int)(this["VideoHotKeyModifier"]));
+            }
+            set {
+                this["VideoHotKeyModifier"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("20")]
+        public int VideoFps {
+            get {
+                return ((int)(this["VideoFps"]));
+            }
+            set {
+                this["VideoFps"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        public int VideoSeconds {
+            get {
+                return ((int)(this["VideoSeconds"]));
+            }
+            set {
+                this["VideoSeconds"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int VideoQuality {
+            get {
+                return ((int)(this["VideoQuality"]));
+            }
+            set {
+                this["VideoQuality"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int VideoAudioSource {
+            get {
+                return ((int)(this["VideoAudioSource"]));
+            }
+            set {
+                this["VideoAudioSource"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool VideoLockRatio {
+            get {
+                return ((bool)(this["VideoLockRatio"]));
+            }
+            set {
+                this["VideoLockRatio"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("16:9")]
+        public string VideoRatioPreset {
+            get {
+                return ((string)(this["VideoRatioPreset"]));
+            }
+            set {
+                this["VideoRatioPreset"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool VideoLockPixel {
+            get {
+                return ((bool)(this["VideoLockPixel"]));
+            }
+            set {
+                this["VideoLockPixel"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1280")]
+        public int VideoPixelWidth {
+            get {
+                return ((int)(this["VideoPixelWidth"]));
+            }
+            set {
+                this["VideoPixelWidth"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("720")]
+        public int VideoPixelHeight {
+            get {
+                return ((int)(this["VideoPixelHeight"]));
+            }
+            set {
+                this["VideoPixelHeight"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int VideoOutput {
+            get {
+                return ((int)(this["VideoOutput"]));
+            }
+            set {
+                this["VideoOutput"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VideoFolder {
+            get {
+                return ((string)(this["VideoFolder"]));
+            }
+            set {
+                this["VideoFolder"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("G")]
         public string GifHotKey {
             get {
@@ -476,6 +632,18 @@ namespace MicroApp.Properties {
             }
             set {
                 this["GifHotKeyTakeOver"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VideoHotKeyTakeOver {
+            get {
+                return ((string)(this["VideoHotKeyTakeOver"]));
+            }
+            set {
+                this["VideoHotKeyTakeOver"] = value;
             }
         }
     }
