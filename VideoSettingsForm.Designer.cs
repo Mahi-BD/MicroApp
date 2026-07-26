@@ -137,12 +137,12 @@ namespace MicroApp
             this.cardRecording.Size = new Size(592, 188);
             this.cardRecording.TabIndex = 1;
             this.cardRecording.Title = "Recording";
-            this.cardRecording.Description = "Hot key, frame rate, length, size and sound";
+            this.cardRecording.Description = "Hot key, size and sound";
             //
             // hotKeyHost
             //
             this.hotKeyHost.Controls.Add(this.Video_Letter);
-            this.hotKeyHost.Location = new Point(16, 56);
+            this.hotKeyHost.Location = new Point(16, 60);
             this.hotKeyHost.Name = "hotKeyHost";
             this.hotKeyHost.Size = new Size(96, 32);
             this.hotKeyHost.TabIndex = 0;
@@ -158,20 +158,20 @@ namespace MicroApp
             // keyLabel
             //
             this.keyLabel.AutoSize = true;
-            this.keyLabel.Location = new Point(120, 65);
+            this.keyLabel.Location = new Point(120, 69);
             this.keyLabel.Name = "keyLabel";
             this.keyLabel.Text = "key";
             //
             // modifiersLabel
             //
             this.modifiersLabel.AutoSize = true;
-            this.modifiersLabel.Location = new Point(200, 40);
+            this.modifiersLabel.Location = new Point(200, 44);
             this.modifiersLabel.Name = "modifiersLabel";
             this.modifiersLabel.Text = "HELD WITH";
             //
             // Video_Alt
             //
-            this.Video_Alt.Location = new Point(200, 58);
+            this.Video_Alt.Location = new Point(200, 62);
             this.Video_Alt.Name = "Video_Alt";
             this.Video_Alt.Size = new Size(88, 24);
             this.Video_Alt.TabIndex = 1;
@@ -180,7 +180,7 @@ namespace MicroApp
             //
             // Video_Control
             //
-            this.Video_Control.Location = new Point(296, 58);
+            this.Video_Control.Location = new Point(296, 62);
             this.Video_Control.Name = "Video_Control";
             this.Video_Control.Size = new Size(88, 24);
             this.Video_Control.TabIndex = 2;
@@ -189,7 +189,7 @@ namespace MicroApp
             //
             // Video_Shift
             //
-            this.Video_Shift.Location = new Point(392, 58);
+            this.Video_Shift.Location = new Point(392, 62);
             this.Video_Shift.Name = "Video_Shift";
             this.Video_Shift.Size = new Size(88, 24);
             this.Video_Shift.TabIndex = 3;
@@ -198,7 +198,7 @@ namespace MicroApp
             //
             // Video_Windows
             //
-            this.Video_Windows.Location = new Point(488, 58);
+            this.Video_Windows.Location = new Point(488, 62);
             this.Video_Windows.Name = "Video_Windows";
             this.Video_Windows.Size = new Size(88, 24);
             this.Video_Windows.TabIndex = 4;
@@ -208,7 +208,7 @@ namespace MicroApp
             // fpsHost
             //
             this.fpsHost.Controls.Add(this.videoFps);
-            this.fpsHost.Location = new Point(16, 100);
+            this.fpsHost.Location = new Point(16, 104);
             this.fpsHost.Name = "fpsHost";
             this.fpsHost.Size = new Size(84, 32);
             this.fpsHost.TabIndex = 5;
@@ -223,14 +223,14 @@ namespace MicroApp
             // fpsLabel
             //
             this.fpsLabel.AutoSize = true;
-            this.fpsLabel.Location = new Point(110, 109);
+            this.fpsLabel.Location = new Point(110, 113);
             this.fpsLabel.Name = "fpsLabel";
             this.fpsLabel.Text = "frames per second (1-30)";
             //
             // secondsHost
             //
             this.secondsHost.Controls.Add(this.videoSeconds);
-            this.secondsHost.Location = new Point(300, 100);
+            this.secondsHost.Location = new Point(300, 104);
             this.secondsHost.Name = "secondsHost";
             this.secondsHost.Size = new Size(84, 32);
             this.secondsHost.TabIndex = 6;
@@ -245,14 +245,14 @@ namespace MicroApp
             // secondsLabel
             //
             this.secondsLabel.AutoSize = true;
-            this.secondsLabel.Location = new Point(394, 109);
+            this.secondsLabel.Location = new Point(394, 113);
             this.secondsLabel.Name = "secondsLabel";
             this.secondsLabel.Text = "seconds at most";
             //
             // qualityHost
             //
             this.qualityHost.Controls.Add(this.qualityBox);
-            this.qualityHost.Location = new Point(16, 144);
+            this.qualityHost.Location = new Point(16, 148);
             this.qualityHost.Name = "qualityHost";
             this.qualityHost.Size = new Size(150, 32);
             this.qualityHost.TabIndex = 7;
@@ -267,14 +267,14 @@ namespace MicroApp
             // qualityLabel
             //
             this.qualityLabel.AutoSize = true;
-            this.qualityLabel.Location = new Point(176, 153);
+            this.qualityLabel.Location = new Point(176, 157);
             this.qualityLabel.Name = "qualityLabel";
             this.qualityLabel.Text = "quality";
             //
             // soundHost
             //
             this.soundHost.Controls.Add(this.soundBox);
-            this.soundHost.Location = new Point(300, 144);
+            this.soundHost.Location = new Point(300, 148);
             this.soundHost.Name = "soundHost";
             this.soundHost.Size = new Size(150, 32);
             this.soundHost.TabIndex = 8;
@@ -289,7 +289,7 @@ namespace MicroApp
             // soundLabel
             //
             this.soundLabel.AutoSize = true;
-            this.soundLabel.Location = new Point(460, 153);
+            this.soundLabel.Location = new Point(460, 157);
             this.soundLabel.Name = "soundLabel";
             this.soundLabel.Text = "sound";
             //
@@ -305,14 +305,14 @@ namespace MicroApp
             this.cardLock.Controls.Add(this.lockNote);
             this.cardLock.Location = new Point(24, 308);
             this.cardLock.Name = "cardLock";
-            this.cardLock.Size = new Size(592, 132);
+            this.cardLock.Size = new Size(592, 126);
             this.cardLock.TabIndex = 2;
             this.cardLock.Title = "Selection lock";
             this.cardLock.Description = "Constrain the recorded area";
             //
             // lockRatio
             //
-            this.lockRatio.Location = new Point(16, 48);
+            this.lockRatio.Location = new Point(16, 46);
             this.lockRatio.Name = "lockRatio";
             this.lockRatio.Size = new Size(150, 24);
             this.lockRatio.TabIndex = 0;
@@ -322,7 +322,7 @@ namespace MicroApp
             // ratioHost
             //
             this.ratioHost.Controls.Add(this.ratioBox);
-            this.ratioHost.Location = new Point(176, 46);
+            this.ratioHost.Location = new Point(176, 44);
             this.ratioHost.Name = "ratioHost";
             this.ratioHost.Size = new Size(130, 32);
             this.ratioHost.TabIndex = 1;
@@ -336,7 +336,7 @@ namespace MicroApp
             //
             // lockPixel
             //
-            this.lockPixel.Location = new Point(16, 82);
+            this.lockPixel.Location = new Point(16, 78);
             this.lockPixel.Name = "lockPixel";
             this.lockPixel.Size = new Size(150, 24);
             this.lockPixel.TabIndex = 2;
@@ -346,7 +346,7 @@ namespace MicroApp
             // pixelWidthHost
             //
             this.pixelWidthHost.Controls.Add(this.pixelWidth);
-            this.pixelWidthHost.Location = new Point(176, 80);
+            this.pixelWidthHost.Location = new Point(176, 76);
             this.pixelWidthHost.Name = "pixelWidthHost";
             this.pixelWidthHost.Size = new Size(84, 32);
             this.pixelWidthHost.TabIndex = 3;
@@ -361,14 +361,14 @@ namespace MicroApp
             // byLabel
             //
             this.byLabel.AutoSize = true;
-            this.byLabel.Location = new Point(268, 89);
+            this.byLabel.Location = new Point(268, 85);
             this.byLabel.Name = "byLabel";
             this.byLabel.Text = "x";
             //
             // pixelHeightHost
             //
             this.pixelHeightHost.Controls.Add(this.pixelHeight);
-            this.pixelHeightHost.Location = new Point(286, 80);
+            this.pixelHeightHost.Location = new Point(286, 76);
             this.pixelHeightHost.Name = "pixelHeightHost";
             this.pixelHeightHost.Size = new Size(84, 32);
             this.pixelHeightHost.TabIndex = 4;
@@ -383,13 +383,13 @@ namespace MicroApp
             // pxLabel
             //
             this.pxLabel.AutoSize = true;
-            this.pxLabel.Location = new Point(378, 89);
+            this.pxLabel.Location = new Point(378, 85);
             this.pxLabel.Name = "pxLabel";
             this.pxLabel.Text = "px";
             //
             // lockNote
             //
-            this.lockNote.Location = new Point(16, 108);
+            this.lockNote.Location = new Point(16, 104);
             this.lockNote.Name = "lockNote";
             this.lockNote.Size = new Size(560, 20);
             this.lockNote.Text = "Nothing is locked.";
@@ -401,16 +401,16 @@ namespace MicroApp
             this.cardOutput.Controls.Add(this.outputOpen);
             this.cardOutput.Controls.Add(this.folderHost);
             this.cardOutput.Controls.Add(this.browseButton);
-            this.cardOutput.Location = new Point(24, 456);
+            this.cardOutput.Location = new Point(24, 452);
             this.cardOutput.Name = "cardOutput";
-            this.cardOutput.Size = new Size(592, 104);
+            this.cardOutput.Size = new Size(592, 108);
             this.cardOutput.TabIndex = 3;
             this.cardOutput.Title = "After recording";
             this.cardOutput.Description = "The MP4 is always written to the folder below";
             //
             // outputSave
             //
-            this.outputSave.Location = new Point(16, 40);
+            this.outputSave.Location = new Point(16, 46);
             this.outputSave.Name = "outputSave";
             this.outputSave.Size = new Size(120, 24);
             this.outputSave.TabIndex = 0;
@@ -420,7 +420,7 @@ namespace MicroApp
             //
             // outputCopyPath
             //
-            this.outputCopyPath.Location = new Point(146, 40);
+            this.outputCopyPath.Location = new Point(146, 46);
             this.outputCopyPath.Name = "outputCopyPath";
             this.outputCopyPath.Size = new Size(150, 24);
             this.outputCopyPath.TabIndex = 1;
@@ -430,7 +430,7 @@ namespace MicroApp
             //
             // outputOpen
             //
-            this.outputOpen.Location = new Point(306, 40);
+            this.outputOpen.Location = new Point(306, 46);
             this.outputOpen.Name = "outputOpen";
             this.outputOpen.Size = new Size(140, 24);
             this.outputOpen.TabIndex = 2;
@@ -441,7 +441,7 @@ namespace MicroApp
             // folderHost
             //
             this.folderHost.Controls.Add(this.folderBox);
-            this.folderHost.Location = new Point(16, 68);
+            this.folderHost.Location = new Point(16, 72);
             this.folderHost.Name = "folderHost";
             this.folderHost.Size = new Size(470, 32);
             this.folderHost.TabIndex = 3;
@@ -455,7 +455,7 @@ namespace MicroApp
             //
             // browseButton
             //
-            this.browseButton.Location = new Point(496, 68);
+            this.browseButton.Location = new Point(496, 72);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new Size(76, 32);
             this.browseButton.TabIndex = 4;

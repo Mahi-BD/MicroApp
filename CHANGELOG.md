@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.3.3 — 2026-07-27
+
+### Fixed
+
+- **Video Setting layout** — the card descriptions overlapped the *HELD WITH* label and the
+  *Just save* row; the rows now sit where they do in the other settings windows.
+
 ## 4.3.2 — 2026-07-27
 
 ### Added
