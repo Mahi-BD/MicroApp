@@ -45,7 +45,9 @@ namespace MicroApp
 
             Mf.IMFAttributes attrs;
             Mf.Check(Mf.MFCreateAttributes(out attrs, 2));
-            Mf.SetU32(attrs, Mf.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
+            // stay on Microsoft's software H.264 encoder: GPU encoder MFTs corrupt the
+            // stream on some machines when fed RGB frames, and the CPU one never does
+            Mf.SetU32(attrs, Mf.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 0);
             Mf.SetU32(attrs, Mf.MF_SINK_WRITER_DISABLE_THROTTLING, 1);
 
             try

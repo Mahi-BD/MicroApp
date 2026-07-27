@@ -1293,6 +1293,7 @@ namespace MicroApp
             int frames = recorder.FrameCount;
             string path = recorder.Path;
             recorder.Dispose();   // finalises the MP4 index; skipping it leaves the file unplayable
+            string error = recorder.Error;
 
             var traySize = SystemInformation.SmallIconSize;
             bool darkTray = ThemeHelper.IsSystemDark;
@@ -1306,6 +1307,13 @@ namespace MicroApp
                 Toast.Show("Nothing was recorded.");
                 try { System.IO.File.Delete(path); } catch (Exception) { }
                 return;
+            }
+
+            if (error != null)
+            {
+                SystemSounds.Beep.Play();
+                ModernDialog.Info("Recording problem",
+                    "The video encoder reported an error; the file may be incomplete.\r\n\r\n" + error);
             }
 
             long size = 0;

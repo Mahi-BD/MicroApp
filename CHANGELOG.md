@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.3.4 — 2026-07-27
+
+### Fixed
+
+- **Corrupted video recordings** — recording now always uses the H.264 encoder built into
+  Windows instead of the GPU vendor's encoder, which produced broken files on some machines
+  when fed screen frames. Frame timestamps are also guaranteed to strictly increase, and if
+  the encoder ever fails mid-recording MicroApp now says so and still finalises the frames
+  it managed to write, instead of silently reporting a saved-but-unplayable file.
+
 ## 4.3.3 — 2026-07-27
 
 ### Fixed

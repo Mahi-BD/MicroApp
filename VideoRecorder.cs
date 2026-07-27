@@ -32,6 +32,8 @@ namespace MicroApp
         public bool Running { get { return _thread != null && _thread.IsAlive; } }
         /// <summary>True when sound was asked for but no capture device was available.</summary>
         public bool AudioMissing { get; private set; }
+        /// <summary>Set when the encoder failed mid-recording or the file could not be finalised.</summary>
+        public string Error { get; private set; }
 
         public VideoRecorder(Rectangle region, string path, int fps, int maxSeconds,
                              VideoQuality quality, VideoAudioSource audioSource)
@@ -96,32 +98,47 @@ namespace MicroApp
             using (var frame = new Bitmap(_region.Width, _region.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb))
             using (var g = Graphics.FromImage(frame))
             {
+                long lastTimestamp = -1;
                 for (int i = 0; i < maxFrames && !_stop; i++)
                 {
                     long due = (long)i * frameMs;
                     long wait = due - clock.ElapsedMilliseconds;
                     if (wait > 0) Thread.Sleep((int)wait);
 
-                    g.CopyFromScreen(_region.Location, Point.Empty, _region.Size, CopyPixelOperation.SourceCopy);
-                    DrawCursor(g);
-
-                    // timestamps follow the wall clock, not the frame index: when a grab
-                    // runs late the video stays in step with the sound instead of speeding up
-                    long timestamp = clock.ElapsedTicks * 10_000_000L / System.Diagnostics.Stopwatch.Frequency;
-                    var bits = frame.LockBits(new Rectangle(0, 0, _region.Width, _region.Height),
-                                              System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                                              System.Drawing.Imaging.PixelFormat.Format32bppRgb);
                     try
                     {
-                        _writer.WriteVideoFrame(bits.Scan0, bits.Stride, timestamp);
-                    }
-                    finally
-                    {
-                        frame.UnlockBits(bits);
-                    }
-                    FrameCount++;
+                        g.CopyFromScreen(_region.Location, Point.Empty, _region.Size, CopyPixelOperation.SourceCopy);
+                        DrawCursor(g);
 
-                    DrainAudio(timestamp, false);
+                        // timestamps follow the wall clock, not the frame index: when a grab
+                        // runs late the video stays in step with the sound instead of
+                        // speeding up. Encoders insist they strictly increase.
+                        long timestamp = clock.ElapsedTicks * 10_000_000L / System.Diagnostics.Stopwatch.Frequency;
+                        if (timestamp <= lastTimestamp) timestamp = lastTimestamp + frameDuration;
+                        lastTimestamp = timestamp;
+
+                        var bits = frame.LockBits(new Rectangle(0, 0, _region.Width, _region.Height),
+                                                  System.Drawing.Imaging.ImageLockMode.ReadOnly,
+                                                  System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+                        try
+                        {
+                            _writer.WriteVideoFrame(bits.Scan0, bits.Stride, timestamp);
+                        }
+                        finally
+                        {
+                            frame.UnlockBits(bits);
+                        }
+                        FrameCount++;
+
+                        DrainAudio(timestamp, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        // encoder gave up mid-flight: stop here and try to finalise what
+                        // exists, so the frames already written are not lost too
+                        Error = ex.Message;
+                        break;
+                    }
                 }
             }
 
@@ -193,6 +210,14 @@ namespace MicroApp
             _stop = true;
             if (_thread != null && _thread.IsAlive) _thread.Join(6000);
             if (_audio != null) _audio.Dispose();
+            try
+            {
+                _writer.Finish();
+            }
+            catch (Exception ex)
+            {
+                if (Error == null) Error = ex.Message;   // an unfinalised MP4 will not play
+            }
             _writer.Dispose();
         }
     }
