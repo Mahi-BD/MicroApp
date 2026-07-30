@@ -18,12 +18,12 @@ Everything runs offline. No account, no service, no telemetry. Text recognition 
 
 ## Install
 
-**Installer** — download `MicroApp-4.4.0-setup.exe` from the
+**Installer** — download `MicroApp-4.4.1-setup.exe` from the
 [latest release](https://github.com/Mahi-BD/MicroApp/releases/latest) and run it. The last page asks
 whether MicroApp should **run when Windows starts**; tick it and it will. There is also a
 `-peruser-setup.exe` that installs into your profile and needs no administrator rights.
 
-**Portable** — or take `MicroApp-4.4.0-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
+**Portable** — or take `MicroApp-4.4.1-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
 is written outside your settings file.
 
 Either way, MicroApp lives in the notification area — there is no main window. Right-click the tray icon

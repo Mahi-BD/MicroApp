@@ -747,7 +747,7 @@ namespace MicroApp
                 // Nirmala UI has matching Latin and Bengali designs, so mixed text sits
                 // on one visual size (Consolas has no Bangla and the fallback ran large)
                 Font = new Font("Nirmala UI", NoteFontSize()),
-                ScrollBars = RichTextBoxScrollBars.Vertical,
+                ScrollBars = RichTextBoxScrollBars.ForcedVertical,   // always reserved, always clipped
                 AcceptsTab = true,
                 DetectUrls = false,
                 HideSelection = false
@@ -921,15 +921,20 @@ namespace MicroApp
 
         private void LayoutEditor(Panel host, NoteScrollBar slimBar)
         {
-            const int padLeft = 10, padTop = 8, padRight = 6, padBottom = 8;
+            // padRight is the strip the slim bar owns: text wraps before it, so nothing
+            // is ever drawn under the bar
+            const int padLeft = 10, padTop = 8, padRight = 16, padBottom = 8;
             int width = host.ClientSize.Width, height = host.ClientSize.Height;
             if (width <= 0 || height <= 0) return;
 
+            // The box is one native-scrollbar wider than the space it may draw in, and
+            // its (always present, always clipped) bar eats exactly that much - so the
+            // text area lines up with the visible region whether or not it can scroll.
             int fat = SystemInformation.VerticalScrollBarWidth;
             _box.Bounds = new Rectangle(padLeft, padTop,
                                         Math.Max(1, width - padLeft - padRight + fat),
                                         Math.Max(1, height - padTop - padBottom));
-            slimBar.Bounds = new Rectangle(width - padRight - 10, padTop, 10 + padRight,
+            slimBar.Bounds = new Rectangle(width - padRight, padTop, padRight,
                                            Math.Max(1, height - padTop - padBottom));
             slimBar.Invalidate();
         }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.4.1 — 2026-07-31
+
+### Fixed
+
+- **Text no longer runs off the right edge of a note.** The last characters of a line could be cut
+  off — hidden behind the scrollbar strip — in notes short enough not to need a scrollbar. Lines now
+  wrap at the same place whether or not the note scrolls.
+
 ## 4.4.0 — 2026-07-31
 
 ### Added
