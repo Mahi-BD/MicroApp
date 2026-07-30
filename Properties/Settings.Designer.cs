@@ -646,5 +646,185 @@ namespace MicroApp.Properties {
                 this["VideoHotKeyTakeOver"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("T")]
+        public string TextPickHotKey {
+            get {
+                return ((string)(this["TextPickHotKey"]));
+            }
+            set {
+                this["TextPickHotKey"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int TextPickHotKeyModifier {
+            get {
+                return ((int)(this["TextPickHotKeyModifier"]));
+            }
+            set {
+                this["TextPickHotKeyModifier"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TextPickHotKeyTakeOver {
+            get {
+                return ((string)(this["TextPickHotKeyTakeOver"]));
+            }
+            set {
+                this["TextPickHotKeyTakeOver"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("N")]
+        public string NoteHotKey {
+            get {
+                return ((string)(this["NoteHotKey"]));
+            }
+            set {
+                this["NoteHotKey"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int NoteHotKeyModifier {
+            get {
+                return ((int)(this["NoteHotKeyModifier"]));
+            }
+            set {
+                this["NoteHotKeyModifier"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteHotKeyTakeOver {
+            get {
+                return ((string)(this["NoteHotKeyTakeOver"]));
+            }
+            set {
+                this["NoteHotKeyTakeOver"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("yyyy-MM-dd")]
+        public string NoteDateFormat {
+            get {
+                return ((string)(this["NoteDateFormat"]));
+            }
+            set {
+                this["NoteDateFormat"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("dddd, dd MMMM yyyy")]
+        public string NoteLongDateFormat {
+            get {
+                return ((string)(this["NoteLongDateFormat"]));
+            }
+            set {
+                this["NoteLongDateFormat"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("yyyy-MM-dd HH:mm:ss")]
+        public string NoteTimestampFormat {
+            get {
+                return ((string)(this["NoteTimestampFormat"]));
+            }
+            set {
+                this["NoteTimestampFormat"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int NoteAiProvider {
+            get {
+                return ((int)(this["NoteAiProvider"]));
+            }
+            set {
+                this["NoteAiProvider"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteAiModel {
+            get {
+                return ((string)(this["NoteAiModel"]));
+            }
+            set {
+                this["NoteAiModel"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteAiApiKey {
+            get {
+                return ((string)(this["NoteAiApiKey"]));
+            }
+            set {
+                this["NoteAiApiKey"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteAiBaseUrl {
+            get {
+                return ((string)(this["NoteAiBaseUrl"]));
+            }
+            set {
+                this["NoteAiBaseUrl"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NoteHideTaskbar {
+            get {
+                return ((bool)(this["NoteHideTaskbar"]));
+            }
+            set {
+                this["NoteHideTaskbar"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteListBounds {
+            get {
+                return ((string)(this["NoteListBounds"]));
+            }
+            set {
+                this["NoteListBounds"] = value;
+            }
+        }
     }
 }

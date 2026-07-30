@@ -176,8 +176,23 @@ namespace MicroApp
         int? _videoHotKey;
         EventHandler<HotKeyEventArgs> _videoHotKeyHandler = null;
         VideoRecorder _videoRecorder;
-        RecordingIndicator _videoIndicator;
+        VideoRecordingIndicator _videoIndicator;
+        RecordingRegionFrame _videoFrame;
         IKeyboardMouseEvents _videoHook;
+
+        // notes: every hot key press opens a fresh little notepad, saved as you type
+        int? _noteHotKey;
+        EventHandler<HotKeyEventArgs> _noteHotKeyHandler = null;
+
+        // text picker: "+" crosshair, click an element, get its real text (UI Automation, no OCR)
+        int? _pickHotKey;
+        EventHandler<HotKeyEventArgs> _pickHotKeyHandler = null;
+        IKeyboardMouseEvents _pickHook;
+        TextPickerHud _pickHud;
+        ElementOutline _pickOutline;
+        System.Windows.Forms.Timer _pickTimer;
+        bool _pickPeekBusy;
+        IntPtr _pickTarget;
 
         // hot keys are raised on HotKeyManager's own message loop; this marshals the
         // UI work (overlay, dialogs, clipboard) back onto the tray thread
@@ -194,6 +209,9 @@ namespace MicroApp
             StartCaptureHotKey();
             StartGifHotKey();
             StartVideoHotKey();
+            StartTextPickHotKey();
+            StartNoteHotKey();
+            NoteForm.OpenSettings = () => NoteSettings(this, EventArgs.Empty);
             bool darkTray = true;
             using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
             {
@@ -229,32 +247,40 @@ namespace MicroApp
             };
 
             var grab = new ToolStripMenuItem("Grab text (OCR)", null, GrabText) { Padding = new Padding(4, 3, 4, 3) };
+            var pick = new ToolStripMenuItem("Pick Text", null, PickText) { Padding = new Padding(4, 3, 4, 3) };
             var capture = new ToolStripMenuItem("Screen Capture", null, ScreenCapture) { Padding = new Padding(4, 3, 4, 3) };
             var gif = new ToolStripMenuItem("Record GIF", null, RecordGif) { Padding = new Padding(4, 3, 4, 3) };
             var video = new ToolStripMenuItem("Record Video", null, RecordVideo) { Padding = new Padding(4, 3, 4, 3) };
+            var note = new ToolStripMenuItem("New Note", null, NewNote) { Padding = new Padding(4, 3, 4, 3) };
 
             // each feature shows its current hot key, so the menu doubles as a cheat sheet
             grab.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.OcrHotKey, Properties.Settings.Default.OcrHotKeyModifier);
+            pick.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.TextPickHotKey, Properties.Settings.Default.TextPickHotKeyModifier);
             capture.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.CaptureHotKey, Properties.Settings.Default.CaptureHotKeyModifier);
             gif.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.GifHotKey, Properties.Settings.Default.GifHotKeyModifier);
             video.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.VideoHotKey, Properties.Settings.Default.VideoHotKeyModifier);
+            note.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.NoteHotKey, Properties.Settings.Default.NoteHotKeyModifier);
             var keySettings = new ToolStripMenuItem("Key Setting", null, Settings) { Padding = new Padding(4, 3, 4, 3) };
             var ocrSettings = new ToolStripMenuItem("OCR Setting", null, OcrSettings) { Padding = new Padding(4, 3, 4, 3) };
             var captureSettings = new ToolStripMenuItem("Capture Setting", null, CaptureSettings) { Padding = new Padding(4, 3, 4, 3) };
             var gifSettings = new ToolStripMenuItem("GIF Setting", null, GifSettings) { Padding = new Padding(4, 3, 4, 3) };
             var videoSettings = new ToolStripMenuItem("Video Setting", null, VideoSettings) { Padding = new Padding(4, 3, 4, 3) };
+            var noteSettings = new ToolStripMenuItem("Note Setting", null, NoteSettings) { Padding = new Padding(4, 3, 4, 3) };
             var about = new ToolStripMenuItem("About", null, About) { Padding = new Padding(4, 3, 4, 3) };
             var exit = new ToolStripMenuItem("Exit", null, Exit) { Padding = new Padding(4, 3, 4, 3) };
             menu.Items.Add(grab);
+            menu.Items.Add(pick);
             menu.Items.Add(capture);
             menu.Items.Add(gif);
             menu.Items.Add(video);
+            menu.Items.Add(note);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(keySettings);
             menu.Items.Add(ocrSettings);
             menu.Items.Add(captureSettings);
             menu.Items.Add(gifSettings);
             menu.Items.Add(videoSettings);
+            menu.Items.Add(noteSettings);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(about);
             menu.Items.Add(exit);
@@ -266,11 +292,8 @@ namespace MicroApp
             if (!Matches(e, Properties.Settings.Default.HotKey, Properties.Settings.Default.HotKeyModifier)) return;
 
             StopHotKey();
-            // wait until control keys are no longer pressed
-            while (Native.IsModifierKeyPressed())
-            {
-                Thread.Sleep(300);
-            }
+            // act on the key DOWN: the crosshair appears while the hot key is still held;
+            // StartTyping waits out the modifiers itself before any keystroke is injected
             switch((HotKeyMode) Properties.Settings.Default.HotKeyMode)
             {
                 case HotKeyMode.Target:
@@ -358,6 +381,12 @@ namespace MicroApp
         }
         void StartTyping()
         {
+            // never type while the hot key's modifiers are still down - held Ctrl/Alt/Shift
+            // would combine with the injected keystrokes and corrupt them
+            while (Native.IsModifierKeyPressed())
+            {
+                Thread.Sleep(50);
+            }
             string clip;
             try
             {
@@ -642,12 +671,7 @@ namespace MicroApp
         {
             if (!Matches(e, Properties.Settings.Default.OcrHotKey, Properties.Settings.Default.OcrHotKeyModifier)) return;
 
-            // let go of Ctrl/Alt/Shift before the overlay takes over the screen
-            while (Native.IsModifierKeyPressed())
-            {
-                Thread.Sleep(150);
-            }
-            BeginOcrCapture();
+            BeginOcrCapture();   // on the key down - the overlay opens while the keys are held
         }
 
         void GrabText(object sender, EventArgs e)
@@ -812,11 +836,7 @@ namespace MicroApp
         {
             if (!Matches(e, Properties.Settings.Default.CaptureHotKey, Properties.Settings.Default.CaptureHotKeyModifier)) return;
 
-            while (Native.IsModifierKeyPressed())
-            {
-                Thread.Sleep(150);
-            }
-            BeginScreenCapture();
+            BeginScreenCapture();   // on the key down
         }
 
         void ScreenCapture(object sender, EventArgs e)
@@ -972,11 +992,7 @@ namespace MicroApp
                 BeginStopRecording();
                 return;
             }
-            while (Native.IsModifierKeyPressed())
-            {
-                Thread.Sleep(150);
-            }
-            BeginGifRecording();
+            BeginGifRecording();   // on the key down
         }
 
         void RecordGif(object sender, EventArgs e)
@@ -1161,11 +1177,7 @@ namespace MicroApp
                 BeginStopVideoRecording();
                 return;
             }
-            while (Native.IsModifierKeyPressed())
-            {
-                Thread.Sleep(150);
-            }
-            BeginVideoRecording();
+            BeginVideoRecording();   // on the key down
         }
 
         void RecordVideo(object sender, EventArgs e)
@@ -1216,7 +1228,6 @@ namespace MicroApp
             if (region.Width < 8 || region.Height < 8) return;
 
             int fps = Properties.Settings.Default.VideoFps;
-            int seconds = Properties.Settings.Default.VideoSeconds;
             string folder = VideoSettingsForm.DefaultFolder();
             string path;
             try
@@ -1232,7 +1243,8 @@ namespace MicroApp
 
             try
             {
-                _videoRecorder = new VideoRecorder(region, path, fps, seconds,
+                // no time limit: the recording runs until it is saved or Esc is pressed
+                _videoRecorder = new VideoRecorder(region, path, fps, 0,
                     (VideoQuality)Properties.Settings.Default.VideoQuality,
                     (VideoAudioSource)Properties.Settings.Default.VideoAudioSource);
             }
@@ -1243,9 +1255,20 @@ namespace MicroApp
                 return;
             }
 
-            _videoIndicator = new RecordingIndicator(region, seconds);
-            _videoIndicator.StopRequested += (s, e) => BeginStopVideoRecording();
+            _videoIndicator = new VideoRecordingIndicator(region);
+            _videoIndicator.PauseToggled += (s, paused) =>
+            {
+                var recorder = _videoRecorder;
+                if (recorder == null) return;
+                if (paused) recorder.Pause(); else recorder.Resume();
+                if (_videoFrame != null) _videoFrame.SetPaused(paused);
+            };
+            _videoIndicator.SaveRequested += (s, e) => BeginStopVideoRecording();
             _videoIndicator.Show();
+
+            // the region stays marked until the video is saved
+            _videoFrame = new RecordingRegionFrame(region);
+            _videoFrame.Show();
 
             // Esc anywhere stops the recording
             _videoHook = Hook.GlobalEvents();
@@ -1255,14 +1278,9 @@ namespace MicroApp
             _notify.Icon = new System.Drawing.Icon(Properties.Resources.Typing, traySize.Width, traySize.Height);
 
             _videoRecorder.Start();
-            string note = $"Recording {region.Width & ~1} x {region.Height & ~1} at {fps} fps. Esc to stop.";
+            string note = $"Recording {region.Width & ~1} x {region.Height & ~1} at {fps} fps. Save on the badge or Esc to stop.";
             if (_videoRecorder.AudioMissing) note += "\r\nNo audio device found: recording without sound.";
             Toast.Show(note);
-
-            // stop by itself once the time limit is up
-            var limit = new System.Windows.Forms.Timer { Interval = Math.Max(1000, seconds * 1000 + 400) };
-            limit.Tick += (s, e) => { limit.Stop(); limit.Dispose(); FinishVideoRecording(); };
-            limit.Start();
         }
 
         private void _videoHook_KeyDown(object sender, KeyEventArgs e)
@@ -1288,6 +1306,12 @@ namespace MicroApp
                 _videoIndicator.Dispose();
                 _videoIndicator = null;
             }
+            if (_videoFrame != null)
+            {
+                _videoFrame.Close();
+                _videoFrame.Dispose();
+                _videoFrame = null;
+            }
 
             recorder.Stop();
             int frames = recorder.FrameCount;
@@ -1301,19 +1325,26 @@ namespace MicroApp
                 darkTray ? Properties.Resources.Target : Properties.Resources.TargetDark,
                 traySize.Width, traySize.Height);
 
-            if (frames == 0)
-            {
-                SystemSounds.Beep.Play();
-                Toast.Show("Nothing was recorded.");
-                try { System.IO.File.Delete(path); } catch (Exception) { }
-                return;
-            }
-
+            // report the encoder error even when no frame made it: "Nothing was
+            // recorded" alone would hide the real reason
             if (error != null)
             {
                 SystemSounds.Beep.Play();
                 ModernDialog.Info("Recording problem",
-                    "The video encoder reported an error; the file may be incomplete.\r\n\r\n" + error);
+                    frames == 0
+                        ? "The video encoder failed before anything could be recorded.\r\n\r\n" + error
+                        : "The video encoder reported an error; the file may be incomplete.\r\n\r\n" + error);
+            }
+
+            if (frames == 0)
+            {
+                if (error == null)
+                {
+                    SystemSounds.Beep.Play();
+                    Toast.Show("Nothing was recorded.");
+                }
+                try { System.IO.File.Delete(path); } catch (Exception) { }
+                return;
             }
 
             long size = 0;
@@ -1331,6 +1362,262 @@ namespace MicroApp
                     break;
             }
             Toast.Show(note);
+        }
+
+        void StartNoteHotKey()
+        {
+            StopNoteHotKey();
+            var letter = Properties.Settings.Default.NoteHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _noteHotKey = RegisterOrTakeOver("Note", key, (KeyModifiers)Properties.Settings.Default.NoteHotKeyModifier, "NoteHotKeyTakeOver");
+                if (!_noteHotKey.HasValue) return;
+                _noteHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_NoteHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _noteHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Note hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopNoteHotKey()
+        {
+            if (_noteHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _noteHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_noteHotKey.Value);
+            }
+            _noteHotKey = null;
+            _noteHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_NoteHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.NoteHotKey, Properties.Settings.Default.NoteHotKeyModifier)) return;
+            BeginNewNote();   // a fresh note on every press
+        }
+
+        void NewNote(object sender, EventArgs e)
+        {
+            BeginNewNote();
+        }
+
+        void BeginNewNote()
+        {
+            if (_settingsOpen) return;
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(() => NoteForm.ShowNew()));
+            else NoteForm.ShowNew();
+        }
+
+        void NoteSettings(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new NoteSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+            RefreshTrayMenu();
+        }
+
+        void StartTextPickHotKey()
+        {
+            StopTextPickHotKey();
+            var letter = Properties.Settings.Default.TextPickHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _pickHotKey = RegisterOrTakeOver("Text picker", key, (KeyModifiers)Properties.Settings.Default.TextPickHotKeyModifier, "TextPickHotKeyTakeOver");
+                if (!_pickHotKey.HasValue) return;
+                _pickHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_TextPickHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _pickHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Text picker hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopTextPickHotKey()
+        {
+            if (_pickHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _pickHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_pickHotKey.Value);
+            }
+            _pickHotKey = null;
+            _pickHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_TextPickHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.TextPickHotKey, Properties.Settings.Default.TextPickHotKeyModifier)) return;
+
+            // pressing the hot key again while picking cancels it
+            if (_pickHook != null)
+            {
+                _sync.BeginInvoke(new Action(CancelTextPick));
+                return;
+            }
+            BeginTextPick();   // on the key down - the "+" cursor appears while the keys are held
+        }
+
+        void PickText(object sender, EventArgs e)
+        {
+            BeginTextPick();
+        }
+
+        void BeginTextPick()
+        {
+            if (_settingsOpen) return;
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(StartTextPick));
+            else StartTextPick();
+        }
+
+        /// <summary>
+        /// "+" crosshair everywhere, a live preview of the text under it, and one click to
+        /// take that text — read through UI Automation, so it is exact and multi-line, not OCR.
+        /// </summary>
+        void StartTextPick()
+        {
+            if (_ocrBusy || _pickHook != null || _recorder != null || _videoRecorder != null) return;
+
+            // "type it out" and the preview's type button should land back here
+            _pickTarget = Native.GetForegroundWindow();
+
+            // same "+" cursor treatment the click-to-target picker uses
+            uint[] cursors = { Native.NORMAL, Native.IBEAM, Native.HAND };
+            for (int i = 0; i < cursors.Length; i++)
+                Native.SetSystemCursor(Native.CopyIcon(Native.LoadCursor(IntPtr.Zero, (int)Native.CROSS)), cursors[i]);
+
+            _pickHud = new TextPickerHud();
+            _pickOutline = new ElementOutline();
+            _pickHud.UpdatePreview(null, Cursor.Position);
+            _pickHud.Show();
+
+            _pickHook = Hook.GlobalEvents();
+            _pickHook.MouseDownExt += _pickHook_MouseDownExt;
+            _pickHook.KeyDown += _pickHook_KeyDown;
+
+            _pickTimer = new System.Windows.Forms.Timer { Interval = 120 };
+            _pickTimer.Tick += _pickTimer_Tick;
+            _pickTimer.Start();
+        }
+
+        void _pickTimer_Tick(object sender, EventArgs e)
+        {
+            // single-flight: UI Automation lookups can be slow in some apps
+            if (_pickPeekBusy || _pickHud == null) return;
+            _pickPeekBusy = true;
+            Point p = Cursor.Position;
+            Task.Run(() =>
+            {
+                string snippet;
+                Rectangle bounds;
+                UiTextReader.Peek(p, out snippet, out bounds);
+                _sync.BeginInvoke(new Action(() =>
+                {
+                    _pickPeekBusy = false;
+                    if (_pickHud == null) return;   // picking ended meanwhile
+                    _pickHud.UpdatePreview(snippet, Cursor.Position);
+                    _pickOutline.Outline(bounds);
+                }));
+            });
+        }
+
+        private void _pickHook_MouseDownExt(object sender, MouseEventExtArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                e.Handled = true;   // the click belongs to the picker, not the app underneath
+                var p = new Point(e.X, e.Y);
+                _sync.BeginInvoke(new Action(() => FinishTextPick(p)));
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                e.Handled = true;
+                _sync.BeginInvoke(new Action(CancelTextPick));
+            }
+        }
+
+        private void _pickHook_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                e.Handled = true;
+                _sync.BeginInvoke(new Action(CancelTextPick));
+            }
+        }
+
+        void CancelTextPick()
+        {
+            EndTextPick();
+        }
+
+        void EndTextPick()
+        {
+            if (_pickTimer != null)
+            {
+                _pickTimer.Stop();
+                _pickTimer.Dispose();
+                _pickTimer = null;
+            }
+            if (_pickHook != null)
+            {
+                _pickHook.MouseDownExt -= _pickHook_MouseDownExt;
+                _pickHook.KeyDown -= _pickHook_KeyDown;
+                _pickHook.Dispose();
+                _pickHook = null;
+            }
+            if (_pickHud != null)
+            {
+                _pickHud.Close();
+                _pickHud.Dispose();
+                _pickHud = null;
+            }
+            if (_pickOutline != null)
+            {
+                _pickOutline.Close();
+                _pickOutline.Dispose();
+                _pickOutline = null;
+            }
+            Native.SystemParametersInfo(0x0057, 0, null, 0);   // restore the real cursors
+        }
+
+        void FinishTextPick(Point point)
+        {
+            if (_pickHook == null) return;   // already cancelled
+            EndTextPick();
+            IntPtr target = _pickTarget;
+
+            var previous = _notify.Icon;
+            var traySize = SystemInformation.SmallIconSize;
+            _notify.Icon = new System.Drawing.Icon(Properties.Resources.Typing, traySize.Width, traySize.Height);
+            Task.Run(() =>
+            {
+                string text = null;
+                try { text = UiTextReader.ExtractTextAt(point); } catch (Exception) { }
+                _sync.BeginInvoke(new Action(() =>
+                {
+                    _notify.Icon = previous;
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        SystemSounds.Beep.Play();
+                        Toast.Show("No text found there.");
+                        return;
+                    }
+                    // hand it off exactly like OCR output: clipboard, preview or type-out
+                    DeliverOcrText(text, target);
+                }));
+            });
         }
 
         void StopHotKey()
@@ -1443,6 +1730,8 @@ namespace MicroApp
             StopCaptureHotKey();
             StopGifHotKey();
             StopVideoHotKey();
+            StopTextPickHotKey();
+            StopNoteHotKey();
         }
 
         void StartAllHotKeys()
@@ -1452,12 +1741,15 @@ namespace MicroApp
             StartCaptureHotKey();
             StartGifHotKey();
             StartVideoHotKey();
+            StartTextPickHotKey();
+            StartNoteHotKey();
         }
 
         void Exit(object sender, EventArgs e)
         {
             if (_recorder != null) FinishGifRecording();
             if (_videoRecorder != null) FinishVideoRecording();
+            EndTextPick();
             EndTrack();
             // Hide tray icon, otherwise it will remain shown until user mouses over it
             _notify.Visible = false;

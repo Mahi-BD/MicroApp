@@ -1,5 +1,63 @@
 # Changelog
 
+## 4.3.5 — 2026-07-30
+
+### Added
+
+- **Notes** (default **Ctrl+Shift+N**) — a quick scratch pad. Every press of the hot key opens a
+  fresh note; each note is one window backed by one plain `.txt` file that saves itself as you type
+  (under `Notes\` next to the exe, or `%AppData%\MicroApp\Notes` when that isn't writable). The
+  window title follows the first line of the note. Notes come with:
+  - a toolbar: new note, all notes, strip spaces, join lines, insert date / long date / timestamp
+    (three configurable formats with live previews in Note Setting);
+  - **spell check** with red squiggles as you type (Windows' own spell checker; English, plus
+    Bangla when a Bangla dictionary is installed — Bangla words are never sent to the English
+    checker), right-click for suggestions and *Add to dictionary*;
+  - a **Grammar** button that fixes spelling and grammar with AI — MiMo, Gemini or ChatGPT, using
+    your own API key set in Note Setting (English, Bangla or mixed; nothing is sent anywhere unless
+    you click the button);
+  - an **All notes** browser — newest first with a first-line preview, a slim scrollbar, click to
+    select, click again (or Enter) to open, plus New note / Open / Delete and icon buttons to
+    close all open notes or delete every note. The window remembers its size and position;
+  - a **Hide note windows from the taskbar** switch (on by default) so a pile of open notes does
+    not flood the taskbar;
+  - notes use Notepad's font (Consolas 11).
+- **Pick Text** (default **Ctrl+Alt+T**) — a text picker that works like a colour picker: a **+**
+  crosshair with a live preview of the text under it; one click grabs the element's exact text
+  through UI Automation — no OCR, character-perfect, multi-line. If the clicked element has no text
+  of its own, the texts inside it are gathered one per line. The click is swallowed so the app
+  underneath is never activated; password fields are never read. Delivery follows the OCR Setting
+  (clipboard by default).
+- **A red frame around the recorded region** while video records — so it is always clear what is
+  being filmed. It sits just outside the recording, is click-through, and turns grey while paused.
+
+### Changed
+
+- **Video recording no longer has a time limit** — it runs until you save it. The *seconds at
+  most* setting is gone.
+- **Pause and save on the recording badge** — the badge now carries a pause/resume button and a
+  save button. Paused stretches are simply absent from the file: no frames, no sound, no gap.
+  The badge shows PAUSED and the timer freezes while paused. Esc still stops and saves.
+- **Hot keys act on the key press, not the release** — the crosshair (paste, OCR, capture, GIF,
+  video, pick text) now appears the moment the combination goes down, while the keys are still
+  held. Typing itself still waits until every modifier is released, so held keys can never corrupt
+  the injected keystrokes.
+
+### Fixed
+
+- **Paste as keystrokes now types Bangla and every other script correctly.** Characters the active
+  keyboard layout cannot produce were being mapped through whatever other layout was installed, and
+  the target read those key codes in its own layout — Bangla (and Hindi, Arabic, …) came out as the
+  wrong characters. Such characters are now injected directly as Unicode. (Hardware VM/IPMI
+  consoles that ignore Unicode input still receive only what their layout can express.)
+- **Video recordings could vanish on some machines** — on PCs where the Windows video encoder
+  refuses to be shared between threads, every frame write failed (E_NOINTERFACE) and the empty
+  file was deleted, so recordings silently never saved. The encoder now lives entirely on the
+  recording thread, which is safe everywhere. If the encoder ever fails before the first frame,
+  MicroApp now says exactly why instead of just "Nothing was recorded".
+- **Video Setting layout (again)** — the Selection lock rows were cramped together; they now use
+  the same spacing as the other settings windows.
+
 ## 4.3.4 — 2026-07-27
 
 ### Fixed

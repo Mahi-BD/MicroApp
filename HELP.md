@@ -1,13 +1,16 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 4.2.2.
+Version 4.3.5.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
 - [Grab text (OCR)](#grab-text-ocr)
+- [Pick Text](#pick-text)
 - [Screen capture](#screen-capture)
 - [Record GIF](#record-gif)
+- [Record Video](#record-video)
+- [Notes](#notes)
 - [Settings reference](#settings-reference)
 - [Where files go](#where-files-go)
 - [Troubleshooting](#troubleshooting)
@@ -23,17 +26,25 @@ MicroApp runs in the notification area. There is no main window and nothing to l
 
 ```
 Grab text (OCR)
+Pick Text
 Screen Capture
 Record GIF
+Record Video
+New Note
 ────────────────
 Key Setting
 OCR Setting
 Capture Setting
 GIF Setting
+Video Setting
+Note Setting
 ────────────────
 About
 Exit
 ```
+
+Global hot keys act the moment the combination is pressed — the crosshair appears while the keys
+are still held down.
 
 Only one copy runs at a time. Starting a second one exits silently.
 
@@ -45,7 +56,9 @@ Notifications appear bottom-right for about a second and never take focus. Click
 
 Some windows refuse a normal paste: VM consoles, remote desktop sessions, KVM/IPMI consoles, "no paste"
 password fields. MicroApp types the clipboard character by character instead, so those windows see
-ordinary typing.
+ordinary typing. Text in any script is typed correctly — characters the keyboard layout cannot produce
+(Bangla, Hindi, Arabic, CJK, …) are injected directly as Unicode. The one exception is hardware
+VM/IPMI consoles that ignore Unicode input; those can only receive what their own layout can express.
 
 **How to use it**
 
@@ -104,6 +117,28 @@ Small selections are upscaled before recognition, so grabbing a short line of sm
 
 ---
 
+## Pick Text
+
+Grabs the **exact** text of a control — like a colour picker, but for text. No OCR: it asks the
+control itself (through Windows UI Automation), so the result is character-perfect and keeps every
+line, however long the text is. Works on labels, edit boxes, lists, buttons, message bodies — anything
+that exposes its text to Windows. Password fields are never read.
+
+**How to use it**
+
+1. Press **Ctrl+Alt+T**, or tray → *Pick Text*.
+2. The pointer becomes a **+** crosshair. As you move, the element under it is outlined and a small
+   card previews the text it holds.
+3. **Click** to take that text. **Esc** or a right-click cancels; the click never reaches the app
+   underneath, so you won't accidentally press what you're picking from.
+4. The text is delivered per your OCR Setting: clipboard *(default)*, preview window, or typed out.
+
+If the element you click carries no text of its own, MicroApp gathers the texts of everything inside
+it (one line each) — handy for lifting a whole list or dialog at once. Prefer *Grab text (OCR)* for
+images, videos and remote desktops, where there is no real text behind the pixels.
+
+---
+
 ## Screen capture
 
 **How to use it**
@@ -155,12 +190,13 @@ megabytes rather than the hundreds a GIF would — and it can include **sound**.
 
 1. Press **Ctrl+Alt+R**, or tray → *Record Video*.
 2. Pick the region (same crosshair, same locks — video has its own lock settings).
-3. Recording starts, with the same red **REC** badge outside the recorded area.
-4. Stop with **Esc**, by pressing the hot key again, by clicking the badge, or by letting the time
-   limit expire.
+3. Recording starts, with a red **REC** badge outside the recorded area. The badge has a
+   **pause/resume** button — paused stretches are left out of the file entirely — and a **save**
+   button that stops the recording and keeps the MP4.
+4. Recording has **no time limit**: it runs until you save it, press **Esc**, or press the hot
+   key again.
 
-**Recording** (Video Setting) — frame rate 1–30 fps (20 by default), a maximum length in seconds
-(300 by default), a **quality** choice (*Small file* / *Balanced* / *Sharp*) that trades file size
+**Recording** (Video Setting) — frame rate 1–30 fps (20 by default), a **quality** choice (*Small file* / *Balanced* / *Sharp*) that trades file size
 against picture crispness, and a **sound** source: *No sound*, *System sound* (whatever the machine
 is playing) or *Microphone*.
 
@@ -170,6 +206,43 @@ made without a sound track. On Windows *N* editions the Media Feature Pack must 
 
 **After recording** — the MP4 is always written (to `Videos\MicroApp` unless you pick another
 folder); you can additionally have the path copied or the file opened in your default player.
+
+While recording, a thin **red frame** marks the recorded region (grey while paused). It sits just
+outside the recording and is click-through, so it never appears in the video and never gets in
+the way.
+
+---
+
+## Notes
+
+A scratch pad that is always one hot key away. Every press of **Ctrl+Shift+N** (or tray → *New
+Note*) opens a **fresh** note — older ones come back through the note list.
+
+Each note is one window backed by one plain `.txt` file. There is no save button: the file follows
+your typing with less than a second of lag. Close the window and the note is on disk; close an empty
+note and its file is removed. The window title always shows the note's first line, and the text uses
+Notepad's font (Consolas 11). Note windows stay **off the taskbar** by default (a switch in Note
+Setting brings them back).
+
+**The toolbar** — new note · all notes · remove every space · join all lines · insert date · insert
+long date · insert timestamp · **Grammar** · settings. The three date/time formats are configurable
+in Note Setting, each with a live preview.
+
+**Spell check** — misspellings get a red squiggle as you pause typing, using the spell checker built
+into Windows. English is always checked; Bangla words are checked only when a Bangla dictionary is
+installed, and are never sent to the English checker. Right-click a squiggled word for suggestions
+and *Add to dictionary*.
+
+**Grammar (AI)** — one click sends the note to the AI service you configured and replaces the text
+with the corrected version (English, Bangla or mixed — the language is preserved). Three providers:
+**MiMo**, **Gemini**, **ChatGPT**. Each needs your own API key, set in Note Setting; for MiMo the
+base URL is also configurable (Token Plan subscriptions get a regional URL from the MiMo console).
+Nothing ever leaves your machine unless you press the button.
+
+**All notes** (toolbar list button) — every note, newest first, with a first-line preview and a slim
+scrollbar. **Click** a note to select it, **click it again** (or press Enter, or double-click) to
+open it. The footer has *New note*, two icon buttons — **close all open notes** and **delete all
+notes** — and *Delete* / *Open* for the selected one. The window remembers its size and position.
 
 ---
 
@@ -223,13 +296,26 @@ folder); you can additionally have the path copied or the file opened in your de
 |---|---|
 | Record video hot key | `Ctrl + Alt + R` |
 | Frames per second | 20 |
-| Seconds at most | 300 |
 | Quality | Balanced |
 | Sound | System sound |
 | Lock ratio | off, 16:9 |
 | Lock pixel size | off, 1280 × 720 |
 | After recording | Just save |
 | Video folder | `Videos\MicroApp` |
+
+### Note Setting
+
+| Setting | Default |
+|---|---|
+| New note hot key | `Ctrl + Shift + N` |
+| Hide note windows from the taskbar | on |
+| Date format | `yyyy-MM-dd` |
+| Long date format | `dddd, dd MMMM yyyy` |
+| Timestamp format | `yyyy-MM-dd HH:mm:ss` |
+| AI provider | MiMo |
+| Model | `mimo-v2.5` |
+| Base URL (MiMo) | the MiMo Token Plan endpoint |
+| API key | *(empty — set your own)* |
 
 Clearing a hot key's key box (Delete or Backspace) disables that hot key.
 
@@ -276,6 +362,9 @@ Uninstalling removes the shortcut either way.
 
 - **Screenshots** — `Pictures\MicroApp\MicroApp-YYYYMMDD-HHMMSS.png`, or the folder you set in Capture Setting.
 - **GIFs** — `MicroApp-YYYYMMDD-HHMMSS.gif` in the GIF folder; if that is blank, the image folder is used.
+- **Videos** — `MicroApp-YYYYMMDD-HHMMSS.mp4` in `Videos\MicroApp`, or the folder you set in Video Setting.
+- **Notes** — `Note-YYYYMMDD-HHMMSS.txt` in a `Notes` folder next to `MicroApp.exe` when that is
+  writable (portable use), otherwise under `%AppData%\MicroApp\Notes`.
 - **The app itself** — `C:\Program Files\MicroApp` (standard installer),
   `%LOCALAPPDATA%\Programs\MicroApp` (per-user installer), or wherever you unzipped the portable build.
 - **Your settings** — the standard per-user .NET settings file under

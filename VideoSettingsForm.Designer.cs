@@ -38,9 +38,6 @@ namespace MicroApp
             this.fpsHost = new FieldHost();
             this.videoFps = new TextBox();
             this.fpsLabel = new Label();
-            this.secondsHost = new FieldHost();
-            this.videoSeconds = new TextBox();
-            this.secondsLabel = new Label();
             this.qualityHost = new FieldHost();
             this.qualityBox = new ComboBox();
             this.qualityLabel = new Label();
@@ -126,8 +123,6 @@ namespace MicroApp
             this.cardRecording.Controls.Add(this.Video_Windows);
             this.cardRecording.Controls.Add(this.fpsHost);
             this.cardRecording.Controls.Add(this.fpsLabel);
-            this.cardRecording.Controls.Add(this.secondsHost);
-            this.cardRecording.Controls.Add(this.secondsLabel);
             this.cardRecording.Controls.Add(this.qualityHost);
             this.cardRecording.Controls.Add(this.qualityLabel);
             this.cardRecording.Controls.Add(this.soundHost);
@@ -225,29 +220,7 @@ namespace MicroApp
             this.fpsLabel.AutoSize = true;
             this.fpsLabel.Location = new Point(110, 113);
             this.fpsLabel.Name = "fpsLabel";
-            this.fpsLabel.Text = "frames per second (1-30)";
-            //
-            // secondsHost
-            //
-            this.secondsHost.Controls.Add(this.videoSeconds);
-            this.secondsHost.Location = new Point(300, 104);
-            this.secondsHost.Name = "secondsHost";
-            this.secondsHost.Size = new Size(84, 32);
-            this.secondsHost.TabIndex = 6;
-            //
-            // videoSeconds
-            //
-            this.videoSeconds.Location = new Point(10, 8);
-            this.videoSeconds.Name = "videoSeconds";
-            this.videoSeconds.Size = new Size(64, 16);
-            this.videoSeconds.TabIndex = 0;
-            //
-            // secondsLabel
-            //
-            this.secondsLabel.AutoSize = true;
-            this.secondsLabel.Location = new Point(394, 113);
-            this.secondsLabel.Name = "secondsLabel";
-            this.secondsLabel.Text = "seconds at most";
+            this.fpsLabel.Text = "frames per second (1-30) — recording runs until you save it";
             //
             // qualityHost
             //
@@ -303,16 +276,16 @@ namespace MicroApp
             this.cardLock.Controls.Add(this.pixelHeightHost);
             this.cardLock.Controls.Add(this.pxLabel);
             this.cardLock.Controls.Add(this.lockNote);
-            this.cardLock.Location = new Point(24, 308);
+            this.cardLock.Location = new Point(24, 300);
             this.cardLock.Name = "cardLock";
-            this.cardLock.Size = new Size(592, 126);
+            this.cardLock.Size = new Size(592, 144);
             this.cardLock.TabIndex = 2;
             this.cardLock.Title = "Selection lock";
             this.cardLock.Description = "Constrain the recorded area";
             //
             // lockRatio
             //
-            this.lockRatio.Location = new Point(16, 46);
+            this.lockRatio.Location = new Point(16, 56);
             this.lockRatio.Name = "lockRatio";
             this.lockRatio.Size = new Size(150, 24);
             this.lockRatio.TabIndex = 0;
@@ -322,7 +295,7 @@ namespace MicroApp
             // ratioHost
             //
             this.ratioHost.Controls.Add(this.ratioBox);
-            this.ratioHost.Location = new Point(176, 44);
+            this.ratioHost.Location = new Point(176, 54);
             this.ratioHost.Name = "ratioHost";
             this.ratioHost.Size = new Size(130, 32);
             this.ratioHost.TabIndex = 1;
@@ -336,7 +309,7 @@ namespace MicroApp
             //
             // lockPixel
             //
-            this.lockPixel.Location = new Point(16, 78);
+            this.lockPixel.Location = new Point(16, 92);
             this.lockPixel.Name = "lockPixel";
             this.lockPixel.Size = new Size(150, 24);
             this.lockPixel.TabIndex = 2;
@@ -346,7 +319,7 @@ namespace MicroApp
             // pixelWidthHost
             //
             this.pixelWidthHost.Controls.Add(this.pixelWidth);
-            this.pixelWidthHost.Location = new Point(176, 76);
+            this.pixelWidthHost.Location = new Point(176, 90);
             this.pixelWidthHost.Name = "pixelWidthHost";
             this.pixelWidthHost.Size = new Size(84, 32);
             this.pixelWidthHost.TabIndex = 3;
@@ -361,14 +334,14 @@ namespace MicroApp
             // byLabel
             //
             this.byLabel.AutoSize = true;
-            this.byLabel.Location = new Point(268, 85);
+            this.byLabel.Location = new Point(268, 99);
             this.byLabel.Name = "byLabel";
             this.byLabel.Text = "x";
             //
             // pixelHeightHost
             //
             this.pixelHeightHost.Controls.Add(this.pixelHeight);
-            this.pixelHeightHost.Location = new Point(286, 76);
+            this.pixelHeightHost.Location = new Point(286, 90);
             this.pixelHeightHost.Name = "pixelHeightHost";
             this.pixelHeightHost.Size = new Size(84, 32);
             this.pixelHeightHost.TabIndex = 4;
@@ -383,13 +356,13 @@ namespace MicroApp
             // pxLabel
             //
             this.pxLabel.AutoSize = true;
-            this.pxLabel.Location = new Point(378, 85);
+            this.pxLabel.Location = new Point(378, 99);
             this.pxLabel.Name = "pxLabel";
             this.pxLabel.Text = "px";
             //
             // lockNote
             //
-            this.lockNote.Location = new Point(16, 104);
+            this.lockNote.Location = new Point(16, 118);
             this.lockNote.Name = "lockNote";
             this.lockNote.Size = new Size(560, 20);
             this.lockNote.Text = "Nothing is locked.";
@@ -534,9 +507,6 @@ namespace MicroApp
         private FieldHost fpsHost;
         private TextBox videoFps;
         private Label fpsLabel;
-        private FieldHost secondsHost;
-        private TextBox videoSeconds;
-        private Label secondsLabel;
         private FieldHost qualityHost;
         private ComboBox qualityBox;
         private Label qualityLabel;

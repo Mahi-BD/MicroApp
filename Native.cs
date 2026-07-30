@@ -200,6 +200,16 @@ namespace MicroApp
             // e.g. umlauts unmappable via the foreground HKL.
             if ((vkResult & 0xFF) == 0xFF && ((vkResult >> 8) & 0xFF) == 0xFF)
             {
+                // Only Latin-ish characters are worth that hunt. For complex scripts
+                // (Bangla, Hindi, Arabic, ...) a VK borrowed from an inactive layout
+                // gets reinterpreted through the target's ACTIVE layout and comes out
+                // as a completely different character - inject the code point instead.
+                if (c >= (char)0x0250)
+                {
+                    SendUnicodeChar(c);
+                    return;
+                }
+
                 int count = (int)GetKeyboardLayoutList(0, null);
                 if (count > 0)
                 {

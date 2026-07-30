@@ -1,13 +1,16 @@
 # MicroApp
 
-A small Windows tray tool that does four things well:
+A small Windows tray tool that does a handful of things well:
 
-- **Types the clipboard as real keystrokes** into any window — including ones that block paste (VM consoles, remote desktops, KVM/IPMI consoles, fields that refuse Ctrl+V).
+- **Types the clipboard as real keystrokes** into any window — including ones that block paste (VM consoles, remote desktops, KVM/IPMI consoles, fields that refuse Ctrl+V). Handles every script, Bangla included.
 - **Reads text off the screen with OCR** — drag over a browser, an image, a PDF, a video frame, anything.
+- **Picks the exact text of any control** — like a colour picker, but for text (UI Automation, no OCR).
 - **Captures a screen region as a PNG**, with an optional locked ratio or locked pixel size.
 - **Records a screen region as an animated GIF.**
+- **Records a screen region as an MP4 video with sound**, no time limit, with pause/resume.
+- **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check and an optional AI grammar fixer.
 
-Everything runs offline. No account, no service, no telemetry. Text recognition uses the OCR engine built into Windows 10/11.
+Everything runs offline. No account, no service, no telemetry. Text recognition uses the OCR engine built into Windows 10/11; the only thing that ever goes online is the Grammar button in Notes, and only when you click it, to the AI provider you configured with your own key.
 
 ![Key Setting](docs/key-setting.png)
 
@@ -15,12 +18,12 @@ Everything runs offline. No account, no service, no telemetry. Text recognition 
 
 ## Install
 
-**Installer** — download `MicroApp-4.2.2-setup.exe` from the
+**Installer** — download `MicroApp-4.3.5-setup.exe` from the
 [latest release](https://github.com/Mahi-BD/MicroApp/releases/latest) and run it. The last page asks
 whether MicroApp should **run when Windows starts**; tick it and it will. There is also a
 `-peruser-setup.exe` that installs into your profile and needs no administrator rights.
 
-**Portable** — or take `MicroApp-4.2.2-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
+**Portable** — or take `MicroApp-4.3.5-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
 is written outside your settings file.
 
 Either way, MicroApp lives in the notification area — there is no main window. Right-click the tray icon
@@ -32,13 +35,14 @@ Requires **Windows 10 (1809+) or Windows 11** and the **.NET Framework 4.8** run
 
 ---
 
-## The four features
+## The features
 
 ### 1. Paste as keystrokes
 
 Copy some text, then either click the tray icon and click your target, or press the hot key
 (**Ctrl+Alt+V** by default). The pointer becomes a crosshair; click where the text should land and
-MicroApp types it there.
+MicroApp types it there. Unicode scripts — Bangla, Hindi, Arabic, CJK — are typed correctly
+regardless of the keyboard layout.
 
 Three typing engines, because no single one works everywhere:
 
@@ -63,7 +67,14 @@ into the window you came from.
 Recognition uses `Windows.Media.Ocr`. Whatever OCR language packs Windows has installed appear in the
 language list — add more under *Windows Settings → Time & language → Language & region*.
 
-### 3. Screen capture
+### 3. Pick Text
+
+Press **Ctrl+Alt+T** (or tray → *Pick Text*). A **+** crosshair with a live preview follows the
+pointer; one click grabs the exact text of the control under it through UI Automation — no OCR,
+character-perfect, however many lines. The click never reaches the app underneath, and password
+fields are never read. Use OCR instead for images, videos and remote desktops.
+
+### 4. Screen capture
 
 Press **Ctrl+Alt+S** (or tray → *Screen Capture*) and drag. The screen freezes and dims so the selection
 is easy to see, and the dimming never ends up in the picture.
@@ -77,7 +88,7 @@ Two optional constraints:
 
 The image goes to the clipboard, to a PNG, or both.
 
-### 4. Record GIF
+### 5. Record GIF
 
 Press **Ctrl+Alt+G** (or tray → *Record GIF*), pick a region, and MicroApp records it. A small red badge
 shows elapsed time, placed outside the recorded area so it stays out of the frames. Stop with **Esc**,
@@ -89,18 +100,40 @@ Frames stream straight to disk while recording, so a long capture costs no more 
 GIF recording has its own hot key, frame rate, length limit, selection lock and output folder — separate
 from screen capture.
 
+### 6. Record Video
+
+Press **Ctrl+Alt+R** (or tray → *Record Video*), pick a region, and MicroApp records it as a small
+**MP4 (H.264 + AAC)** — with **sound** from the system or a microphone if you want it. A red frame marks
+the recorded region and a badge shows the time, with **pause/resume** (paused stretches are simply absent
+from the file) and a **save** button. There is no time limit: it records until you save, press **Esc**,
+or press the hot key again. Encoding uses the codecs built into Windows; the video streams to disk while
+it records.
+
+### 7. Notes
+
+Press **Ctrl+Shift+N** (or tray → *New Note*) and a fresh note opens — every press gives a new one.
+A note is one window backed by one plain `.txt` file that **saves itself as you type**; its title
+follows its first line, and it uses Notepad's font. The toolbar strips spaces, joins lines, and inserts
+the date, long date or a timestamp in formats you choose. **Spell check** underlines mistakes as you
+type (English, plus Bangla when a Bangla dictionary is installed) with right-click suggestions, and a
+**Grammar** button can fix spelling and grammar with AI — MiMo, Gemini or ChatGPT with your own API
+key, English, Bangla or mixed. The **All notes** browser lists every note newest-first with previews;
+click to select, click again to open. Notes stay off the taskbar by default so they never pile up there.
+
 ---
 
 ## Settings
 
-Four focused windows, all reachable from the tray menu:
+Six focused windows, all reachable from the tray menu:
 
 | Window | Covers |
 |---|---|
 | **Key Setting** | Typing method, delays, confirmation threshold, typing hot key |
-| **OCR Setting** | OCR hot key, recognizer language, what happens to the text |
+| **OCR Setting** | OCR + Pick Text hot keys, recognizer language, what happens to the text |
 | **Capture Setting** | Screen capture hot key, selection lock, image output + folder |
 | **GIF Setting** | GIF hot key, fps and length, selection lock, GIF output + folder |
+| **Video Setting** | Video hot key, fps, quality, sound source, selection lock, output folder |
+| **Note Setting** | Note hot key, taskbar behaviour, date/time formats, AI provider + key |
 
 | | |
 |---|---|
@@ -117,9 +150,14 @@ The full reference — every default, and the troubleshooting list — is in **[
 |---|---|
 | Paste as keystrokes | `Ctrl + Alt + V` |
 | Grab text (OCR) | `Ctrl + Shift + O` |
+| Pick Text | `Ctrl + Alt + T` |
 | Screen capture | `Ctrl + Alt + S` |
 | Record GIF | `Ctrl + Alt + G` |
+| Record Video | `Ctrl + Alt + R` |
+| New note | `Ctrl + Shift + N` |
 | Cancel anything in progress | `Esc` |
+
+Hot keys act the moment the combination is pressed — the crosshair appears while the keys are still held.
 
 Global hot keys win over the focused app, so if one collides with something you use, change it — every
 hot key is editable in its settings window, and clearing the key box disables that hot key entirely.

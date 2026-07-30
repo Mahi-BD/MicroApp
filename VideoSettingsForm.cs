@@ -68,7 +68,6 @@ namespace MicroApp
                 mod.Checked = (0 != (Properties.Settings.Default.VideoHotKeyModifier & int.Parse(mod.Tag.ToString())));
             }
             videoFps.Text = Properties.Settings.Default.VideoFps.ToString();
-            videoSeconds.Text = Properties.Settings.Default.VideoSeconds.ToString();
 
             qualityBox.DropDownStyle = ComboBoxStyle.DropDownList;
             qualityBox.Items.Add("Small file");
@@ -126,7 +125,7 @@ namespace MicroApp
             modifiersLabel.Font = new Font(Theme.Small, FontStyle.Bold);
             modifiersLabel.ForeColor = Theme.TextDim;
 
-            foreach (var helper in new[] { keyLabel, fpsLabel, secondsLabel, qualityLabel, soundLabel, byLabel, pxLabel, lockNote })
+            foreach (var helper in new[] { keyLabel, fpsLabel, qualityLabel, soundLabel, byLabel, pxLabel, lockNote })
             {
                 helper.Font = Theme.Base;
                 helper.ForeColor = Theme.TextDim;
@@ -217,9 +216,8 @@ namespace MicroApp
             }
             Properties.Settings.Default.VideoHotKeyModifier = mods;
 
-            int fps, secs, w, h;
+            int fps, w, h;
             if (int.TryParse(videoFps.Text, out fps)) Properties.Settings.Default.VideoFps = Math.Max(1, Math.Min(30, fps));
-            if (int.TryParse(videoSeconds.Text, out secs)) Properties.Settings.Default.VideoSeconds = Math.Max(1, Math.Min(3600, secs));
 
             Properties.Settings.Default.VideoQuality = qualityBox.SelectedIndex;
             Properties.Settings.Default.VideoAudioSource = soundBox.SelectedIndex;
