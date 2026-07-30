@@ -18,7 +18,7 @@ namespace MicroApp
     /// selection lock, and its own folder. Screen capture keeps a separate set in
     /// Capture Setting, so the two features never have to share a shape or a folder.
     /// </summary>
-    public partial class GifSettingsForm : Form
+    public partial class GifSettingsForm : PixelPerfectForm
     {
         private static readonly string[] RatioPresets =
             { "16:9", "16:10", "4:3", "3:2", "1:1", "21:9", "9:16", "3:4" };

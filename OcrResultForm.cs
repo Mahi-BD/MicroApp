@@ -8,7 +8,7 @@ namespace MicroApp
     /// Preview of what OCR read, with the option to copy it or type it out.
     /// Built in code (no designer) from the same control set as the settings window.
     /// </summary>
-    public class OcrResultForm : Form
+    public class OcrResultForm : PixelPerfectForm
     {
         private readonly HeaderBar _header;
         private readonly PictureBox _icon;

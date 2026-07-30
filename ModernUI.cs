@@ -7,6 +7,34 @@ using System.Windows.Forms;
 namespace MicroApp
 {
     /// <summary>
+    /// Base for MicroApp's fixed-pixel windows (settings canvases, dialogs, notes).
+    /// Their layout is hand-drawn at 96 DPI coordinates, so at 125%/150% display
+    /// scaling the window is created DPI-unaware (GDI-scaled) and Windows stretches
+    /// it as a whole instead of WinForms half-scaling it. The process itself stays
+    /// DPI-aware — capture/paste overlays need real physical pixels.
+    /// </summary>
+    public class PixelPerfectForm : Form
+    {
+        protected override void CreateHandle()
+        {
+            IntPtr prev = IntPtr.Zero;
+            bool switched = false;
+            try
+            {
+                prev = Native.SetThreadDpiAwarenessContext(Native.DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED);
+                if (prev == IntPtr.Zero)  // pre-1809: GDISCALED unknown, fall back to plain bitmap stretch
+                    prev = Native.SetThreadDpiAwarenessContext(Native.DPI_AWARENESS_CONTEXT_UNAWARE);
+                switched = prev != IntPtr.Zero;
+            }
+            catch (EntryPointNotFoundException) { }  // pre-1607: no per-window DPI, behave as before
+            catch (DllNotFoundException) { }
+
+            try { base.CreateHandle(); }
+            finally { if (switched) Native.SetThreadDpiAwarenessContext(prev); }
+        }
+    }
+
+    /// <summary>
     /// Palette + fonts for the modern (Fluent-flavoured) look, in light and dark.
     /// Call <see cref="Init"/> once at startup, then <see cref="Apply"/> per form.
     /// </summary>

@@ -8,7 +8,7 @@ namespace MicroApp
     /// Everything about notes: the hot key, the three date/time insert formats (live
     /// preview under each), and the AI service the Grammar button talks to.
     /// </summary>
-    public partial class NoteSettingsForm : Form
+    public partial class NoteSettingsForm : PixelPerfectForm
     {
         private CheckBox[] _modifiers;
         private int _lastProvider = -1;
@@ -48,7 +48,8 @@ namespace MicroApp
             providerBox.Items.Add("MiMo");
             providerBox.Items.Add("Gemini");
             providerBox.Items.Add("ChatGPT");
-            int provider = Math.Max(0, Math.Min(2, Properties.Settings.Default.NoteAiProvider));
+            providerBox.Items.Add("OpenRouter");
+            int provider = Math.Max(0, Math.Min(3, Properties.Settings.Default.NoteAiProvider));
             _lastProvider = provider;
             providerBox.SelectedIndex = provider;
             modelBox.Text = Properties.Settings.Default.NoteAiModel;
@@ -61,6 +62,7 @@ namespace MicroApp
             if (baseUrlBox.Text.Trim().Length == 0) baseUrlBox.Text = NoteAi.DefaultMiMoBaseUrl;
             baseUrlBox.Enabled = provider == NoteAi.ProviderMiMo;
             apiKeyBox.Text = Properties.Settings.Default.NoteAiApiKey;
+            banglaTokenBox.Text = Properties.Settings.Default.NoteBanglaToken;
 
             ShowPreviews();
         }
@@ -75,12 +77,11 @@ namespace MicroApp
             modifiersLabel.Font = new Font(Theme.Small, FontStyle.Bold);
             modifiersLabel.ForeColor = Theme.TextDim;
 
-            foreach (var helper in new[] { keyLabel, dateLabel, longDateLabel, timeLabel, modelLabel, baseUrlLabel, apiKeyLabel, aiNote })
+            foreach (var helper in new[] { keyLabel, dateLabel, longDateLabel, timeLabel, modelLabel, baseUrlLabel, apiKeyLabel, banglaLabel })
             {
                 helper.Font = Theme.Base;
                 helper.ForeColor = Theme.TextDim;
             }
-            aiNote.Font = Theme.Small;
         }
 
         /// <summary>Each format label doubles as a live preview of today's date in it.</summary>
@@ -169,6 +170,7 @@ namespace MicroApp
             Properties.Settings.Default.NoteAiModel = modelBox.Text.Trim();
             Properties.Settings.Default.NoteAiBaseUrl = baseUrlBox.Text.Trim();
             Properties.Settings.Default.NoteAiApiKey = apiKeyBox.Text.Trim();
+            Properties.Settings.Default.NoteBanglaToken = banglaTokenBox.Text.Trim();
 
             Properties.Settings.Default.Save();
             NoteForm.ApplyTaskbarSetting();   // open notes follow the toggle right away

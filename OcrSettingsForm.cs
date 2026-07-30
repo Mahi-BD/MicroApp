@@ -13,7 +13,7 @@ namespace MicroApp
         Type = 2
     }
 
-    public partial class OcrSettingsForm : Form
+    public partial class OcrSettingsForm : PixelPerfectForm
     {
         private CheckBox[] _modifiers;
         private RadioButton[] _outputs;

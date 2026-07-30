@@ -1,7 +1,7 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 4.3.5.
+Version 4.4.0.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
@@ -45,6 +45,10 @@ Exit
 
 Global hot keys act the moment the combination is pressed — the crosshair appears while the keys
 are still held down.
+
+MicroApp's windows are laid out in fixed pixels and scale as a whole, so they stay correct at any
+Windows display scaling (100%, 125%, 150%, …), while capture, OCR and the recording overlays keep
+working in true screen pixels.
 
 Only one copy runs at a time. Starting a second one exits silently.
 
@@ -218,26 +222,66 @@ the way.
 A scratch pad that is always one hot key away. Every press of **Ctrl+Shift+N** (or tray → *New
 Note*) opens a **fresh** note — older ones come back through the note list.
 
+A new note opens **in front** of whatever you were working in.
+
 Each note is one window backed by one plain `.txt` file. There is no save button: the file follows
 your typing with less than a second of lag. Close the window and the note is on disk; close an empty
-note and its file is removed. The window title always shows the note's first line, and the text uses
-Notepad's font (Consolas 11). Note windows stay **off the taskbar** by default (a switch in Note
-Setting brings them back).
+note and its file is removed. The window title always shows the note's first line. Note windows stay
+**off the taskbar** by default (a switch in Note Setting brings them back).
+
+The text uses **Nirmala UI**, which draws Latin and Bengali letters at matching sizes, so a note that
+mixes English and Bangla reads evenly. **A-** and **A+** on the toolbar step the size between 8 and
+28 pt; the choice is remembered and applies to every open note at once.
 
 **The toolbar** — new note · all notes · remove every space · join all lines · insert date · insert
-long date · insert timestamp · **Grammar** · settings. The three date/time formats are configurable
-in Note Setting, each with a live preview.
+long date · insert timestamp · **undo** · **redo** · **A-** · **A+** · **E / ক** (Bangla) ·
+**Grammar** · settings. The three date/time formats are configurable in Note Setting, each with a
+live preview. Undo and redo also answer to **Ctrl+Z** and **Ctrl+Y**.
 
 **Spell check** — misspellings get a red squiggle as you pause typing, using the spell checker built
 into Windows. English is always checked; Bangla words are checked only when a Bangla dictionary is
 installed, and are never sent to the English checker. Right-click a squiggled word for suggestions
 and *Add to dictionary*.
 
+**Bangla phonetic typing** — click **E / ক** on the toolbar or press **Ctrl+Shift+L**, and type
+Bangla the way it sounds. A list of candidates appears under the word as you type: `ami` → আমি,
+`bhalo` → ভালো, `bangla` → বাংলা.
+
+| Key | Does |
+|---|---|
+| `↑` `↓` | move through the candidates |
+| `Enter` or `Tab` | take the highlighted one |
+| `Space` | take the highlighted one and type the space |
+| `Esc` | dismiss the list (a second `Esc` closes the note) |
+| `.` | types দাঁড়ি (।) |
+| `0`–`9` | type ০–৯ |
+
+Typing punctuation or any other separator also accepts the highlighted candidate, so ordinary typing
+just works. Press **Ctrl+Shift+L** again for English — you can switch mid-sentence.
+
+This looks words up in the **[string.bd](https://string.bd)** dictionary, so it needs an API token
+(free from string.bd) in Note Setting. Lookups are cached, so repeated words convert instantly even
+when you type quickly.
+
+![Bangla phonetic typing](docs/note-bangla.png)
+
 **Grammar (AI)** — one click sends the note to the AI service you configured and replaces the text
-with the corrected version (English, Bangla or mixed — the language is preserved). Three providers:
-**MiMo**, **Gemini**, **ChatGPT**. Each needs your own API key, set in Note Setting; for MiMo the
-base URL is also configurable (Token Plan subscriptions get a regional URL from the MiMo console).
-Nothing ever leaves your machine unless you press the button.
+with the corrected version (English, Bangla or mixed — the language is preserved). Four providers:
+**MiMo**, **Gemini**, **ChatGPT**, **OpenRouter**. Each needs your own API key, set in Note Setting;
+for MiMo the base URL is also configurable (Token Plan subscriptions get a regional URL from the MiMo
+console). Nothing ever leaves your machine unless you press the button.
+
+**Ask AI** — the box under the note takes an instruction in plain words and applies it to the note:
+*rewrite this as a Facebook post*, *translate to English*, *make it shorter*, *turn this into bullet
+points*. Press Enter or click the send button.
+
+**Select text before you ask and only that part is rewritten** — the rest of the note is left exactly
+as it was, and the new text stays selected so you can refine it again.
+
+**Translate a word** — right-click any word for its translation: an **English** word offers Bangla
+from the string.bd dictionary, a **Bangla** word offers English from your AI provider. Pick one and it
+replaces the word. Right-clicking inside a selection translates the whole selection instead of one
+word.
 
 **All notes** (toolbar list button) — every note, newest first, with a first-line preview and a slim
 scrollbar. **Click** a note to select it, **click it again** (or press Enter, or double-click) to
@@ -312,10 +356,16 @@ notes** — and *Delete* / *Open* for the selected one. The window remembers its
 | Date format | `yyyy-MM-dd` |
 | Long date format | `dddd, dd MMMM yyyy` |
 | Timestamp format | `yyyy-MM-dd HH:mm:ss` |
+| Text size | 11 pt |
 | AI provider | MiMo |
 | Model | `mimo-v2.5` |
 | Base URL (MiMo) | the MiMo Token Plan endpoint |
 | API key | *(empty — set your own)* |
+| Bangla token (string.bd) | *(empty — set your own)* |
+
+Both keys are stored in your own user settings file (see *Where files go*) and are never included in
+the installer or the portable download. Switching provider fills in that provider's usual model name;
+the base URL box only applies to MiMo.
 
 Clearing a hot key's key box (Delete or Backspace) disables that hot key.
 
@@ -403,6 +453,16 @@ Windows has no OCR language pack installed. Add one under *Time & language → L
 
 **"Clipboard is busy."**
 Another app is holding the clipboard open. MicroApp retries for a moment, then tells you. Try again.
+
+**Bangla typing shows no suggestions.**
+Notes needs a string.bd API token — set it in Note Setting. If the token is there, check that the
+machine can reach `string.bd`; MicroApp never blocks your typing on a lookup, so a failed one simply
+leaves the word as you typed it.
+
+**The Grammar button, Ask AI or a Bangla→English translation reports an error.**
+The message comes straight from the AI provider. The usual causes are an empty or wrong API key, a
+model name that provider does not serve, or no credit left on the account. MiMo Token Plan keys
+(`tp-…`) also need the regional base URL from the MiMo console.
 
 **The GIF is huge.**
 Lower the frame rate, shorten the recording, or select a smaller area. GIF has no interframe

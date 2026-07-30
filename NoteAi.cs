@@ -18,6 +18,7 @@ namespace MicroApp
         public const int ProviderMiMo = 0;
         public const int ProviderGemini = 1;
         public const int ProviderChatGpt = 2;
+        public const int ProviderOpenRouter = 3;
 
         /// <summary>MiMo Token Plan endpoint; the console hands each subscriber their own regional URL.</summary>
         public const string DefaultMiMoBaseUrl = "https://token-plan-sgp.xiaomimimo.com/v1";
@@ -28,6 +29,7 @@ namespace MicroApp
             {
                 case ProviderGemini: return "gemini-2.0-flash";
                 case ProviderChatGpt: return "gpt-4o-mini";
+                case ProviderOpenRouter: return "openai/gpt-4o-mini";
                 default: return "mimo-v2.5";
             }
         }
@@ -47,6 +49,45 @@ namespace MicroApp
         /// <summary>Blocking; run it off the UI thread. Throws with a readable message on failure.</summary>
         public static string CorrectGrammar(string text)
         {
+            return Chat(Prompt, text);
+        }
+
+        /// <summary>
+        /// The instruction box under the note: reshapes the whole note per the user's
+        /// direction ("rewrite as a Facebook post", "make it formal", ...). Blocking.
+        /// </summary>
+        public static string Apply(string text, string instruction)
+        {
+            string prompt =
+                "Apply this instruction to the text below: \"" + instruction + "\". " +
+                "The text may be English, Bangla (Bengali), or a mix; keep whichever language fits the request. " +
+                "Reply with only the resulting text - no explanations, no quotes, no markdown.";
+            return Chat(prompt, text);
+        }
+
+        /// <summary>
+        /// One Bangla word to English options. The string.bd dictionary only translates
+        /// English to Bangla, so the reverse direction goes through the AI. Blocking.
+        /// </summary>
+        public static List<string> BanglaToEnglish(string word, int limit)
+        {
+            string reply = Chat(
+                "Give the " + limit + " most common English translations of the Bangla word the user sends. " +
+                "Reply with only the English words, separated by commas - no numbering, no explanations.",
+                word);
+
+            var options = new List<string>();
+            foreach (string part in reply.Split(','))
+            {
+                string option = part.Trim().Trim('.', '"', '\'');
+                if (option.Length > 0 && option.Length < 40 && !options.Contains(option)) options.Add(option);
+                if (options.Count >= limit) break;
+            }
+            return options;
+        }
+
+        private static string Chat(string prompt, string text)
+        {
             int provider = Properties.Settings.Default.NoteAiProvider;
             string key = (Properties.Settings.Default.NoteAiApiKey ?? "").Trim();
             if (key.Length == 0) throw new Exception("No API key is set. Add one in Note Setting.");
@@ -62,7 +103,7 @@ namespace MicroApp
                 string url = "https://generativelanguage.googleapis.com/v1beta/models/" +
                              Uri.EscapeDataString(model) + ":generateContent?key=" + Uri.EscapeDataString(key);
                 string body = "{\"contents\":[{\"parts\":[{\"text\":\"" +
-                              Json.Escape(Prompt + "\n\n" + text) + "\"}]}]}";
+                              Json.Escape(prompt + "\n\n" + text) + "\"}]}]}";
                 object root = Json.Parse(Post(url, body, null));
                 result = Json.Dig(root, "candidates", 0, "content", "parts", 0, "text") as string;
             }
@@ -70,9 +111,11 @@ namespace MicroApp
             {
                 string url = provider == ProviderChatGpt
                     ? "https://api.openai.com/v1/chat/completions"
-                    : MiMoBaseUrl() + "/chat/completions";
+                    : provider == ProviderOpenRouter
+                        ? "https://openrouter.ai/api/v1/chat/completions"
+                        : MiMoBaseUrl() + "/chat/completions";
                 string body = "{\"model\":\"" + Json.Escape(model) + "\",\"temperature\":0.2,\"messages\":[" +
-                              "{\"role\":\"system\",\"content\":\"" + Json.Escape(Prompt) + "\"}," +
+                              "{\"role\":\"system\",\"content\":\"" + Json.Escape(prompt) + "\"}," +
                               "{\"role\":\"user\",\"content\":\"" + Json.Escape(text) + "\"}]}";
                 object root = Json.Parse(Post(url, body, key));
                 result = Json.Dig(root, "choices", 0, "message", "content") as string;
@@ -126,6 +169,113 @@ namespace MicroApp
                 }
                 throw new Exception(ex.Message);
             }
+        }
+    }
+
+    public struct BanglaSuggestion
+    {
+        public string Phonetic;
+        public string Bangla;
+    }
+
+    /// <summary>
+    /// string.bd Suggestions API: phonetic text in ("ami"), ranked Bangla candidates out.
+    /// Bearer token comes from Note Setting; results are cached per query for the session.
+    /// </summary>
+    public static class BanglaPhonetic
+    {
+        private static readonly Dictionary<string, List<BanglaSuggestion>> Cache =
+            new Dictionary<string, List<BanglaSuggestion>>(StringComparer.Ordinal);
+
+        public static bool HasToken
+        {
+            get { return (Properties.Settings.Default.NoteBanglaToken ?? "").Trim().Length > 0; }
+        }
+
+        /// <summary>
+        /// English word to Bangla, from the string.bd dictionary
+        /// (/api/dictionary/translate). Blocking; empty list on failure.
+        /// </summary>
+        public static List<string> Translate(string english, int limit)
+        {
+            var results = new List<string>();
+            foreach (object item in GetList("/api/dictionary/translate?q=" +
+                                            Uri.EscapeDataString(english) + "&limit=" + limit, "results"))
+            {
+                string bangla = Json.Dig(item, "bangla") as string;
+                if (!string.IsNullOrEmpty(bangla) && !results.Contains(bangla)) results.Add(bangla);
+            }
+            return results;
+        }
+
+        private static List<object> GetList(string path, string field)
+        {
+            string token = (Properties.Settings.Default.NoteBanglaToken ?? "").Trim();
+            if (token.Length == 0) return new List<object>();
+
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            var request = (HttpWebRequest)WebRequest.Create("https://string.bd" + path);
+            request.Timeout = 8000;
+            request.ReadWriteTimeout = 8000;
+            request.Headers["Authorization"] = "Bearer " + token;
+            try
+            {
+                using (var response = (HttpWebResponse)request.GetResponse())
+                using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                {
+                    return (Json.Dig(Json.Parse(reader.ReadToEnd()), field) as List<object>) ?? new List<object>();
+                }
+            }
+            catch (Exception) { return new List<object>(); }
+        }
+
+        /// <summary>Already-known answer for a word, so a fast typist's space can still convert it.</summary>
+        public static bool TryCached(string word, out List<BanglaSuggestion> items)
+        {
+            lock (Cache) { return Cache.TryGetValue(word, out items) && items.Count > 0; }
+        }
+
+        /// <summary>Blocking; run it off the UI thread. Empty list (never null) when nothing matches or the call fails.</summary>
+        public static List<BanglaSuggestion> Suggest(string word, int limit)
+        {
+            List<BanglaSuggestion> cached;
+            lock (Cache) { if (Cache.TryGetValue(word, out cached)) return cached; }
+
+            var results = new List<BanglaSuggestion>();
+            string token = (Properties.Settings.Default.NoteBanglaToken ?? "").Trim();
+            if (token.Length == 0) return results;
+
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            var request = (HttpWebRequest)WebRequest.Create(
+                "https://string.bd/api/suggestions?q=" + Uri.EscapeDataString(word) + "&limit=" + limit);
+            request.Timeout = 8000;
+            request.ReadWriteTimeout = 8000;
+            request.Headers["Authorization"] = "Bearer " + token;
+            try
+            {
+                using (var response = (HttpWebResponse)request.GetResponse())
+                using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                {
+                    object root = Json.Parse(reader.ReadToEnd());
+                    var list = Json.Dig(root, "suggestions") as List<object>;
+                    if (list != null)
+                    {
+                        foreach (object item in list)
+                        {
+                            string bangla = Json.Dig(item, "bangla") as string;
+                            if (string.IsNullOrEmpty(bangla)) continue;
+                            results.Add(new BanglaSuggestion
+                            {
+                                Bangla = bangla,
+                                Phonetic = (Json.Dig(item, "phonetic") as string) ?? ""
+                            });
+                        }
+                    }
+                }
+                lock (Cache) { Cache[word] = results; }
+            }
+            catch (Exception) { }   // typing must never break on a network hiccup
+            return results;
         }
     }
 

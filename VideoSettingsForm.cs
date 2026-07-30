@@ -34,7 +34,7 @@ namespace MicroApp
     /// size/quality trade, the sound source, its own selection lock and its own folder.
     /// GIF and screen capture keep their separate sets, so nothing is shared.
     /// </summary>
-    public partial class VideoSettingsForm : Form
+    public partial class VideoSettingsForm : PixelPerfectForm
     {
         private static readonly string[] RatioPresets =
             { "16:9", "16:10", "4:3", "3:2", "1:1", "21:9", "9:16", "3:4" };

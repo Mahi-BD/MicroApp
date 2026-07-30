@@ -347,6 +347,23 @@ namespace MicroApp
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool SetProcessDPIAware();
 
+        #region Editor scrolling (for the note's slim overlay scrollbar)
+
+        public const int EM_LINESCROLL = 0x00B6;
+        public const int EM_GETFIRSTVISIBLELINE = 0x00CE;
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+        #endregion
+
+        // Per-window DPI awareness (Win10 1607+; UNAWARE_GDISCALED needs 1809+)
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr dpiContext);
+
+        public static readonly IntPtr DPI_AWARENESS_CONTEXT_UNAWARE = (IntPtr)(-1);
+        public static readonly IntPtr DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED = (IntPtr)(-5);
+
         [DllImport("user32.dll")]
         public static extern bool SetSystemCursor(IntPtr hcur, uint id);
 

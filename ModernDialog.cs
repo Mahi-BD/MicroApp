@@ -8,7 +8,7 @@ namespace MicroApp
     /// Themed replacement for MessageBox: same two-button flow, but it matches the
     /// rest of the app (dark title bar, card typography, accent primary button).
     /// </summary>
-    public class ModernDialog : Form
+    public class ModernDialog : PixelPerfectForm
     {
         private readonly PictureBox _icon;
         private readonly Label _heading;

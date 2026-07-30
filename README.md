@@ -8,9 +8,9 @@ A small Windows tray tool that does a handful of things well:
 - **Captures a screen region as a PNG**, with an optional locked ratio or locked pixel size.
 - **Records a screen region as an animated GIF.**
 - **Records a screen region as an MP4 video with sound**, no time limit, with pause/resume.
-- **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check and an optional AI grammar fixer.
+- **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check, **Bangla phonetic typing**, and an AI that fixes grammar or rewrites the note on request.
 
-Everything runs offline. No account, no service, no telemetry. Text recognition uses the OCR engine built into Windows 10/11; the only thing that ever goes online is the Grammar button in Notes, and only when you click it, to the AI provider you configured with your own key.
+Everything runs offline. No account, no service, no telemetry. Text recognition uses the OCR engine built into Windows 10/11. The only parts that ever go online live in Notes and are yours to enable: the AI buttons (Grammar, Ask AI, Bangla→English), which call the provider you configured with your own key when you click them, and Bangla phonetic typing, which looks words up in the [string.bd](https://string.bd) dictionary with your own token.
 
 ![Key Setting](docs/key-setting.png)
 
@@ -18,12 +18,12 @@ Everything runs offline. No account, no service, no telemetry. Text recognition 
 
 ## Install
 
-**Installer** — download `MicroApp-4.3.5-setup.exe` from the
+**Installer** — download `MicroApp-4.4.0-setup.exe` from the
 [latest release](https://github.com/Mahi-BD/MicroApp/releases/latest) and run it. The last page asks
 whether MicroApp should **run when Windows starts**; tick it and it will. There is also a
 `-peruser-setup.exe` that installs into your profile and needs no administrator rights.
 
-**Portable** — or take `MicroApp-4.3.5-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
+**Portable** — or take `MicroApp-4.4.0-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
 is written outside your settings file.
 
 Either way, MicroApp lives in the notification area — there is no main window. Right-click the tray icon
@@ -111,14 +111,30 @@ it records.
 
 ### 7. Notes
 
-Press **Ctrl+Shift+N** (or tray → *New Note*) and a fresh note opens — every press gives a new one.
-A note is one window backed by one plain `.txt` file that **saves itself as you type**; its title
-follows its first line, and it uses Notepad's font. The toolbar strips spaces, joins lines, and inserts
-the date, long date or a timestamp in formats you choose. **Spell check** underlines mistakes as you
-type (English, plus Bangla when a Bangla dictionary is installed) with right-click suggestions, and a
-**Grammar** button can fix spelling and grammar with AI — MiMo, Gemini or ChatGPT with your own API
-key, English, Bangla or mixed. The **All notes** browser lists every note newest-first with previews;
-click to select, click again to open. Notes stay off the taskbar by default so they never pile up there.
+Press **Ctrl+Shift+N** (or tray → *New Note*) and a fresh note opens in front of whatever you were
+doing — every press gives a new one. A note is one window backed by one plain `.txt` file that
+**saves itself as you type**; its title follows its first line. The toolbar strips spaces, joins
+lines, inserts the date, long date or a timestamp in formats you choose, undoes and redoes
+(**Ctrl+Z** / **Ctrl+Y**), and steps the text size with **A- / A+**. **Spell check** underlines
+mistakes as you type (English, plus Bangla when a Bangla dictionary is installed) with right-click
+suggestions. The **All notes** browser lists every note newest-first with previews; click to select,
+click again to open. Notes stay off the taskbar by default so they never pile up there.
+
+**Type Bangla by sound.** Click **E / ক** on the toolbar or press **Ctrl+Shift+L**, then type the way
+the word sounds: `ami` → আমি, `bhalo` → ভালো. Suggestions appear under the word — **↑ ↓** to move,
+**Enter**, **Tab** or **Space** to pick, **Esc** to dismiss. `.` becomes দাঁড়ি (।) and digits become
+০–৯. English and Bangla sit at the same size in the same note, and you can switch back mid-sentence.
+
+![Bangla phonetic typing](docs/note-bangla.png)
+
+**Let the AI do the boring part.** The **Grammar** button fixes spelling and grammar in place. The
+**Ask AI** box under the note takes an instruction — *rewrite this as a Facebook post*, *translate to
+English*, *make it formal* — and applies it; **select some text first and only that part changes**.
+Right-click any word to translate it: English words offer Bangla from the dictionary, Bangla words
+offer English from the AI. Bring your own key: **MiMo, Gemini, ChatGPT or OpenRouter**, set in Note
+Setting, and nothing is sent anywhere until you ask for it.
+
+Bangla phonetic typing needs a free [string.bd](https://string.bd) API token, also set in Note Setting.
 
 ---
 
@@ -133,7 +149,7 @@ Six focused windows, all reachable from the tray menu:
 | **Capture Setting** | Screen capture hot key, selection lock, image output + folder |
 | **GIF Setting** | GIF hot key, fps and length, selection lock, GIF output + folder |
 | **Video Setting** | Video hot key, fps, quality, sound source, selection lock, output folder |
-| **Note Setting** | Note hot key, taskbar behaviour, date/time formats, AI provider + key |
+| **Note Setting** | Note hot key, taskbar behaviour, date/time formats, AI provider + key, string.bd token |
 
 | | |
 |---|---|
@@ -155,6 +171,7 @@ The full reference — every default, and the troubleshooting list — is in **[
 | Record GIF | `Ctrl + Alt + G` |
 | Record Video | `Ctrl + Alt + R` |
 | New note | `Ctrl + Shift + N` |
+| Bangla / English in a note | `Ctrl + Shift + L` |
 | Cancel anything in progress | `Esc` |
 
 Hot keys act the moment the combination is pressed — the crosshair appears while the keys are still held.

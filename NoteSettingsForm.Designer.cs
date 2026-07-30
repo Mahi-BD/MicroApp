@@ -60,7 +60,9 @@ namespace MicroApp
             this.keyHost = new FieldHost();
             this.apiKeyBox = new TextBox();
             this.apiKeyLabel = new Label();
-            this.aiNote = new Label();
+            this.banglaHost = new FieldHost();
+            this.banglaTokenBox = new TextBox();
+            this.banglaLabel = new Label();
 
             this.cancelButton = new ModernButton();
             this.saveButton = new ModernButton();
@@ -120,7 +122,7 @@ namespace MicroApp
             this.cardNote.Controls.Add(this.hideTaskbarCheck);
             this.cardNote.Location = new Point(24, 104);
             this.cardNote.Name = "cardNote";
-            this.cardNote.Size = new Size(592, 136);
+            this.cardNote.Size = new Size(592, 128);
             this.cardNote.TabIndex = 1;
             this.cardNote.Title = "Note";
             this.cardNote.Description = "Hot key that opens a new note";
@@ -193,7 +195,7 @@ namespace MicroApp
             //
             // hideTaskbarCheck
             //
-            this.hideTaskbarCheck.Location = new Point(16, 102);
+            this.hideTaskbarCheck.Location = new Point(16, 96);
             this.hideTaskbarCheck.Name = "hideTaskbarCheck";
             this.hideTaskbarCheck.Size = new Size(400, 24);
             this.hideTaskbarCheck.TabIndex = 5;
@@ -207,9 +209,9 @@ namespace MicroApp
             this.cardDates.Controls.Add(this.longDateLabel);
             this.cardDates.Controls.Add(this.timeHost);
             this.cardDates.Controls.Add(this.timeLabel);
-            this.cardDates.Location = new Point(24, 252);
+            this.cardDates.Location = new Point(24, 244);
             this.cardDates.Name = "cardDates";
-            this.cardDates.Size = new Size(592, 172);
+            this.cardDates.Size = new Size(592, 164);
             this.cardDates.TabIndex = 2;
             this.cardDates.Title = "Date && time";
             this.cardDates.Description = "Formats for the toolbar insert buttons";
@@ -240,7 +242,7 @@ namespace MicroApp
             // longDateHost
             //
             this.longDateHost.Controls.Add(this.longDateBox);
-            this.longDateHost.Location = new Point(16, 96);
+            this.longDateHost.Location = new Point(16, 92);
             this.longDateHost.Name = "longDateHost";
             this.longDateHost.Size = new Size(190, 32);
             this.longDateHost.TabIndex = 1;
@@ -256,14 +258,14 @@ namespace MicroApp
             // longDateLabel
             //
             this.longDateLabel.AutoSize = true;
-            this.longDateLabel.Location = new Point(216, 105);
+            this.longDateLabel.Location = new Point(216, 101);
             this.longDateLabel.Name = "longDateLabel";
             this.longDateLabel.Text = "long date";
             //
             // timeHost
             //
             this.timeHost.Controls.Add(this.timeBox);
-            this.timeHost.Location = new Point(16, 136);
+            this.timeHost.Location = new Point(16, 128);
             this.timeHost.Name = "timeHost";
             this.timeHost.Size = new Size(190, 32);
             this.timeHost.TabIndex = 2;
@@ -279,7 +281,7 @@ namespace MicroApp
             // timeLabel
             //
             this.timeLabel.AutoSize = true;
-            this.timeLabel.Location = new Point(216, 145);
+            this.timeLabel.Location = new Point(216, 137);
             this.timeLabel.Name = "timeLabel";
             this.timeLabel.Text = "timestamp";
             //
@@ -292,13 +294,14 @@ namespace MicroApp
             this.cardAi.Controls.Add(this.baseUrlLabel);
             this.cardAi.Controls.Add(this.keyHost);
             this.cardAi.Controls.Add(this.apiKeyLabel);
-            this.cardAi.Controls.Add(this.aiNote);
-            this.cardAi.Location = new Point(24, 436);
+            this.cardAi.Controls.Add(this.banglaHost);
+            this.cardAi.Controls.Add(this.banglaLabel);
+            this.cardAi.Location = new Point(24, 420);
             this.cardAi.Name = "cardAi";
-            this.cardAi.Size = new Size(592, 188);
+            this.cardAi.Size = new Size(592, 208);
             this.cardAi.TabIndex = 3;
-            this.cardAi.Title = "AI grammar";
-            this.cardAi.Description = "Used by the Grammar button";
+            this.cardAi.Title = "AI && Bangla";
+            this.cardAi.Description = "Keys for the Grammar tools and Bangla phonetic typing";
             //
             // providerHost
             //
@@ -383,17 +386,33 @@ namespace MicroApp
             this.apiKeyLabel.Name = "apiKeyLabel";
             this.apiKeyLabel.Text = "API key";
             //
-            // aiNote
+            // banglaHost
             //
-            this.aiNote.Location = new Point(16, 164);
-            this.aiNote.Name = "aiNote";
-            this.aiNote.Size = new Size(560, 18);
-            this.aiNote.Text = "Keys: mimo.mi.com Token Plan (MiMo)  ·  aistudio.google.com (Gemini)  ·  platform.openai.com (ChatGPT)";
+            this.banglaHost.Controls.Add(this.banglaTokenBox);
+            this.banglaHost.Location = new Point(16, 168);
+            this.banglaHost.Name = "banglaHost";
+            this.banglaHost.Size = new Size(390, 32);
+            this.banglaHost.TabIndex = 4;
+            //
+            // banglaTokenBox
+            //
+            this.banglaTokenBox.Location = new Point(10, 8);
+            this.banglaTokenBox.Name = "banglaTokenBox";
+            this.banglaTokenBox.Size = new Size(370, 16);
+            this.banglaTokenBox.TabIndex = 0;
+            this.banglaTokenBox.UseSystemPasswordChar = true;
+            //
+            // banglaLabel
+            //
+            this.banglaLabel.AutoSize = true;
+            this.banglaLabel.Location = new Point(416, 177);
+            this.banglaLabel.Name = "banglaLabel";
+            this.banglaLabel.Text = "Bangla (string.bd)";
             //
             // cancelButton
             //
             this.cancelButton.DialogResult = DialogResult.Cancel;
-            this.cancelButton.Location = new Point(436, 636);
+            this.cancelButton.Location = new Point(436, 640);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new Size(88, 36);
             this.cancelButton.TabIndex = 5;
@@ -403,7 +422,7 @@ namespace MicroApp
             //
             this.saveButton.Accent = true;
             this.saveButton.DialogResult = DialogResult.OK;
-            this.saveButton.Location = new Point(536, 636);
+            this.saveButton.Location = new Point(536, 640);
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new Size(80, 36);
             this.saveButton.TabIndex = 6;
@@ -484,7 +503,9 @@ namespace MicroApp
         private FieldHost keyHost;
         private TextBox apiKeyBox;
         private Label apiKeyLabel;
-        private Label aiNote;
+        private FieldHost banglaHost;
+        private TextBox banglaTokenBox;
+        private Label banglaLabel;
 
         private ModernButton cancelButton;
         private ModernButton saveButton;

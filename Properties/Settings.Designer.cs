@@ -793,6 +793,30 @@ namespace MicroApp.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("11")]
+        public int NoteFontSize {
+            get {
+                return ((int)(this["NoteFontSize"]));
+            }
+            set {
+                this["NoteFontSize"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteBanglaToken {
+            get {
+                return ((string)(this["NoteBanglaToken"]));
+            }
+            set {
+                this["NoteBanglaToken"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string NoteAiBaseUrl {
             get {

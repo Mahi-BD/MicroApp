@@ -17,7 +17,7 @@ namespace MicroApp
     /// Screen capture only: its hot key, its selection lock and its output. GIF
     /// recording keeps a separate set of all three in GIF Setting.
     /// </summary>
-    public partial class CaptureSettingsForm : Form
+    public partial class CaptureSettingsForm : PixelPerfectForm
     {
         private static readonly string[] RatioPresets =
             { "16:9", "16:10", "4:3", "3:2", "1:1", "21:9", "9:16", "3:4" };

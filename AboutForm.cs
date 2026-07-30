@@ -10,7 +10,7 @@ namespace MicroApp
     /// About box: who wrote it, how to reach them, and what the app is built on.
     /// Same 640 x 612 canvas as the settings windows.
     /// </summary>
-    public class AboutForm : Form
+    public class AboutForm : PixelPerfectForm
     {
         public const string AuthorName = "Samsur Rahman Mahi";
         public const string AuthorEmail = "mahi@rampsbd.com";

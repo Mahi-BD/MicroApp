@@ -96,6 +96,11 @@ namespace MicroApp
             if (!createdNew) return;
 
             Native.SetProcessDPIAware();
+            // Fill WinForms' static Screen cache now, while the thread is DPI-aware.
+            // PixelPerfectForm windows are created DPI-unaware; if one of them filled
+            // the cache first, capture/overlay code would get virtualized (shrunken)
+            // screen bounds and record only part of the screen.
+            var _ = Screen.PrimaryScreen;
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 

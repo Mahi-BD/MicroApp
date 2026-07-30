@@ -1,5 +1,45 @@
 # Changelog
 
+## 4.4.0 — 2026-07-31
+
+### Added
+
+- **Bangla phonetic typing in notes** — click **E / ক** on the note toolbar (or press
+  **Ctrl+Shift+L**) and type Bangla the way it sounds: `ami` offers আমি, `bhalo` offers ভালো. A
+  suggestion list appears under the word — **↑ ↓** to move, **Enter**, **Tab** or **Space** to
+  pick, **Esc** to dismiss — and `.` becomes দাঁড়ি (।) while digits become ০–৯. It uses the
+  [string.bd](https://string.bd) dictionary, so it needs a free API token in Note Setting; nothing
+  else about notes goes online.
+- **Ask AI box under every note** — type an instruction ("rewrite this as a Facebook post",
+  "translate to English", "make it formal") and press Enter. **Select text first and only that part
+  is rewritten**; with nothing selected the whole note is.
+- **Right-click a word to translate it** — an English word offers Bangla from the string.bd
+  dictionary, a Bangla word offers English from your AI provider. Click one and it replaces the
+  word. Right-clicking a selection translates the whole selection.
+- **OpenRouter** as an AI provider, alongside MiMo, Gemini and ChatGPT.
+- **Undo / Redo and text-size buttons on the note toolbar** — undo and redo also on **Ctrl+Z** and
+  **Ctrl+Y**, and **A- / A+** step the note font between 8 and 28 pt. The size is remembered and
+  applies to every open note.
+
+### Changed
+
+- **Notes open in front.** A note opened with the hot key now comes up over whatever you were
+  working in, instead of behind it.
+- **Notes now use Nirmala UI** instead of Consolas. Consolas has no Bengali letters, so mixed
+  English and Bangla text used to render at two visibly different sizes; now it matches.
+- **The note editor has the same slim scrollbar as the notes list** instead of the fat Windows one.
+- **New toolbar icons throughout Notes** — the hand-drawn glyphs are gone in favour of the Fluent
+  icon set Windows itself uses.
+- **Note Setting** gained the string.bd token and the OpenRouter provider without growing.
+
+### Fixed
+
+- **Windows display scaling (125%, 150%, …) no longer breaks the settings windows.** Their layouts
+  are drawn at fixed pixel positions, so at a scale other than 100% they used to overlap; every
+  fixed-size window now scales as a whole and stays pixel-perfect. Screen capture, OCR and the
+  recording overlays keep working in true screen pixels.
+- Asking the AI to rewrite a selected line no longer swallows the line break after it.
+
 ## 4.3.5 — 2026-07-30
 
 ### Added

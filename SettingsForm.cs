@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace MicroApp
 {
-    public partial class SettingsForm : Form
+    public partial class SettingsForm : PixelPerfectForm
     {
         RadioButton[] _methods;
         CheckBox[] _modifiers;
