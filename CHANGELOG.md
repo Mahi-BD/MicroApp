@@ -1,5 +1,24 @@
 # Changelog
 
+## 4.5.0 — 2026-07-31
+
+### Added
+
+- **Right-click a note in the list** for *Open*, **Pin to top**, **Archive**, a **Colour** submenu and
+  *Delete*.
+- **Pinned notes** stay at the top of the list with a pin marker, however the rest is ordered.
+- **Archived notes** drop out of the list without being deleted. *Show archived notes* brings them
+  back, dimmed and marked, where *Restore from archive* puts one back.
+- **Drag notes into the order you want.** Grab a row, an accent line shows where it will land, and
+  the order sticks — it is remembered between sessions. New notes still arrive at the top.
+- **A colour per note.** Every note gets its own colour automatically, shown as a bar down the left
+  of its row with a matching tint; pick a different one from *Colour* (eight colours, or back to
+  Automatic).
+
+Pins, archive flags, colours and the manual order live in a small `.notes-meta` file inside the
+Notes folder. The notes themselves stay plain `.txt`, and deleting that file only loses the
+decoration.
+
 ## 4.4.1 — 2026-07-31
 
 ### Fixed

@@ -55,6 +55,210 @@ namespace MicroApp
         }
     }
 
+    /// <summary>
+    /// The small bits of state a note has beyond its text: pinned, archived, colour and
+    /// the order the user dragged it into. Notes stay plain .txt files, so this lives in
+    /// one sidecar file next to them \u2014 lose it and only the decoration is lost.
+    /// Format, one line per note: name|pinned|archived|colour
+    /// </summary>
+    public static class NoteMeta
+    {
+        private const string FileName = ".notes-meta";
+
+        private class Entry { public bool Pinned; public bool Archived; public int Colour = -1; }
+
+        private static readonly Dictionary<string, Entry> Map =
+            new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
+        private static readonly List<string> Order = new List<string>();   // manual order, top first
+        private static bool _loaded;
+
+        /// <summary>Row colours. Index -1 means "pick one from the name", so a fresh list is varied.</summary>
+        public static readonly Color[] Palette =
+        {
+            Color.FromArgb(99, 102, 241),    // indigo
+            Color.FromArgb(14, 165, 233),    // sky
+            Color.FromArgb(16, 185, 129),    // emerald
+            Color.FromArgb(234, 179, 8),     // amber
+            Color.FromArgb(249, 115, 22),    // orange
+            Color.FromArgb(244, 63, 94),     // rose
+            Color.FromArgb(168, 85, 247),    // purple
+            Color.FromArgb(100, 116, 139)    // slate
+        };
+
+        public static readonly string[] PaletteNames =
+        {
+            "Indigo", "Sky", "Emerald", "Amber", "Orange", "Rose", "Purple", "Slate"
+        };
+
+        private static string Key(string path) { return Path.GetFileName(path); }
+
+        private static string MetaPath { get { return Path.Combine(NoteStore.Folder, FileName); } }
+
+        private static Entry Get(string path, bool create)
+        {
+            Load();
+            string key = Key(path);
+            Entry entry;
+            if (Map.TryGetValue(key, out entry)) return entry;
+            if (!create) return null;
+            entry = new Entry();
+            Map[key] = entry;
+            return entry;
+        }
+
+        private static void Load()
+        {
+            if (_loaded) return;
+            _loaded = true;
+            try
+            {
+                if (!File.Exists(MetaPath)) return;
+                foreach (string line in File.ReadAllLines(MetaPath, Encoding.UTF8))
+                {
+                    var parts = line.Split('|');
+                    if (parts.Length < 4 || parts[0].Length == 0) continue;
+                    int colour;
+                    if (!int.TryParse(parts[3], out colour)) colour = -1;
+                    Map[parts[0]] = new Entry
+                    {
+                        Pinned = parts[1] == "1",
+                        Archived = parts[2] == "1",
+                        Colour = colour
+                    };
+                    Order.Add(parts[0]);
+                }
+            }
+            catch (Exception) { }   // a broken sidecar just means default decoration
+        }
+
+        public static void Save()
+        {
+            try
+            {
+                var lines = new List<string>();
+                foreach (string name in Order)
+                {
+                    Entry entry;
+                    if (!Map.TryGetValue(name, out entry)) continue;
+                    lines.Add(name + "|" + (entry.Pinned ? "1" : "0") + "|" +
+                              (entry.Archived ? "1" : "0") + "|" + entry.Colour);
+                }
+                File.WriteAllLines(MetaPath, lines.ToArray(), Encoding.UTF8);
+            }
+            catch (Exception) { }
+        }
+
+        public static bool IsPinned(string path)
+        {
+            var entry = Get(path, false);
+            return entry != null && entry.Pinned;
+        }
+
+        public static bool IsArchived(string path)
+        {
+            var entry = Get(path, false);
+            return entry != null && entry.Archived;
+        }
+
+        public static void SetPinned(string path, bool value) { Get(path, true).Pinned = value; Touch(path); }
+
+        public static void SetArchived(string path, bool value) { Get(path, true).Archived = value; Touch(path); }
+
+        public static void SetColour(string path, int index) { Get(path, true).Colour = index; Touch(path); }
+
+        public static void Forget(string path)
+        {
+            Load();
+            string key = Key(path);
+            Map.Remove(key);
+            Order.Remove(key);
+            Save();
+        }
+
+        private static void Touch(string path)
+        {
+            string key = Key(path);
+            if (!Order.Contains(key)) Order.Insert(0, key);
+            Save();
+        }
+
+        /// <summary>The colour of a row: the one set by hand, else a stable one from its name.</summary>
+        public static Color ColourOf(string path)
+        {
+            var entry = Get(path, false);
+            int index = entry != null ? entry.Colour : -1;
+            if (index < 0 || index >= Palette.Length) index = AutoIndex(Key(path));
+            return Palette[index];
+        }
+
+        public static int ColourIndex(string path)
+        {
+            var entry = Get(path, false);
+            return entry != null ? entry.Colour : -1;
+        }
+
+        private static int AutoIndex(string name)
+        {
+            int hash = 0;
+            foreach (char c in name) hash = (hash * 31 + c) & 0x7FFFFFF;
+            return hash % Palette.Length;
+        }
+
+        /// <summary>
+        /// Pinned first, then the order the user dragged things into; notes the sidecar
+        /// has never seen (new ones) come first, newest first, so they are easy to find.
+        /// </summary>
+        public static void Sort(List<string> paths)
+        {
+            Load();
+            var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < Order.Count; i++)
+            {
+                if (!index.ContainsKey(Order[i])) index[Order[i]] = i;
+            }
+
+            var times = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+            foreach (string path in paths)
+            {
+                try { times[path] = File.GetLastWriteTime(path); }
+                catch (Exception) { times[path] = DateTime.MinValue; }
+            }
+
+            paths.Sort((a, b) =>
+            {
+                bool pinnedA = IsPinned(a), pinnedB = IsPinned(b);
+                if (pinnedA != pinnedB) return pinnedA ? -1 : 1;
+
+                int rankA, rankB;
+                bool knownA = index.TryGetValue(Key(a), out rankA);
+                bool knownB = index.TryGetValue(Key(b), out rankB);
+                if (knownA != knownB) return knownA ? 1 : -1;          // unseen notes float up
+                if (knownA) return rankA.CompareTo(rankB);
+                return times[b].CompareTo(times[a]);                    // both unseen: newest first
+            });
+        }
+
+        /// <summary>Writes the list back as the manual order after a drag.</summary>
+        public static void StoreOrder(IList<string> paths)
+        {
+            Load();
+            var kept = new List<string>();
+            foreach (string path in paths)
+            {
+                string key = Key(path);
+                Get(path, true);          // every visible note now has an entry, so it has a rank
+                kept.Add(key);
+            }
+            foreach (string name in Order)
+            {
+                if (!kept.Contains(name)) kept.Add(name);   // archived / filtered-out notes keep theirs
+            }
+            Order.Clear();
+            Order.AddRange(kept);
+            Save();
+        }
+    }
+
     public struct SpellError
     {
         public int Start;
@@ -1540,6 +1744,8 @@ namespace MicroApp
         private const int BarWidth = 6;    // the slim scrollbar thumb
         private const int BarHit = 16;     // the grab zone is wider than the thumb looks
 
+        private static readonly Font PinFont = new Font("Segoe MDL2 Assets", 9F);
+
         private readonly List<string> _paths = new List<string>();
         private readonly Dictionary<string, CachedRow> _cache =
             new Dictionary<string, CachedRow>(StringComparer.OrdinalIgnoreCase);
@@ -1551,10 +1757,22 @@ namespace MicroApp
         private bool _barHover;
         private bool _openArmed;           // the pressed row was already selected: release opens it
 
+        // row drag (reordering)
+        private int _pressedRow = -1;
+        private Point _pressedAt;
+        private bool _rowDragging;
+        private int _dropAt = -1;          // insertion index while dragging a row
+
         private struct CachedRow { public DateTime Stamp; public string When; public string Preview; }
 
         /// <summary>Raised when the user asks for the selected note (click on selection, Enter, double click).</summary>
         public event EventHandler OpenRequested;
+
+        /// <summary>Raised after a drag reordered the rows, so the order can be stored.</summary>
+        public event EventHandler Reordered;
+
+        /// <summary>Raised on right-click, once the row under the pointer is selected.</summary>
+        public event MouseEventHandler RowMenuRequested;
 
         public NoteListView()
         {
@@ -1650,6 +1868,28 @@ namespace MicroApp
                 return;
             }
 
+            if (_rowDragging)
+            {
+                int drop = DropIndexAt(e.Y);
+                if (drop != _dropAt) { _dropAt = drop; Invalidate(); }
+                // drag past an edge scrolls the list along
+                if (e.Y < RowHeight / 2) { _scroll -= 8; ClampScroll(); Invalidate(); }
+                else if (e.Y > Height - RowHeight / 2) { _scroll += 8; ClampScroll(); Invalidate(); }
+                return;
+            }
+
+            if (_pressedRow >= 0 && (e.Button & MouseButtons.Left) == MouseButtons.Left &&
+                Math.Abs(e.Y - _pressedAt.Y) > 6)
+            {
+                _rowDragging = true;      // past the threshold: this is a reorder, not a click
+                _openArmed = false;
+                _selected = _pressedRow;
+                _dropAt = DropIndexAt(e.Y);
+                Cursor = Cursors.SizeNS;
+                Invalidate();
+                return;
+            }
+
             bool barHover = Overflowing && e.X >= Width - BarHit;
             int row = barHover ? -1 : RowAt(e.Y);
             if (barHover != _barHover || row != _hoverRow)
@@ -1664,6 +1904,16 @@ namespace MicroApp
         {
             base.OnMouseDown(e);
             Focus();
+
+            if (e.Button == MouseButtons.Right)
+            {
+                int hit = RowAt(e.Y);
+                if (hit >= 0 && hit != _selected) { _selected = hit; Invalidate(); }
+                var menu = RowMenuRequested;
+                if (menu != null) menu(this, e);
+                return;
+            }
+
             if (e.Button != MouseButtons.Left) return;
 
             if (Overflowing && e.X >= Width - BarHit)
@@ -1688,7 +1938,9 @@ namespace MicroApp
             }
 
             int row = RowAt(e.Y);
-            if (row < 0) { _openArmed = false; return; }
+            if (row < 0) { _openArmed = false; _pressedRow = -1; return; }
+            _pressedRow = row;
+            _pressedAt = e.Location;
             _openArmed = row == _selected;
             if (!_openArmed)
             {
@@ -1697,9 +1949,27 @@ namespace MicroApp
             }
         }
 
+        /// <summary>Where a row dropped at this height would land.</summary>
+        private int DropIndexAt(int y)
+        {
+            int index = (y + _scroll + RowHeight / 2) / RowHeight;
+            return Math.Max(0, Math.Min(_paths.Count, index));
+        }
+
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+            if (_rowDragging)
+            {
+                MoveRow(_pressedRow, _dropAt);
+                _rowDragging = false;
+                _pressedRow = -1;
+                _dropAt = -1;
+                Cursor = Cursors.Default;
+                Invalidate();
+                return;
+            }
+            _pressedRow = -1;
             if (_dragging)
             {
                 _dragging = false;
@@ -1721,6 +1991,24 @@ namespace MicroApp
             _scroll -= e.Delta / 120 * RowHeight;
             ClampScroll();
             Invalidate();
+        }
+
+        /// <summary>Drops the row at <paramref name="from"/> in front of index <paramref name="to"/>.</summary>
+        private void MoveRow(int from, int to)
+        {
+            if (from < 0 || from >= _paths.Count) return;
+            if (to > from) to--;                       // the row itself leaves the list first
+            to = Math.Max(0, Math.Min(_paths.Count - 1, to));
+            if (to == from) return;
+
+            string path = _paths[from];
+            _paths.RemoveAt(from);
+            _paths.Insert(to, path);
+            _selected = to;
+            EnsureVisible(to);
+
+            var reordered = Reordered;
+            if (reordered != null) reordered(this, EventArgs.Empty);
         }
 
         // ---- keyboard -------------------------------------------------------------
@@ -1839,11 +2127,32 @@ namespace MicroApp
                 string path = _paths[i];
                 var row = GetRow(path);
                 string title = Path.GetFileNameWithoutExtension(path);
+                bool pinned = NoteMeta.IsPinned(path);
+                bool archived = NoteMeta.IsArchived(path);
+                var colour = NoteMeta.ColourOf(path);
 
-                var top = new Rectangle(bounds.X + 12, bounds.Y + 6, bounds.Width - 152, 20);
+                // the note's own colour: a bar down the left edge, and a wash behind the row
+                using (var wash = new SolidBrush(Color.FromArgb(Theme.Dark ? 26 : 18, colour)))
+                using (var bar = new SolidBrush(archived ? Color.FromArgb(110, colour) : colour))
+                {
+                    g.FillRectangle(wash, bounds);
+                    g.FillRectangle(bar, new Rectangle(bounds.X, bounds.Y + 1, 4, bounds.Height - 2));
+                }
+
+                int textLeft = bounds.X + 14;
+                if (pinned)
+                {
+                    TextRenderer.DrawText(g, "\uE718", PinFont,                 // Pinned
+                        new Rectangle(textLeft, bounds.Y + 6, 18, 20), colour,
+                        TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                    textLeft += 18;
+                }
+
+                var titleColour = archived ? Theme.TextDim : Theme.Text;
+                var top = new Rectangle(textLeft, bounds.Y + 6, bounds.Right - textLeft - 152, 20);
                 var stamp = new Rectangle(bounds.Right - 140, bounds.Y + 6, 122, 20);
-                var bottom = new Rectangle(bounds.X + 12, bounds.Y + 25, bounds.Width - 32, 18);
-                TextRenderer.DrawText(g, title, Theme.Strong, top, Theme.Text,
+                var bottom = new Rectangle(bounds.X + 14, bounds.Y + 25, bounds.Width - 34, 18);
+                TextRenderer.DrawText(g, archived ? title + "  (archived)" : title, Theme.Strong, top, titleColour,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
                 TextRenderer.DrawText(g, row.When, Theme.Small, stamp, Theme.TextDim,
                     TextFormatFlags.Right | TextFormatFlags.VerticalCenter);
@@ -1853,6 +2162,21 @@ namespace MicroApp
                 using (var pen = new Pen(Theme.Border))
                 {
                     g.DrawLine(pen, bounds.X + 6, bounds.Bottom - 1, bounds.Right - 6, bounds.Bottom - 1);
+                }
+            }
+
+            if (_rowDragging && _dropAt >= 0)
+            {
+                int y = _dropAt * RowHeight - _scroll;
+                using (var pen = new Pen(Theme.Accent, 2))
+                {
+                    g.DrawLine(pen, 4, y, Width - BarHit, y);
+                }
+                using (var brush = new SolidBrush(Theme.Accent))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.FillEllipse(brush, 1, y - 3, 6, 6);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
                 }
             }
 
@@ -1882,6 +2206,7 @@ namespace MicroApp
         private static NoteListForm _open;
 
         private readonly NoteListView _list;
+        private bool _showArchived;
 
         public static void Open()
         {
@@ -1915,6 +2240,8 @@ namespace MicroApp
 
             _list = new NoteListView { Dock = DockStyle.Fill };
             _list.OpenRequested += (s, e) => OpenSelected();
+            _list.Reordered += (s, e) => NoteMeta.StoreOrder(_list.Paths);
+            _list.RowMenuRequested += (s, e) => ShowRowMenu(e.Location);
 
             var listHost = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface, Padding = new Padding(6) };
             listHost.Controls.Add(_list);
@@ -2003,11 +2330,97 @@ namespace MicroApp
                 {
                     files.Add(new FileInfo(file));
                 }
-                files.Sort((a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
-                foreach (var file in files) paths.Add(file.FullName);
+                foreach (var file in files)
+                {
+                    if (!_showArchived && NoteMeta.IsArchived(file.FullName)) continue;
+                    paths.Add(file.FullName);
+                }
+                NoteMeta.Sort(paths);   // pinned first, then the order dragged into place
             }
             catch (Exception) { }
             _list.SetPaths(paths, selected);
+        }
+
+        /// <summary>Right-click on a row: pin, archive, colour, open, delete \u2014 plus the archive filter.</summary>
+        private void ShowRowMenu(Point where)
+        {
+            var menu = new ContextMenuStrip
+            {
+                Renderer = new ModernMenuRenderer(),
+                BackColor = Theme.Surface,
+                ForeColor = Theme.Text,
+                Font = Theme.Base,
+                ShowImageMargin = false
+            };
+
+            string path = _list.SelectedPath;
+            if (path != null)
+            {
+                bool pinned = NoteMeta.IsPinned(path);
+                bool archived = NoteMeta.IsArchived(path);
+
+                var open = new ToolStripMenuItem("Open") { Font = Theme.Strong };
+                open.Click += (s, e) => OpenSelected();
+                menu.Items.Add(open);
+
+                var pin = new ToolStripMenuItem(pinned ? "Unpin" : "Pin to top");
+                pin.Click += (s, e) => { NoteMeta.SetPinned(path, !pinned); Reload(); };
+                menu.Items.Add(pin);
+
+                var archive = new ToolStripMenuItem(archived ? "Restore from archive" : "Archive");
+                archive.Click += (s, e) =>
+                {
+                    NoteMeta.SetArchived(path, !archived);
+                    Reload();   // an archived note drops out of the list unless the filter is on
+                };
+                menu.Items.Add(archive);
+
+                var colour = new ToolStripMenuItem("Colour");
+                int current = NoteMeta.ColourIndex(path);
+                var auto = new ToolStripMenuItem("Automatic") { Checked = current < 0 };
+                auto.Click += (s, e) => { NoteMeta.SetColour(path, -1); _list.Invalidate(); };
+                colour.DropDownItems.Add(auto);
+                colour.DropDownItems.Add(new ToolStripSeparator());
+                for (int i = 0; i < NoteMeta.Palette.Length; i++)
+                {
+                    int index = i;
+                    var swatch = new ToolStripMenuItem(NoteMeta.PaletteNames[i])
+                    {
+                        Checked = current == i,
+                        Image = Swatch(NoteMeta.Palette[i]),
+                        ImageScaling = ToolStripItemImageScaling.None
+                    };
+                    swatch.Click += (s, e) => { NoteMeta.SetColour(path, index); _list.Invalidate(); };
+                    colour.DropDownItems.Add(swatch);
+                }
+                menu.Items.Add(colour);
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                var delete = new ToolStripMenuItem("Delete");
+                delete.Click += (s, e) => DeleteSelected();
+                menu.Items.Add(delete);
+                menu.Items.Add(new ToolStripSeparator());
+            }
+
+            var showArchived = new ToolStripMenuItem("Show archived notes") { Checked = _showArchived };
+            showArchived.Click += (s, e) => { _showArchived = !_showArchived; Reload(); };
+            menu.Items.Add(showArchived);
+
+            menu.ShowImageMargin = path != null;   // the swatches need the margin back
+            menu.Show(_list, where);
+        }
+
+        private static Bitmap Swatch(Color colour)
+        {
+            var bitmap = new Bitmap(12, 12);
+            using (var g = Graphics.FromImage(bitmap))
+            using (var brush = new SolidBrush(colour))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.FillEllipse(brush, 1, 1, 10, 10);
+            }
+            return bitmap;
         }
 
         private void OpenSelected()
@@ -2023,6 +2436,7 @@ namespace MicroApp
             if (!ModernDialog.Confirm("Delete note",
                 Path.GetFileName(path) + " will be deleted for good.", "Delete", "Keep it")) return;
             try { File.Delete(path); } catch (Exception) { }
+            NoteMeta.Forget(path);
             Reload();
         }
 
@@ -2036,6 +2450,7 @@ namespace MicroApp
             foreach (var path in paths)
             {
                 try { File.Delete(path); } catch (Exception) { }
+                NoteMeta.Forget(path);
             }
             Reload();
         }

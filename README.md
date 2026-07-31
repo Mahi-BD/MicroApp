@@ -18,12 +18,12 @@ Everything runs offline. No account, no service, no telemetry. Text recognition 
 
 ## Install
 
-**Installer** — download `MicroApp-4.4.1-setup.exe` from the
+**Installer** — download `MicroApp-4.5.0-setup.exe` from the
 [latest release](https://github.com/Mahi-BD/MicroApp/releases/latest) and run it. The last page asks
 whether MicroApp should **run when Windows starts**; tick it and it will. There is also a
 `-peruser-setup.exe` that installs into your profile and needs no administrator rights.
 
-**Portable** — or take `MicroApp-4.4.1-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
+**Portable** — or take `MicroApp-4.5.0-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
 is written outside your settings file.
 
 Step-by-step instructions, silent-install switches, first-run setup for the AI and Bangla keys,
@@ -120,8 +120,12 @@ doing — every press gives a new one. A note is one window backed by one plain 
 lines, inserts the date, long date or a timestamp in formats you choose, undoes and redoes
 (**Ctrl+Z** / **Ctrl+Y**), and steps the text size with **A- / A+**. **Spell check** underlines
 mistakes as you type (English, plus Bangla when a Bangla dictionary is installed) with right-click
-suggestions. The **All notes** browser lists every note newest-first with previews; click to select,
-click again to open. Notes stay off the taskbar by default so they never pile up there.
+suggestions. The **All notes** browser lists every note with a preview; click to select, click again to open.
+Right-click a note to **pin** it to the top, **archive** it out of the way, give it a **colour** or
+delete it — and **drag notes into whatever order you like**. Every note carries its own colour down
+the left edge of its row. Notes stay off the taskbar by default so they never pile up there.
+
+![All notes](docs/note-list.png)
 
 **Type Bangla by sound.** Click **E / ক** on the toolbar or press **Ctrl+Shift+L**, then type the way
 the word sounds: `ami` → আমি, `bhalo` → ভালো. Suggestions appear under the word — **↑ ↓** to move,

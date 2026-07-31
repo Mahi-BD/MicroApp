@@ -1,7 +1,7 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 4.4.1.
+Version 4.5.0.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
@@ -286,10 +286,33 @@ from the string.bd dictionary, a **Bangla** word offers English from your AI pro
 replaces the word. Right-clicking inside a selection translates the whole selection instead of one
 word.
 
-**All notes** (toolbar list button) — every note, newest first, with a first-line preview and a slim
-scrollbar. **Click** a note to select it, **click it again** (or press Enter, or double-click) to
-open it. The footer has *New note*, two icon buttons — **close all open notes** and **delete all
-notes** — and *Delete* / *Open* for the selected one. The window remembers its size and position.
+**All notes** (toolbar list button) — every note with a first-line preview and a slim scrollbar.
+**Click** a note to select it, **click it again** (or press Enter, or double-click) to open it. The
+footer has *New note*, two icon buttons — **close all open notes** and **delete all notes** — and
+*Delete* / *Open* for the selected one. The window remembers its size and position.
+
+Each note carries its **own colour**, shown as a bar down the left of its row with a matching tint.
+The colour is picked automatically so a full list is easy to scan; *Colour* on the right-click menu
+sets a specific one (eight to choose from) or puts it back to *Automatic*.
+
+**Right-click a note** for:
+
+| Item | Does |
+|---|---|
+| **Open** | Same as double-clicking it |
+| **Pin to top** | Keeps the note at the top of the list, with a pin marker, whatever the order |
+| **Archive** | Takes the note out of the list without deleting it |
+| **Colour** | Picks the note's colour, or *Automatic* |
+| **Delete** | Deletes that note |
+| **Show archived notes** | Brings archived notes back into view, dimmed and marked *(archived)*; right-click one for *Restore from archive* |
+
+**Drag to reorder** — grab any row and drag it up or down; an accent line shows where it will land.
+The order you build is remembered between sessions, pinned notes always float above the rest, and a
+brand-new note still arrives at the top.
+
+Pins, archive flags, colours and the manual order are kept in a small `.notes-meta` file inside the
+notes folder. The notes themselves stay plain `.txt` files — delete `.notes-meta` and you only lose
+the decoration, never a note.
 
 ---
 
@@ -417,7 +440,8 @@ Uninstalling removes the shortcut either way.
 - **GIFs** — `MicroApp-YYYYMMDD-HHMMSS.gif` in the GIF folder; if that is blank, the image folder is used.
 - **Videos** — `MicroApp-YYYYMMDD-HHMMSS.mp4` in `Videos\MicroApp`, or the folder you set in Video Setting.
 - **Notes** — `Note-YYYYMMDD-HHMMSS.txt` in a `Notes` folder next to `MicroApp.exe` when that is
-  writable (portable use), otherwise under `%AppData%\MicroApp\Notes`.
+  writable (portable use), otherwise under `%AppData%\MicroApp\Notes`. Pins, archive flags, colours
+  and the manual order sit beside them in `.notes-meta`.
 - **The app itself** — `C:\Program Files\MicroApp` (standard installer),
   `%LOCALAPPDATA%\Programs\MicroApp` (per-user installer), or wherever you unzipped the portable build.
 - **Your settings** — the standard per-user .NET settings file under
