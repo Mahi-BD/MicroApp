@@ -26,6 +26,9 @@ whether MicroApp should **run when Windows starts**; tick it and it will. There 
 **Portable** — or take `MicroApp-4.4.1-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
 is written outside your settings file.
 
+Step-by-step instructions, silent-install switches, first-run setup for the AI and Bangla keys,
+upgrading and uninstalling are all in **[SETUP.md](SETUP.md)**.
+
 Either way, MicroApp lives in the notification area — there is no main window. Right-click the tray icon
 for everything: actions on top, settings below.
 
@@ -156,7 +159,8 @@ Six focused windows, all reachable from the tray menu:
 | ![OCR Setting](docs/ocr-setting.png) | ![Capture Setting](docs/capture-setting.png) |
 | ![GIF Setting](docs/gif-setting.png) | ![About](docs/about.png) |
 
-The full reference — every default, and the troubleshooting list — is in **[HELP.md](HELP.md)**.
+The full reference — every default, and the troubleshooting list — is in **[HELP.md](HELP.md)**;
+installing and first-run setup are in **[SETUP.md](SETUP.md)**.
 
 ---
 

@@ -19,6 +19,9 @@ Version 4.4.1.
 
 ## Getting started
 
+Installing, silent-install switches, upgrading and uninstalling are covered separately in
+**[SETUP.md](SETUP.md)**.
+
 MicroApp runs in the notification area. There is no main window and nothing to log into.
 
 - **Left-click** the tray icon → start a paste (pick a target, then click it).
