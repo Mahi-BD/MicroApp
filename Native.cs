@@ -355,6 +355,16 @@ namespace MicroApp
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr SendMessageW(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
+
+        /// <summary>The grey hint a text box shows while it is empty (EM_SETCUEBANNER).</summary>
+        public static void SetCueBanner(IntPtr edit, string hint)
+        {
+            try { SendMessageW(edit, 0x1501, (IntPtr)1, hint); }
+            catch (Exception) { }
+        }
+
         #endregion
 
         // Per-window DPI awareness (Win10 1607+; UNAWARE_GDISCALED needs 1809+)

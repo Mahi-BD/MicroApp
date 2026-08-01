@@ -33,6 +33,17 @@ namespace MicroApp
         /// <summary>Two writes this close together are the same edit, not a conflict.</summary>
         private const long SkewMs = 2000;
 
+        /// <summary>
+        /// How often the other PCs are checked. Every tick reads one small document - the
+        /// pulse - and only goes on to read the notes themselves when that says something
+        /// actually changed, so checking this often still costs a few thousand reads a day
+        /// however many notes there are.
+        /// </summary>
+        private static readonly TimeSpan Poll = TimeSpan.FromSeconds(15);
+
+        /// <summary>A change made here goes up almost at once rather than at the next tick.</summary>
+        private static readonly TimeSpan Soon = TimeSpan.FromSeconds(3);
+
         /// <summary>The rules the user pastes into their own project, shown by the setup guide.</summary>
         public const string Rules =
             "rules_version = '2';\r\n" +
@@ -81,6 +92,10 @@ namespace MicroApp
         private static System.Threading.Timer _timer;
         private static Control _ui;                               // marshals callbacks onto the UI thread
         private static bool _busy;
+        private static bool _dirty;                               // something changed here since the last push
+        private static long _lastPulse;                           // the newest change any PC has announced
+        private static long _skew;                                // server clock minus this PC's clock, ms
+        private static string _lastLogged = "";                   // so a quiet tick does not repeat itself
 
         /// <summary>The one line Note Setting shows under the sign-in box.</summary>
         public static string Status = "";
@@ -98,6 +113,33 @@ namespace MicroApp
         }
 
         public static string Account { get { return (Properties.Settings.Default.NoteSyncEmail ?? "").Trim(); } }
+
+        /// <summary>
+        /// Now, on the database's clock rather than this PC's. Newest-wins compares stamps
+        /// written by different machines, so a PC whose clock is hours out would otherwise
+        /// win every conflict and have its stale copies overwrite everyone else's edits.
+        /// The offset is learned from the reply to each write; until the first one it is
+        /// zero, which is simply this PC's own clock.
+        /// </summary>
+        public static long NowServer { get { return DateTime.UtcNow.ToMs() + _skew; } }
+
+        private static long ToServer(long localMs) { return localMs + _skew; }
+
+        private static long ToLocal(long serverMs) { return serverMs - _skew; }
+
+        /// <summary>Every write comes back stamped by the server, which is where the offset comes from.</summary>
+        private static void LearnClock(string reply)
+        {
+            try
+            {
+                string when = Json.Dig(Json.Parse(reply), "updateTime") as string;
+                if (when == null) return;
+                DateTime server = DateTime.Parse(when, CultureInfo.InvariantCulture,
+                                                 DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+                _skew = server.ToMs() - DateTime.UtcNow.ToMs();
+            }
+            catch (Exception) { }
+        }
 
         // ---------------------------------------------------------------- sign in
 
@@ -314,15 +356,16 @@ namespace MicroApp
         {
             _ui = uiThread;
             Status = IsOn ? "Waiting for the first sync..." : "Not connected.";
-            _timer = new System.Threading.Timer(Tick, null, TimeSpan.FromSeconds(8), TimeSpan.FromMinutes(3));
+            _timer = new System.Threading.Timer(Tick, null, TimeSpan.FromSeconds(8), Poll);
             if (IsOn) Log("started, syncing " + Account);
         }
 
         /// <summary>Something changed - sync soon rather than at the next tick.</summary>
         public static void Nudge()
         {
+            _dirty = true;
             if (!IsOn || _timer == null) return;
-            try { _timer.Change(TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(3)); }
+            try { _timer.Change(Soon, Poll); }
             catch (Exception) { }
         }
 
@@ -333,7 +376,7 @@ namespace MicroApp
             try
             {
                 bool changed = Sync();
-                Log(Status);
+                if (Status != _lastLogged) { Log(Status); _lastLogged = Status; }
                 if (changed && _ui != null && _ui.IsHandleCreated)
                 {
                     try { _ui.BeginInvoke(new Action(RaisePulled)); }
@@ -423,6 +466,12 @@ namespace MicroApp
             string uid = (Properties.Settings.Default.NoteSyncUid ?? "").Trim();
             if (uid.Length == 0) throw new Exception("Not signed in.");
 
+            // one small read tells us whether anyone has changed anything; when nobody has
+            // and we have nothing of our own to send, that is the whole tick
+            long announced = ReadPulse(uid);
+            if (!_dirty && _lastPulse > 0 && announced <= _lastPulse) return false;
+            _dirty = false;
+
             var remote = List(uid);
             var tombstones = NoteTrash.Load();
             string folder = NoteStore.Folder;
@@ -444,9 +493,13 @@ namespace MicroApp
                 pushed++;
             }
 
-            // 2. bring down anything newer up there, and honour tombstones from other PCs
+            // 2. bring down anything newer up there, and honour tombstones from other PCs.
+            // The order is one list rather than a per-note value, so it follows whichever
+            // side changed decoration last - measured before any of it is applied, or the
+            // two sides would always look equal by the time the question is asked.
             var order = new List<KeyValuePair<int, string>>();
             long newestRemoteMeta = 0;
+            long newestHere = NoteMeta.NewestStamp();
             foreach (var up in remote.Values)
             {
                 string path;
@@ -454,7 +507,7 @@ namespace MicroApp
 
                 if (up.Deleted)
                 {
-                    if (here && File.GetLastWriteTimeUtc(path).ToMs() <= up.Stamp + SkewMs)
+                    if (here && ToServer(File.GetLastWriteTimeUtc(path).ToMs()) <= up.Stamp + SkewMs)
                     {
                         try { File.Delete(path); touchedDisk = true; local.Remove(up.Name); } catch (Exception) { }
                     }
@@ -470,7 +523,7 @@ namespace MicroApp
                     touchedDisk = true;
                     pulled++;
                 }
-                else if (up.Stamp > File.GetLastWriteTimeUtc(path).ToMs() + SkewMs)
+                else if (up.Stamp > ToServer(File.GetLastWriteTimeUtc(path).ToMs()) + SkewMs)
                 {
                     Save(path, up);
                     touchedDisk = true;
@@ -486,7 +539,7 @@ namespace MicroApp
             foreach (var pair in local)
             {
                 Remote up;
-                long stamp = File.GetLastWriteTimeUtc(pair.Value).ToMs();
+                long stamp = ToServer(File.GetLastWriteTimeUtc(pair.Value).ToMs());
                 if (remote.TryGetValue(pair.Key, out up) && !up.Deleted &&
                     stamp <= up.Stamp + SkewMs && NoteMeta.StampOf(pair.Value) <= up.MetaAt) continue;
 
@@ -494,8 +547,20 @@ namespace MicroApp
                 pushed++;
             }
 
-            if (order.Count > 0 && newestRemoteMeta > NoteMeta.NewestStamp()) ApplyOrder(order);
+            if (order.Count > 0 && newestRemoteMeta > newestHere) ApplyOrder(order);
             NoteTrash.Forget(tombstones.Keys);
+
+            // tell the other PCs there is something new, and remember what we have seen
+            if (pushed > 0)
+            {
+                long now = NowServer;
+                WritePulse(uid, now);
+                _lastPulse = now;
+            }
+            else
+            {
+                _lastPulse = Math.Max(announced, 1);   // 1 means "synced once", so 0 stays "never"
+            }
 
             Properties.Settings.Default.NoteSyncStamp = DateTime.Now.ToString("s", CultureInfo.InvariantCulture);
             Properties.Settings.Default.Save();
@@ -524,7 +589,7 @@ namespace MicroApp
             try
             {
                 File.WriteAllText(path, note.Text ?? "", new UTF8Encoding(false));
-                File.SetLastWriteTimeUtc(path, note.Stamp.ToUtc());
+                File.SetLastWriteTimeUtc(path, ToLocal(note.Stamp).ToUtc());
             }
             catch (Exception) { }
         }
@@ -544,7 +609,11 @@ namespace MicroApp
         private static void ApplyOrder(List<KeyValuePair<int, string>> order)
         {
             if (_ui == null || !_ui.IsHandleCreated) return;
-            order.Sort((a, b) => a.Key.CompareTo(b.Key));
+            // two PCs number their rows independently, so ties are possible; break them by
+            // name rather than leaving the result to an unstable sort
+            order.Sort((a, b) => a.Key != b.Key
+                ? a.Key.CompareTo(b.Key)
+                : string.Compare(a.Value, b.Value, StringComparison.OrdinalIgnoreCase));
             var names = new List<string>();
             foreach (var pair in order) names.Add(pair.Value);
             try { _ui.BeginInvoke(new Action(() => NoteMeta.ApplyOrder(names))); }
@@ -605,6 +674,28 @@ namespace MicroApp
             return fallback;
         }
 
+        private static string PulsePath(string uid)
+        {
+            return Documents + "/users/" + Uri.EscapeDataString(uid) + "/state/pulse";
+        }
+
+        /// <summary>When any PC last pushed. Zero when nobody has yet, or the read failed.</summary>
+        private static long ReadPulse(string uid)
+        {
+            try { return Number(Json.Dig(Json.Parse(Get(PulsePath(uid), Token())), "fields", "at", "integerValue")); }
+            catch (Exception) { return 0; }   // no pulse yet: fall through to a full sync
+        }
+
+        private static void WritePulse(string uid, long at)
+        {
+            try
+            {
+                LearnClock(Send("PATCH", PulsePath(uid),
+                     "{\"fields\":{\"at\":{\"integerValue\":\"" + at + "\"}}}", Token(), "application/json"));
+            }
+            catch (Exception) { }   // a missed pulse only means the others notice at the next full sync
+        }
+
         private static void Write(string uid, string name, Remote note)
         {
             var body = new StringBuilder();
@@ -625,7 +716,7 @@ namespace MicroApp
             body.Append("\"updatedAt\":{\"integerValue\":\"").Append(note.Stamp).Append("\"}}}");
 
             string url = Documents + "/users/" + Uri.EscapeDataString(uid) + "/notes/" + Uri.EscapeDataString(name);
-            Send("PATCH", url, body.ToString(), Token(), "application/json");
+            LearnClock(Send("PATCH", url, body.ToString(), Token(), "application/json"));
         }
 
         // ---------------------------------------------------------------- plumbing
@@ -738,7 +829,7 @@ namespace MicroApp
             try
             {
                 string line = System.IO.Path.GetFileName(path) + "|" +
-                              DateTime.UtcNow.ToMs().ToString(CultureInfo.InvariantCulture);
+                              NoteCloud.NowServer.ToString(CultureInfo.InvariantCulture);
                 File.AppendAllText(Path_, line + Environment.NewLine, Encoding.UTF8);
             }
             catch (Exception) { }

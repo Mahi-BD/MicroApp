@@ -121,7 +121,8 @@ doing — every press gives a new one. A note is one window backed by one plain 
 lines, inserts the date, long date or a timestamp in formats you choose, undoes and redoes
 (**Ctrl+Z** / **Ctrl+Y**), and steps the text size with **A- / A+**. **Spell check** underlines
 mistakes as you type (English, plus Bangla when a Bangla dictionary is installed) with right-click
-suggestions. The **All notes** browser lists every note with a preview; click to select, click again to open.
+suggestions. A **colour button** on the toolbar sets that note's colour. The **All notes** browser
+lists every note with a preview and has a **search box** across the top; click to select, click again to open.
 Right-click a note to **pin** it to the top, **archive** it out of the way, give it a **colour** or
 delete it — and **drag notes into whatever order you like**. Every note carries its own colour down
 the left edge of its row. Notes stay off the taskbar by default so they never pile up there.
@@ -163,7 +164,9 @@ invent an email address or a password** — MicroApp makes its own sign-in insid
 hands you a **sync code**. Every PC after that pastes that one code and is done.
 
 Pins, archive flags, colours and the drag order travel with the notes, a note deleted on one PC is
-deleted on the others, and the newer copy always wins. *Disconnect* puts everything back to
+deleted on the others, and the newer copy always wins — judged on the database's clock, so a PC with
+the wrong time set cannot overwrite everyone else. It is close to realtime: a change is up about
+three seconds later and on the other PCs within about fifteen. *Disconnect* puts everything back to
 local-only at any time, leaving every note where it is.
 
 ![Set up sync](docs/note-sync.png)

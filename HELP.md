@@ -293,7 +293,11 @@ footer has *New note*, two icon buttons — **close all open notes** and **delet
 
 Each note carries its **own colour**, shown as a bar down the left of its row with a matching tint.
 The colour is picked automatically so a full list is easy to scan; *Colour* on the right-click menu
-sets a specific one (eight to choose from) or puts it back to *Automatic*.
+sets a specific one (eight to choose from) or puts it back to *Automatic*. The **colour button on the
+note's own toolbar** does the same from inside the note, and shows the colour that note is wearing.
+
+**Search** with the box across the top of the list: it matches a note's file name and its title — the
+first line, which is the bold text on its row. (The Archive's box additionally searches inside notes.)
 
 **Right-click a note** for:
 
@@ -444,8 +448,10 @@ wizard). The notes already on the PC stay exactly where they are and keep workin
 copies in your database stay there too until you delete them yourself.
 
 The `.txt` files on disk stay the source of truth, so notes work with no network. A sync runs a few
-seconds after a change and every three minutes otherwise; the newer copy of a note wins, and a note
-deleted on one PC is deleted on the others. `.sync-log` in the Notes folder records the last 60 syncs
+seconds after a change, and each PC checks the others every 15 seconds — cheaply, by reading one small
+marker document and only fetching the notes when it says something changed. The newer copy of a note
+wins, judged on the database's clock rather than each PC's, and a note deleted on one PC is deleted on
+the others. Pins, colours, archive flags and the manual order travel with the notes. `.sync-log` in the Notes folder records the last 60 syncs
 if something looks wrong.
 
 Clearing a hot key's key box (Delete or Backspace) disables that hot key.

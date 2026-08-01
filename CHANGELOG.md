@@ -1,5 +1,39 @@
 # Changelog
 
+## 4.7.0 — 2026-08-01
+
+### Added
+
+- **A colour button on the note's own toolbar.** Set a note's colour from the note itself rather than
+  only from the list — the button shows the colour it is wearing, and the notes list picks the change
+  up straight away. The colour is kept in the sidecar next to the notes, so it stays on this PC and
+  travels with the note when sync is on.
+- **A search box across the top of the notes list**, matching a note's file name and its title (the
+  first line) as you type. The Archive has had one since 4.6.0; this is the same idea for the notes
+  you are still using.
+
+### Changed
+
+- **Sync is now near-realtime.** It used to check every three minutes. Each PC now checks every 15
+  seconds, but reads a single small "pulse" document to do it and only reads the notes themselves
+  when that says something actually changed — so checking 12× as often costs about 5,700 reads a day
+  whatever the number of notes, well inside the free tier. A change you make goes up about three
+  seconds later. In testing, a pin, a colour and a whole reordering made on one PC appeared on
+  another in 7-9 seconds.
+- **Sync stamps come from the database's clock, not each PC's.** Newest-wins compares stamps written
+  by different machines, so a PC whose clock or time zone is wrong would win every conflict and
+  overwrite everyone else's edits with its stale copies. The offset is learned from the reply to each
+  write, so a misconfigured PC no longer poisons the notes.
+
+### Fixed
+
+- **A reordering made on one PC now reaches the others.** Pin, colour and archive travelled per note,
+  but the manual order is one list rather than a per-note value, and the test deciding who owned it
+  was made after the incoming decoration had already been applied — so the two sides always looked
+  equal and the order never moved. It is now measured before anything is applied.
+- **The note window is wide enough for its toolbar again** — the new colour button pushed the Grammar
+  button underneath the Bangla one at the default width.
+
 ## 4.6.0 — 2026-08-01
 
 ### Added

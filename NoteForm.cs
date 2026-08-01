@@ -107,7 +107,8 @@ namespace MicroApp
 
         private static string MetaPath { get { return Path.Combine(NoteStore.Folder, FileName); } }
 
-        private static long Now { get { return DateTime.UtcNow.ToMs(); } }
+        /// <summary>Decoration stamps go on the database's clock, so they compare across PCs.</summary>
+        private static long Now { get { return NoteCloud.NowServer; } }
 
         private static Entry Get(string path, bool create)
         {
@@ -330,7 +331,8 @@ namespace MicroApp
                 if (stamp <= entry.Stamp) return;
                 if (entry.Pinned == pinned && entry.Archived == archived && entry.Colour == colour)
                 {
-                    entry.Stamp = stamp;
+                    entry.Stamp = stamp;   // nothing to see, but record that we have this version
+                    Save();
                     return;
                 }
                 entry.Pinned = pinned;
@@ -493,7 +495,7 @@ namespace MicroApp
     /// <summary>A small flat toolbar button with a hand-drawn glyph, themed like the rest of the app.</summary>
     public class NoteToolButton : Control
     {
-        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, List, Gear, CloseAll, Trash, Archive, Language, Send, Undo, Redo, SmallerText, BiggerText }
+        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, List, Gear, CloseAll, Trash, Archive, Colour, Language, Send, Undo, Redo, SmallerText, BiggerText }
 
         private readonly Glyph _glyph;
         private bool _hover;
@@ -529,6 +531,9 @@ namespace MicroApp
         /// <summary>For the Language glyph: false = English ("E"), true = Bangla phonetic ("\u0995").</summary>
         public bool BanglaOn { get; set; }
 
+        /// <summary>What the Colour button shows: the colour this note is wearing right now.</summary>
+        public Color SwatchColour { get; set; }
+
         private static readonly Font LangFont = new Font("Segoe UI Semibold", 10F);
 
         public NoteToolButton(Glyph glyph)
@@ -557,6 +562,18 @@ namespace MicroApp
                     g.FillPath(fill, path);
                     g.DrawPath(pen, path);
                 }
+            }
+
+            if (_glyph == Glyph.Colour)
+            {
+                var dot = new Rectangle(Width / 2 - 7, Height / 2 - 7, 14, 14);
+                using (var fill = new SolidBrush(SwatchColour))
+                using (var ring = new Pen(Color.FromArgb(90, Theme.Text)))
+                {
+                    g.FillEllipse(fill, dot);
+                    g.DrawEllipse(ring, dot);
+                }
+                return;
             }
 
             if (_glyph == Glyph.Language)
@@ -935,6 +952,7 @@ namespace MicroApp
         private const string AskHintText = "Ask AI: e.g. rewrite this note as a Facebook post";
 
         private bool _bangla;
+        private NoteToolButton _colourButton;
         private NoteToolButton _langButton;
         private ToolTip _tips;
         private BanglaSuggestPopup _suggestPopup;
@@ -1032,8 +1050,8 @@ namespace MicroApp
             Text = Path.GetFileNameWithoutExtension(path);
             Font = new Font("Segoe UI", 9F);
             BackColor = Theme.Bg;
-            ClientSize = new Size(560, 400);
-            MinimumSize = new Size(576, 300);   // the toolbar's 12 icons + Grammar + gear need the room
+            ClientSize = new Size(592, 400);
+            MinimumSize = new Size(608, 300);   // the toolbar's 13 icons + Grammar + gear need the room
             StartPosition = FormStartPosition.CenterScreen;
             ShowInTaskbar = !Properties.Settings.Default.NoteHideTaskbar;
             KeyPreview = true;
@@ -1054,6 +1072,15 @@ namespace MicroApp
             int x = 8;
             x = AddTool(toolbar, tips, NoteToolButton.Glyph.NewNote, "New note", x, (s, e) => ShowNew());
             x = AddTool(toolbar, tips, NoteToolButton.Glyph.List, "All notes", x, (s, e) => NoteListForm.Open());
+            _colourButton = new NoteToolButton(NoteToolButton.Glyph.Colour)
+            {
+                Location = new Point(x, 7),
+                SwatchColour = NoteMeta.ColourOf(_path)
+            };
+            tips.SetToolTip(_colourButton, "Colour of this note");
+            _colourButton.Click += (s, e) => PickColour();
+            toolbar.Controls.Add(_colourButton);
+            x += _colourButton.Width + 2;
             x += 8;
             x = AddTool(toolbar, tips, NoteToolButton.Glyph.NoSpaces, "Remove every space", x, (s, e) => RemoveSpaces());
             x = AddTool(toolbar, tips, NoteToolButton.Glyph.NoNewlines, "Join all lines into one", x, (s, e) => RemoveNewlines());
@@ -1336,6 +1363,51 @@ namespace MicroApp
         }
 
         #region Bangla phonetic typing
+
+        /// <summary>
+        /// The note's colour, set from the note itself rather than only from the list.
+        /// It is kept in the sidecar next to the notes, so it survives here and travels
+        /// with the note if sync is on; the notes list picks it up straight away.
+        /// </summary>
+        private void PickColour()
+        {
+            var menu = new ContextMenuStrip
+            {
+                Renderer = new ModernMenuRenderer(),
+                BackColor = Theme.Surface,
+                ForeColor = Theme.Text,
+                Font = Theme.Base
+            };
+
+            int current = NoteMeta.ColourIndex(_path);
+            var auto = new ToolStripMenuItem("Automatic") { Checked = current < 0 };
+            auto.Click += (s, e) => ApplyColour(-1);
+            menu.Items.Add(auto);
+            menu.Items.Add(new ToolStripSeparator());
+
+            for (int i = 0; i < NoteMeta.Palette.Length; i++)
+            {
+                int index = i;
+                var swatch = new ToolStripMenuItem(NoteMeta.PaletteNames[i])
+                {
+                    Checked = current == i,
+                    Image = NoteListForm.Swatch(NoteMeta.Palette[i]),
+                    ImageScaling = ToolStripItemImageScaling.None
+                };
+                swatch.Click += (s, e) => ApplyColour(index);
+                menu.Items.Add(swatch);
+            }
+
+            menu.Show(_colourButton, new Point(0, _colourButton.Height));
+        }
+
+        private void ApplyColour(int index)
+        {
+            NoteMeta.SetColour(_path, index);
+            _colourButton.SwatchColour = NoteMeta.ColourOf(_path);
+            _colourButton.Invalidate();
+            NoteListForm.RefreshList();
+        }
 
         private void ToggleBangla()
         {
@@ -2374,6 +2446,7 @@ namespace MicroApp
         private static NoteListForm _open;
 
         private readonly NoteListView _list;
+        private readonly TextBox _searchBox;
 
         public static void Open()
         {
@@ -2431,6 +2504,20 @@ namespace MicroApp
             var listHost = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface, Padding = new Padding(6) };
             listHost.Controls.Add(_list);
 
+            // a filter bar across the top: name and first line, which is what the rows show
+            var search = new Panel { Dock = DockStyle.Top, Height = 44, BackColor = Theme.Bg };
+            var searchHost = new FieldHost { Location = new Point(12, 6), Size = new Size(200, 32) };
+            _searchBox = new TextBox { Location = new Point(10, 8), Size = new Size(180, 16) };
+            _searchBox.TextChanged += (s, e) => Reload();
+            searchHost.Controls.Add(_searchBox);
+            search.Controls.Add(searchHost);
+            search.Resize += (s, e) =>
+            {
+                searchHost.Width = Math.Max(120, search.Width - 24);
+                _searchBox.Width = searchHost.Width - 20;
+            };
+            _searchBox.HandleCreated += (s, e) => Native.SetCueBanner(_searchBox.Handle, "Search notes");
+
             var footer = new Panel { Dock = DockStyle.Bottom, Height = 52, BackColor = Theme.Bg };
             var newButton = new ModernButton { Text = "New note", Size = new Size(96, 32), Location = new Point(12, 10) };
             newButton.Click += (s, e) => NoteForm.ShowNew();
@@ -2469,6 +2556,7 @@ namespace MicroApp
             };
 
             Controls.Add(listHost);
+            Controls.Add(search);
             Controls.Add(footer);
 
             KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) Close(); };
@@ -2522,15 +2610,35 @@ namespace MicroApp
                 {
                     files.Add(new FileInfo(file));
                 }
+                string query = _searchBox != null ? _searchBox.Text.Trim() : "";
                 foreach (var file in files)
                 {
                     if (NoteMeta.IsArchived(file.FullName)) continue;   // those live in the Archive window
+                    if (query.Length > 0 && !Matches(file.FullName, query)) continue;
                     paths.Add(file.FullName);
                 }
                 NoteMeta.Sort(paths);   // pinned first, then the order dragged into place
             }
             catch (Exception) { }
             _list.SetPaths(paths, selected);
+        }
+
+        /// <summary>What the search box matches: the two things a row actually shows.</summary>
+        private static bool Matches(string path, string query)
+        {
+            if (Path.GetFileNameWithoutExtension(path).IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            try
+            {
+                foreach (string line in File.ReadLines(path))
+                {
+                    string trimmed = line.Trim();
+                    if (trimmed.Length == 0) continue;
+                    return trimmed.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;   // the title row
+                }
+            }
+            catch (Exception) { }
+            return false;
         }
 
         /// <summary>Right-click on a row: open, pin, archive, colour, delete \u2014 plus a way into the Archive.</summary>
@@ -2603,7 +2711,7 @@ namespace MicroApp
             menu.Show(_list, where);
         }
 
-        private static Bitmap Swatch(Color colour)
+        internal static Bitmap Swatch(Color colour)
         {
             var bitmap = new Bitmap(12, 12);
             using (var g = Graphics.FromImage(bitmap))
