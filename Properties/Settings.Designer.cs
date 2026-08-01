@@ -854,6 +854,18 @@ namespace MicroApp.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public int NoteDefaultColour {
+            get {
+                return ((int)(this["NoteDefaultColour"]));
+            }
+            set {
+                this["NoteDefaultColour"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string NoteSyncProject {
             get {
                 return ((string)(this["NoteSyncProject"]));

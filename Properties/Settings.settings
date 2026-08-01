@@ -209,6 +209,9 @@
     <Setting Name="NoteListBounds" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="NoteDefaultColour" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">-1</Value>
+    </Setting>
     <Setting Name="NoteSyncProject" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>

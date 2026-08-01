@@ -296,6 +296,10 @@ The colour is picked automatically so a full list is easy to scan; *Colour* on t
 sets a specific one (eight to choose from) or puts it back to *Automatic*. The **colour button on the
 note's own toolbar** does the same from inside the note, and shows the colour that note is wearing.
 
+Whichever colour you pick last becomes the colour **new notes on this PC start in**. That is a setting
+on this machine rather than part of a note, so it is not synced and each PC can differ; *Automatic*
+goes back to picking a colour from the note's name.
+
 **Search** with the box across the top of the list: it matches a note's file name and its title — the
 first line, which is the bold text on its row. (The Archive's box additionally searches inside notes.)
 

@@ -107,8 +107,16 @@ namespace MicroApp
 
         private static string MetaPath { get { return Path.Combine(NoteStore.Folder, FileName); } }
 
-        /// <summary>Decoration stamps go on the database's clock, so they compare across PCs.</summary>
-        private static long Now { get { return NoteCloud.NowServer; } }
+        /// <summary>
+        /// Decoration stamps go on the database's clock so they compare across PCs, but they
+        /// only ever move forward: correcting a PC whose clock ran fast would otherwise put
+        /// new changes behind ones already recorded, and they would never be sent.
+        /// Caller may or may not hold the lock; Monitor is reentrant, so this is safe either way.
+        /// </summary>
+        private static long Now
+        {
+            get { return Math.Max(NoteCloud.NowServer, NewestStamp() + 1); }
+        }
 
         private static Entry Get(string path, bool create)
         {
@@ -201,6 +209,20 @@ namespace MicroApp
         {
             lock (Gate) { Get(path, true).Colour = index; Touch(path); }
             NoteCloud.Nudge();
+        }
+
+        /// <summary>
+        /// The colour just chosen becomes what new notes on this PC start in. It is a local
+        /// preference, not part of a note, so it stays on this machine and is not synced.
+        /// </summary>
+        public static void RememberDefault(int index)
+        {
+            try
+            {
+                Properties.Settings.Default.NoteDefaultColour = index;
+                Properties.Settings.Default.Save();
+            }
+            catch (Exception) { }
         }
 
         public static void Forget(string path)
@@ -964,7 +986,13 @@ namespace MicroApp
 
         public static void ShowNew()
         {
-            var form = new NoteForm(NoteStore.NewPath());
+            string path = NoteStore.NewPath();
+            // a colour chosen once on this PC becomes the colour every new note starts in;
+            // -1 keeps the old behaviour of picking one from the name
+            int preferred = Properties.Settings.Default.NoteDefaultColour;
+            if (preferred >= 0 && preferred < NoteMeta.Palette.Length) NoteMeta.SetColour(path, preferred);
+
+            var form = new NoteForm(path);
             // The hot key fires while another app is foreground, and Windows may refuse
             // the focus switch \u2014 pin the new note above everything for its first show,
             // then unpin so it behaves like a normal window afterwards.
@@ -1404,6 +1432,7 @@ namespace MicroApp
         private void ApplyColour(int index)
         {
             NoteMeta.SetColour(_path, index);
+            NoteMeta.RememberDefault(index);
             _colourButton.SwatchColour = NoteMeta.ColourOf(_path);
             _colourButton.Invalidate();
             NoteListForm.RefreshList();
@@ -2678,7 +2707,7 @@ namespace MicroApp
                 var colour = new ToolStripMenuItem("Colour");
                 int current = NoteMeta.ColourIndex(path);
                 var auto = new ToolStripMenuItem("Automatic") { Checked = current < 0 };
-                auto.Click += (s, e) => { NoteMeta.SetColour(path, -1); _list.Invalidate(); };
+                auto.Click += (s, e) => { NoteMeta.SetColour(path, -1); NoteMeta.RememberDefault(-1); _list.Invalidate(); };
                 colour.DropDownItems.Add(auto);
                 colour.DropDownItems.Add(new ToolStripSeparator());
                 for (int i = 0; i < NoteMeta.Palette.Length; i++)
@@ -2690,7 +2719,7 @@ namespace MicroApp
                         Image = Swatch(NoteMeta.Palette[i]),
                         ImageScaling = ToolStripItemImageScaling.None
                     };
-                    swatch.Click += (s, e) => { NoteMeta.SetColour(path, index); _list.Invalidate(); };
+                    swatch.Click += (s, e) => { NoteMeta.SetColour(path, index); NoteMeta.RememberDefault(index); _list.Invalidate(); };
                     colour.DropDownItems.Add(swatch);
                 }
                 menu.Items.Add(colour);

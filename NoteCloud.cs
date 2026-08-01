@@ -474,6 +474,7 @@ namespace MicroApp
 
             var remote = List(uid);
             var tombstones = NoteTrash.Load();
+            var state = NoteSyncState.Load();
             string folder = NoteStore.Folder;
             bool touchedDisk = false;
             int pushed = 0, pulled = 0;
@@ -518,14 +519,14 @@ namespace MicroApp
                 {
                     if (tombstones.ContainsKey(up.Name)) continue;      // deleted here, waiting to be pushed
                     path = Path.Combine(folder, up.Name);
-                    Save(path, up);
+                    Save(path, up, state);
                     local[up.Name] = path;
                     touchedDisk = true;
                     pulled++;
                 }
                 else if (up.Stamp > ToServer(File.GetLastWriteTimeUtc(path).ToMs()) + SkewMs)
                 {
-                    Save(path, up);
+                    Save(path, up, state);
                     touchedDisk = true;
                     pulled++;
                 }
@@ -539,16 +540,26 @@ namespace MicroApp
             foreach (var pair in local)
             {
                 Remote up;
-                long stamp = ToServer(File.GetLastWriteTimeUtc(pair.Value).ToMs());
-                if (remote.TryGetValue(pair.Key, out up) && !up.Deleted &&
-                    stamp <= up.Stamp + SkewMs && NoteMeta.StampOf(pair.Value) <= up.MetaAt) continue;
+                long mtime = File.GetLastWriteTimeUtc(pair.Value).ToMs();
+                bool known = remote.TryGetValue(pair.Key, out up) && !up.Deleted;
 
-                Write(uid, pair.Key, Read(pair.Value, stamp));
+                long seen;
+                bool textChanged = !state.TryGetValue(pair.Key, out seen) || seen != mtime;
+                bool metaChanged = known && NoteMeta.StampOf(pair.Value) > up.MetaAt;
+                if (known && !textChanged && !metaChanged) continue;
+
+                var note = Read(pair.Value, ToServer(mtime));
+                // whatever our clock says, what we send has to beat what is already there,
+                // or the copy we are replacing would keep winning for ever
+                if (known) note.Stamp = Math.Max(note.Stamp, up.Stamp + 1);
+                Write(uid, pair.Key, note);
+                state[pair.Key] = mtime;
                 pushed++;
             }
 
             if (order.Count > 0 && newestRemoteMeta > newestHere) ApplyOrder(order);
             NoteTrash.Forget(tombstones.Keys);
+            NoteSyncState.Save(state);
 
             // tell the other PCs there is something new, and remember what we have seen
             if (pushed > 0)
@@ -584,12 +595,13 @@ namespace MicroApp
             return note;
         }
 
-        private static void Save(string path, Remote note)
+        private static void Save(string path, Remote note, Dictionary<string, long> state)
         {
             try
             {
                 File.WriteAllText(path, note.Text ?? "", new UTF8Encoding(false));
                 File.SetLastWriteTimeUtc(path, ToLocal(note.Stamp).ToUtc());
+                state[System.IO.Path.GetFileName(path)] = File.GetLastWriteTimeUtc(path).ToMs();
             }
             catch (Exception) { }
         }
@@ -809,6 +821,50 @@ namespace MicroApp
                 return Encoding.UTF8.GetString(plain);
             }
             catch (Exception) { return ""; }
+        }
+    }
+
+    /// <summary>
+    /// The note text stamp each file had when it was last pushed or pulled. Whether this
+    /// PC has edited a note is then a question about this PC alone - the file's own time
+    /// against the one recorded here - instead of a comparison with another machine's
+    /// clock, which is not something we can trust. One line per note: name|unix ms.
+    /// </summary>
+    public static class NoteSyncState
+    {
+        private const string FileName = ".sync-state";
+
+        private static string Path_ { get { return System.IO.Path.Combine(NoteStore.Folder, FileName); } }
+
+        public static Dictionary<string, long> Load()
+        {
+            var found = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                if (!File.Exists(Path_)) return found;
+                foreach (string line in File.ReadAllLines(Path_, Encoding.UTF8))
+                {
+                    var parts = line.Split('|');
+                    long stamp;
+                    if (parts.Length < 2 || parts[0].Length == 0) continue;
+                    if (long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out stamp))
+                        found[parts[0]] = stamp;
+                }
+            }
+            catch (Exception) { }
+            return found;
+        }
+
+        public static void Save(Dictionary<string, long> state)
+        {
+            try
+            {
+                var lines = new List<string>();
+                foreach (var pair in state)
+                    lines.Add(pair.Key + "|" + pair.Value.ToString(CultureInfo.InvariantCulture));
+                File.WriteAllLines(Path_, lines.ToArray(), Encoding.UTF8);
+            }
+            catch (Exception) { }
         }
     }
 

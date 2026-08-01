@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.7.1 — 2026-08-02
+
+### Added
+
+- **New notes keep the colour you last chose.** Colours used to be picked from the note's name, so
+  every note came out a different one. Pick a colour — from the note's toolbar button or the list's
+  right-click menu — and every new note on that PC starts in it. It is a setting on that machine, not
+  part of a note, so it is not synced and each PC can have its own. *Automatic* puts the old
+  per-note-name behaviour back.
+
+### Fixed
+
+- **Pins, colours and the manual order sync again, both ways.** 4.7.0 started stamping changes with
+  the database's clock, which is right in principle — but on a PC whose own clock ran fast, the
+  corrected stamps landed *behind* the ones that PC had already written, so its changes looked older
+  than what was in the cloud and were never sent. Stamps now only ever move forward.
+- **Whether this PC has edited a note no longer depends on comparing clocks at all.** Each note's
+  state at the last sync is recorded in a `.sync-state` file beside the notes, so a local edit is
+  found by comparing the file against its own record. A note being sent is also stamped above
+  whatever it replaces, so a copy can never win for ever. The first sync after updating pushes every
+  note once, which puts any stamps written by a wrong clock back in order.
+
 ## 4.7.0 — 2026-08-01
 
 ### Added
