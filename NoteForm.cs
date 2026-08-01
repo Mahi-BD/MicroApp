@@ -517,7 +517,7 @@ namespace MicroApp
     /// <summary>A small flat toolbar button with a hand-drawn glyph, themed like the rest of the app.</summary>
     public class NoteToolButton : Control
     {
-        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, List, Gear, CloseAll, Trash, Archive, Colour, Language, Send, Undo, Redo, SmallerText, BiggerText }
+        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, Save, List, Gear, CloseAll, Trash, Archive, Colour, Language, Send, Undo, Redo, SmallerText, BiggerText }
 
         private readonly Glyph _glyph;
         private bool _hover;
@@ -530,6 +530,7 @@ namespace MicroApp
             switch (glyph)
             {
                 case Glyph.NewNote: return "\uE70B";    // QuickNote
+                case Glyph.Save: return "\uE74E";       // Save
                 case Glyph.List: return "\uE8FD";       // BulletedList
                 case Glyph.ShortDate: return "\uE8BF";  // CalendarDay
                 case Glyph.LongDate: return "\uE787";   // Calendar
@@ -1098,7 +1099,7 @@ namespace MicroApp
             };
 
             int x = 8;
-            x = AddTool(toolbar, tips, NoteToolButton.Glyph.NewNote, "New note", x, (s, e) => ShowNew());
+            x = AddTool(toolbar, tips, NoteToolButton.Glyph.Save, "Save this note", x, (s, e) => SaveByHand());
             x = AddTool(toolbar, tips, NoteToolButton.Glyph.List, "All notes", x, (s, e) => NoteListForm.Open());
             _colourButton = new NoteToolButton(NoteToolButton.Glyph.Colour)
             {
@@ -1680,6 +1681,20 @@ namespace MicroApp
             }
             if (title == null) title = Path.GetFileNameWithoutExtension(_path);
             if (Text != title) Text = title;
+        }
+
+        /// <summary>
+        /// The Save button. Notes already save themselves as you type, so this is really a
+        /// "write it out now and tell me you did" - it writes even when nothing looks dirty,
+        /// so pressing it is never a no-op.
+        /// </summary>
+        private void SaveByHand()
+        {
+            _dirty = true;
+            SaveNow();
+            NoteCloud.Nudge();
+            Toast.Show("Saved.");
+            _box.Focus();
         }
 
         private void SaveNow()
@@ -2556,15 +2571,9 @@ namespace MicroApp
             };
             tips.SetToolTip(closeAllButton, "Close all open notes");
             closeAllButton.Click += (s, e) => NoteForm.CloseAll();
-            var deleteAllButton = new NoteToolButton(NoteToolButton.Glyph.Trash)
-            {
-                Boxed = true, Size = new Size(38, 32), Location = new Point(160, 10)
-            };
-            tips.SetToolTip(deleteAllButton, "Delete all notes");
-            deleteAllButton.Click += (s, e) => DeleteAll();
             var archiveButton = new NoteToolButton(NoteToolButton.Glyph.Archive)
             {
-                Boxed = true, Size = new Size(38, 32), Location = new Point(204, 10)
+                Boxed = true, Size = new Size(38, 32), Location = new Point(160, 10)
             };
             tips.SetToolTip(archiveButton, "Archive");
             archiveButton.Click += (s, e) => NoteArchiveForm.Open();
@@ -2574,7 +2583,6 @@ namespace MicroApp
             deleteButton.Click += (s, e) => DeleteSelected();
             footer.Controls.Add(newButton);
             footer.Controls.Add(closeAllButton);
-            footer.Controls.Add(deleteAllButton);
             footer.Controls.Add(archiveButton);
             footer.Controls.Add(openButton);
             footer.Controls.Add(deleteButton);
@@ -2770,20 +2778,5 @@ namespace MicroApp
             Reload();
         }
 
-        private void DeleteAll()
-        {
-            var paths = new List<string>(_list.Paths);
-            if (paths.Count == 0) return;
-            if (!ModernDialog.Confirm("Delete all notes",
-                "All " + paths.Count + " notes will be deleted for good" +
-                (NoteCloud.IsOn ? ", on this PC and every PC it syncs with." : "."), "Delete all", "Keep them")) return;
-            NoteForm.CloseAll();   // closing saves them; the files go right after
-            foreach (var path in paths)
-            {
-                try { File.Delete(path); NoteTrash.Record(path); } catch (Exception) { }
-                NoteMeta.Forget(path);
-            }
-            Reload();
-        }
     }
 }

@@ -4,6 +4,13 @@
 
 ### Changed
 
+- **A note's first toolbar button is now Save.** It was *New note*, which a note window did not
+  really need — the hot key and the notes list both make new notes. Notes still save themselves as
+  you type; the button writes the file out there and then and says *Saved*, for when you want to be
+  sure.
+- **Delete all notes is gone from the notes list.** One mis-aimed click could take every note; notes
+  are deleted one at a time now, or archived if they are just in the way.
+
 - **The Bangla suggestion list is smaller.** It took more of the note than it needed to: rows are
   26px instead of 32, the Bangla is 10pt instead of 11, and the panel is narrower — about 168 x 210
   for eight suggestions, down from 240 x 258. Vowel signs that sit above the line still have their
