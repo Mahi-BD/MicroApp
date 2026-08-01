@@ -506,9 +506,18 @@ namespace MicroApp
                 string path;
                 bool here = local.TryGetValue(up.Name, out path);
 
+                // an edit made here that has not been sent yet always wins: it is the copy
+                // the user is looking at. Without this the AI rewriting a note, or any quick
+                // edit, could be replaced by the older copy still in the cloud before the
+                // push half of this same pass got to send it up.
+                long lastSeen;
+                bool unsent = here &&
+                    (!state.TryGetValue(up.Name, out lastSeen) ||
+                     lastSeen != File.GetLastWriteTimeUtc(path).ToMs());
+
                 if (up.Deleted)
                 {
-                    if (here && ToServer(File.GetLastWriteTimeUtc(path).ToMs()) <= up.Stamp + SkewMs)
+                    if (here && !unsent && ToServer(File.GetLastWriteTimeUtc(path).ToMs()) <= up.Stamp + SkewMs)
                     {
                         try { File.Delete(path); touchedDisk = true; local.Remove(up.Name); } catch (Exception) { }
                     }
@@ -524,7 +533,7 @@ namespace MicroApp
                     touchedDisk = true;
                     pulled++;
                 }
-                else if (up.Stamp > ToServer(File.GetLastWriteTimeUtc(path).ToMs()) + SkewMs)
+                else if (!unsent && up.Stamp > ToServer(File.GetLastWriteTimeUtc(path).ToMs()) + SkewMs)
                 {
                     Save(path, up, state);
                     touchedDisk = true;

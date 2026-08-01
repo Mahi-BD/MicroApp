@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.7.3 — 2026-08-02
+
+### Fixed
+
+- **Text you just wrote is no longer replaced by the older copy in the cloud.** With sync on, a note
+  could snap back to what it said before — most visibly when the Grammar button or Ask AI rewrote it,
+  but the same happened to ordinary typing. A sync pulls before it pushes, and the pull only asked
+  whether the cloud's copy looked newer; it never asked whether this PC had an edit it had not sent
+  yet. So a copy that looked newer — which is easy on a PC whose clock is fast — was written over the
+  fresh text before the push half of the very same pass could send it up, and the open note reloaded
+  from disk in front of you.
+
+  An unsent local edit now always wins: the pull leaves it alone (and will not honour a delete from
+  another PC against it either), and the push sends it stamped above whatever it replaces, so it
+  sticks.
+
 ## 4.7.2 — 2026-08-02
 
 ### Changed
