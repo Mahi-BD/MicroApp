@@ -850,5 +850,113 @@ namespace MicroApp.Properties {
                 this["NoteListBounds"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncProject {
+            get {
+                return ((string)(this["NoteSyncProject"]));
+            }
+            set {
+                this["NoteSyncProject"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncApiKey {
+            get {
+                return ((string)(this["NoteSyncApiKey"]));
+            }
+            set {
+                this["NoteSyncApiKey"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncSecret {
+            get {
+                return ((string)(this["NoteSyncSecret"]));
+            }
+            set {
+                this["NoteSyncSecret"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncEmail {
+            get {
+                return ((string)(this["NoteSyncEmail"]));
+            }
+            set {
+                this["NoteSyncEmail"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncUid {
+            get {
+                return ((string)(this["NoteSyncUid"]));
+            }
+            set {
+                this["NoteSyncUid"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncToken {
+            get {
+                return ((string)(this["NoteSyncToken"]));
+            }
+            set {
+                this["NoteSyncToken"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool NoteSyncOn {
+            get {
+                return ((bool)(this["NoteSyncOn"]));
+            }
+            set {
+                this["NoteSyncOn"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NoteSyncStamp {
+            get {
+                return ((string)(this["NoteSyncStamp"]));
+            }
+            set {
+                this["NoteSyncStamp"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool SettingsUpgraded {
+            get {
+                return ((bool)(this["SettingsUpgraded"]));
+            }
+            set {
+                this["SettingsUpgraded"] = value;
+            }
+        }
     }
 }

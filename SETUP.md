@@ -74,8 +74,8 @@ MicroApp works out of the box: press **Ctrl+Alt+V** to type your clipboard somew
 to read text off the screen, **Ctrl+Shift+N** for a note. The
 [default hot keys](README.md#default-hot-keys) are all editable.
 
-Two optional things are worth setting up while you are here — both live in **tray → Note Setting**,
-and both are used only when you ask for them.
+Three optional things are worth setting up while you are here — all live in **tray → Note Setting**,
+and all are used only when you ask for them.
 
 ### AI (Grammar, Ask AI, Bangla → English)
 
@@ -94,9 +94,29 @@ and both are used only when you ask for them.
 3. In any note, press **Ctrl+Shift+L** (or click **E / ক** on the toolbar) and type by sound:
    `ami` → আমি.
 
-Keys and tokens are stored in your own Windows user settings file (see *Where things live*). They are
-never part of the installer or the zip, and nothing is sent anywhere until you press a button that
-needs them.
+### Note sync (optional)
+
+Notes are plain `.txt` files on this PC unless you turn sync on, and that mode is fully supported —
+no account, no network, nothing to set up. If you want the same notes on more than one PC:
+
+1. Tray → **Note Setting** → **Set up sync**. The first page offers *Just this PC*, which is simply
+   how MicroApp already works; pick one of the other two to sync.
+2. **On your first PC**, choose *This is my first PC*. The wizard lists the steps for making a free
+   Firebase project under your own Google account — it copies the security rules to your clipboard
+   and opens the console for you. Paste the project's **project ID** and **Web API key** into the two
+   boxes and press **Create and connect**.
+3. It hands you a **sync code**. **On every other PC**, run the wizard, choose *I have a sync code*,
+   paste it, and that is the whole setup — the code carries the project, the key and the sign-in.
+
+There is no email address or password to invent: MicroApp creates its own sign-in inside your
+project. Anyone holding the sync code can read your notes, so pass it across the way you would a
+password; Note Setting shows it again later under **Sync code**. **Disconnect** returns that PC to
+local-only and leaves every note in place.
+
+Keys, tokens and the sync sign-in are stored in your own Windows user settings file (see *Where
+things live*) — the sync sign-in additionally sealed to your Windows account, so copying the settings
+file to another PC does not carry it. None of them are part of the installer or the zip, and nothing
+is sent anywhere until you press a button that needs it.
 
 ---
 

@@ -64,6 +64,7 @@ namespace MicroApp
             apiKeyBox.Text = Properties.Settings.Default.NoteAiApiKey;
             banglaTokenBox.Text = Properties.Settings.Default.NoteBanglaToken;
 
+            ShowSyncState();
             ShowPreviews();
         }
 
@@ -74,10 +75,14 @@ namespace MicroApp
             subtitleLabel.Font = Theme.Small;
             subtitleLabel.ForeColor = Theme.TextDim;
 
-            modifiersLabel.Font = new Font(Theme.Small, FontStyle.Bold);
-            modifiersLabel.ForeColor = Theme.TextDim;
+            foreach (var caption in new[] { modifiersLabel, providerLabel, modelLabel,
+                                           baseUrlLabel, apiKeyLabel, banglaLabel })
+            {
+                caption.Font = new Font(Theme.Small, FontStyle.Bold);
+                caption.ForeColor = Theme.TextDim;
+            }
 
-            foreach (var helper in new[] { keyLabel, dateLabel, longDateLabel, timeLabel, modelLabel, baseUrlLabel, apiKeyLabel, banglaLabel })
+            foreach (var helper in new[] { keyLabel, dateLabel, longDateLabel, timeLabel, syncStatusLabel })
             {
                 helper.Font = Theme.Base;
                 helper.ForeColor = Theme.TextDim;
@@ -145,6 +150,61 @@ namespace MicroApp
                     break;
             }
             e.SuppressKeyPress = true;
+        }
+
+        /// <summary>
+        /// One line saying whether sync is on and what it last did, plus the way in.
+        /// Everything else about sync lives in the wizard.
+        /// </summary>
+        private void ShowSyncState()
+        {
+            bool on = NoteCloud.IsOn;
+            syncButton.Text = on ? "Sync now" : "Set up sync";
+            syncCodeButton.Visible = on;
+            disconnectButton.Visible = on;
+            syncStatusLabel.Text = on
+                ? (NoteCloud.Status.Length > 0 ? NoteCloud.Status : "On - keeping these notes in your database.")
+                : "Off - the notes are plain .txt files on this PC, and nothing leaves it.";
+        }
+
+        private void Sync_Click(object sender, EventArgs e)
+        {
+            if (!NoteCloud.IsOn)
+            {
+                NoteSyncWizardForm.Run(this);
+                ShowSyncState();
+                return;
+            }
+
+            syncButton.Enabled = false;
+            syncStatusLabel.Text = "Syncing...";
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                string trouble = NoteCloud.SyncNow();
+                syncStatusLabel.Text = trouble ?? NoteCloud.Status;
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                syncButton.Enabled = true;
+            }
+        }
+
+        /// <summary>Shows the code again so a third PC can be added later.</summary>
+        private void SyncCode_Click(object sender, EventArgs e)
+        {
+            NoteSyncWizardForm.Run(this);
+            ShowSyncState();
+        }
+
+        private void Disconnect_Click(object sender, EventArgs e)
+        {
+            if (!ModernDialog.Confirm("Stop syncing",
+                "The notes already on this PC stay put, and the ones in your database stay there too.",
+                "Stop syncing", "Keep syncing")) return;
+            NoteCloud.Disconnect();
+            ShowSyncState();
         }
 
         private void Save_Click(object sender, EventArgs e)

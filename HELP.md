@@ -301,17 +301,34 @@ sets a specific one (eight to choose from) or puts it back to *Automatic*.
 |---|---|
 | **Open** | Same as double-clicking it |
 | **Pin to top** | Keeps the note at the top of the list, with a pin marker, whatever the order |
-| **Archive** | Takes the note out of the list without deleting it |
+| **Archive** | Takes the note out of the list, without deleting it, and puts it in the Archive window |
 | **Colour** | Picks the note's colour, or *Automatic* |
 | **Delete** | Deletes that note |
-| **Show archived notes** | Brings archived notes back into view, dimmed and marked *(archived)*; right-click one for *Restore from archive* |
+| **Archive…** | Opens the Archive window |
+
+#### The Archive
+
+Archived notes leave the main list and live in their own window — the **archive button** in the notes
+toolbar, or *Archive…* on the right-click menu. They are listed **newest first** by the time each was
+last written, with the date and time on every row.
+
+- **Search** — the box in the top right filters as you type, matching both the note's name and
+  everything written inside it.
+- **Double-click** a row (or *Open*) to open the note as usual; it stays archived.
+- **Unarchive** — the button, or the right-click item, puts a note back in the main list with the
+  colour and place it had before.
+- **Delete** works the same as in the main list.
+
+Archiving changes nothing on disk: the `.txt` file stays exactly where it was, and *archived* is one
+flag in `.notes-meta`.
 
 **Drag to reorder** — grab any row and drag it up or down; an accent line shows where it will land.
 The order you build is remembered between sessions, pinned notes always float above the rest, and a
-brand-new note still arrives at the top.
+brand-new note still arrives at the top. (The Archive is always in date order, so rows there do not
+drag.)
 
 Pins, archive flags, colours and the manual order are kept in a small `.notes-meta` file inside the
-notes folder. The notes themselves stay plain `.txt` files — delete `.notes-meta` and you only lose
+notes folder, each with the time it last changed so sync can tell a fresh setting from a stale one. The notes themselves stay plain `.txt` files — delete `.notes-meta` and you only lose
 the decoration, never a note.
 
 ---
@@ -388,10 +405,48 @@ the decoration, never a note.
 | Base URL (MiMo) | the MiMo Token Plan endpoint |
 | API key | *(empty — set your own)* |
 | Bangla token (string.bd) | *(empty — set your own)* |
+| Sync | *(off — set up in the wizard)* |
 
-Both keys are stored in your own user settings file (see *Where files go*) and are never included in
-the installer or the portable download. Switching provider fills in that provider's usual model name;
-the base URL box only applies to MiMo.
+Both AI keys are stored in your own user settings file (see *Where files go*) and are never included
+in the installer or the portable download. Switching provider fills in that provider's usual model
+name; the base URL box only applies to MiMo.
+
+#### Sync
+
+**Sync is optional and off until you turn it on.** Out of the box notes are ordinary `.txt` files in a
+folder on this PC and nothing leaves it — that mode is fully supported and needs no account, no
+network and no setup. Everything below only applies if you want the same notes on more than one PC.
+
+If you do, the database is **a Firebase project you create and own** — nothing ships with the app, and
+the notes never pass through anyone else's account. **Set up sync** in Note Setting opens a wizard
+whose first page includes *Just this PC*, so staying local is a choice you can make (or come back to)
+rather than the absence of one. There is no address or password to invent: MicroApp makes its own
+sign-in inside your project.
+
+**On the first PC** the wizard walks through making the project. It is free (Firebase Spark plan, no
+card):
+
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
+2. Build → Firestore Database → Create database (Standard, Native mode, a region near you).
+3. Rules tab → paste the rules from the wizard (**Copy rules**) → Publish.
+4. Build → Authentication → Get started → Email/Password → Enable.
+5. Project settings → General → Your apps → Web app. The snippet holds `projectId` and `apiKey`.
+6. Put those two into the wizard and press **Create and connect**.
+
+It then shows a **sync code**. **On every other PC**, run the wizard, choose *I have a sync code*,
+paste it, and that is the whole setup — the code carries the project, the key and the sign-in.
+
+Anyone holding the code can read the notes, so pass it across the way you would a password. Note
+Setting shows it again later under **Sync code**.
+
+**Going back to local-only** at any time: **Disconnect** in Note Setting (or *Just this PC* in the
+wizard). The notes already on the PC stay exactly where they are and keep working as plain files; the
+copies in your database stay there too until you delete them yourself.
+
+The `.txt` files on disk stay the source of truth, so notes work with no network. A sync runs a few
+seconds after a change and every three minutes otherwise; the newer copy of a note wins, and a note
+deleted on one PC is deleted on the others. `.sync-log` in the Notes folder records the last 60 syncs
+if something looks wrong.
 
 Clearing a hot key's key box (Delete or Backspace) disables that hot key.
 
@@ -441,7 +496,8 @@ Uninstalling removes the shortcut either way.
 - **Videos** — `MicroApp-YYYYMMDD-HHMMSS.mp4` in `Videos\MicroApp`, or the folder you set in Video Setting.
 - **Notes** — `Note-YYYYMMDD-HHMMSS.txt` in a `Notes` folder next to `MicroApp.exe` when that is
   writable (portable use), otherwise under `%AppData%\MicroApp\Notes`. Pins, archive flags, colours
-  and the manual order sit beside them in `.notes-meta`.
+  and the manual order sit beside them in `.notes-meta`; sync keeps `.sync-log` and `.notes-deleted`
+  in the same folder.
 - **The app itself** — `C:\Program Files\MicroApp` (standard installer),
   `%LOCALAPPDATA%\Programs\MicroApp` (per-user installer), or wherever you unzipped the portable build.
 - **Your settings** — the standard per-user .NET settings file under

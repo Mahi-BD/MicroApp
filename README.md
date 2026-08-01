@@ -8,9 +8,10 @@ A small Windows tray tool that does a handful of things well:
 - **Captures a screen region as a PNG**, with an optional locked ratio or locked pixel size.
 - **Records a screen region as an animated GIF.**
 - **Records a screen region as an MP4 video with sound**, no time limit, with pause/resume.
-- **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check, **Bangla phonetic typing**, and an AI that fixes grammar or rewrites the note on request.
+- **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check, **Bangla phonetic typing**, an **archive** for the ones you are done with, and an AI that fixes grammar or rewrites the note on request.
+- **Optionally, the same notes on every PC** — mirrored through a free database **you** own, set up by a wizard. Off until you turn it on.
 
-Everything runs offline. No account, no service, no telemetry. Text recognition uses the OCR engine built into Windows 10/11. The only parts that ever go online live in Notes and are yours to enable: the AI buttons (Grammar, Ask AI, Bangla→English), which call the provider you configured with your own key when you click them, and Bangla phonetic typing, which looks words up in the [string.bd](https://string.bd) dictionary with your own token.
+Everything runs offline. No account, no service, no telemetry. Text recognition uses the OCR engine built into Windows 10/11. The parts that can go online all live in Notes and are yours to enable: the AI buttons (Grammar, Ask AI, Bangla→English), which call the provider you configured with your own key when you click them; Bangla phonetic typing, which looks words up in the [string.bd](https://string.bd) dictionary with your own token; and note sync, which talks to a Firebase project created under your own Google account. There is no MicroApp server anywhere in that picture — nothing is hosted by this project, and your notes never pass through anyone else's account.
 
 ![Key Setting](docs/key-setting.png)
 
@@ -127,6 +128,14 @@ the left edge of its row. Notes stay off the taskbar by default so they never pi
 
 ![All notes](docs/note-list.png)
 
+**Archive what you are done with.** Archived notes leave the list and live in their own window —
+the archive button on the notes toolbar. They sit newest first with the date and time on each row,
+a search box in the top right filters by name **and** by what is written inside them, double-click
+opens one, and **Unarchive** puts it back where it was. Nothing moves on disk: the `.txt` file stays
+exactly where it was.
+
+![Archive](docs/note-archive.png)
+
 **Type Bangla by sound.** Click **E / ক** on the toolbar or press **Ctrl+Shift+L**, then type the way
 the word sounds: `ami` → আমি, `bhalo` → ভালো. Suggestions appear under the word — **↑ ↓** to move,
 **Enter**, **Tab** or **Space** to pick, **Esc** to dismiss. `.` becomes দাঁড়ি (।) and digits become
@@ -143,6 +152,22 @@ Setting, and nothing is sent anywhere until you ask for it.
 
 Bangla phonetic typing needs a free [string.bd](https://string.bd) API token, also set in Note Setting.
 
+**Keep the same notes on every PC — if you want to.** Notes are ordinary `.txt` files on one PC by
+default, and that mode needs no account, no network and no setup. *Set up sync* in Note Setting opens
+a wizard whose first choice is *Just this PC*; the other two mirror your notes to a database instead.
+
+The database is **a Firebase project you create under your own Google account** — free (Spark plan,
+no card), and nothing ships inside MicroApp. The wizard walks the first PC through making one: it
+copies the security rules to your clipboard and opens the Firebase console for you. **You never
+invent an email address or a password** — MicroApp makes its own sign-in inside your project and
+hands you a **sync code**. Every PC after that pastes that one code and is done.
+
+Pins, archive flags, colours and the drag order travel with the notes, a note deleted on one PC is
+deleted on the others, and the newer copy always wins. *Disconnect* puts everything back to
+local-only at any time, leaving every note where it is.
+
+![Set up sync](docs/note-sync.png)
+
 ---
 
 ## Settings
@@ -156,7 +181,7 @@ Six focused windows, all reachable from the tray menu:
 | **Capture Setting** | Screen capture hot key, selection lock, image output + folder |
 | **GIF Setting** | GIF hot key, fps and length, selection lock, GIF output + folder |
 | **Video Setting** | Video hot key, fps, quality, sound source, selection lock, output folder |
-| **Note Setting** | Note hot key, taskbar behaviour, date/time formats, AI provider + key, string.bd token |
+| **Note Setting** | Note hot key, taskbar behaviour, date/time formats, AI provider + key, string.bd token, note sync |
 
 | | |
 |---|---|

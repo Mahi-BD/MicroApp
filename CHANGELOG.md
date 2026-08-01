@@ -1,5 +1,47 @@
 # Changelog
 
+## 4.6.0 — 2026-08-01
+
+### Added
+
+- **An Archive window.** Archived notes used to be hidden behind a *Show archived notes* toggle that
+  mixed them back into the main list. They now have their own window, reached from the archive button
+  in the notes toolbar: newest first with the date and time on every row, a **search box** in the top
+  right that matches note names *and* their contents as you type, double-click to open, and
+  **Unarchive** to put one back where it was. Archiving still changes nothing on disk.
+- **Note Setting redesigned** into two columns. It had grown past the bottom of a laptop screen; it
+  now fits without scrolling.
+- **Note sync across PCs — optional, and off unless you turn it on.** Notes remain ordinary `.txt`
+  files on one PC by default, needing no account and no network. *Set up sync* in Note Setting opens a
+  wizard whose first choice is *Just this PC*; pick either of the other two and the notes are mirrored
+  to a database so they turn up on every PC you use. *Disconnect* puts it back to local-only at any
+  time, leaving every note in place. Pins, archive flags, colours and the drag order
+  travel with them, and a note deleted on one PC is deleted on the others.
+- **The database is one you own.** MicroApp ships with no project of its own — the wizard walks
+  through making a free Firebase project under your own Google account (it copies the security rules
+  to the clipboard and opens the console for you). The notes go straight from your PC to your
+  project; they never pass through anyone else's account.
+- **No account to invent.** There is no email address or password to make up: MicroApp creates its
+  own sign-in inside your project. The first PC ends up with a **sync code**; every PC after that
+  pastes that one code and is done. Note Setting can show the code again to add another PC later.
+- **Settings now survive an upgrade.** Windows keeps .NET settings in a per-version folder, so every
+  previous version bump quietly reset hot keys and API keys back to defaults. The first run of a new
+  build now carries the old settings across.
+
+### Fixed
+
+- **Archiving, pinning, recolouring or reordering a note no longer undoes itself when sync is on.**
+  None of those touch the note's `.txt` file, so the sync had no reason to send them up — but it
+  still pulled the old flags back down over them, and within three minutes an archived note
+  reappeared in the list. Decoration now carries its own timestamp (a fifth field in `.notes-meta`)
+  and syncs on that, independently of the note's text. Sidecars written by older versions still load;
+  they simply start with no timestamp.
+
+The `.txt` files stay the source of truth and everything works offline; a sync runs a few seconds
+after a change and every three minutes otherwise, newest copy wins. The sign-in is sealed to the
+Windows account with DPAPI, so copying `user.config` to another PC does not carry it. `.sync-log` in
+the Notes folder holds the last 60 syncs.
+
 ## 4.5.0 — 2026-07-31
 
 ### Added

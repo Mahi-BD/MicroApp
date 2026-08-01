@@ -52,6 +52,8 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <!-- DPAPI, so the note sync sign-in is sealed to this Windows account -->
+    <Reference Include="System.Security" />
     <Reference Include="System.Windows.Forms" />
     <!-- UI Automation, for the text picker (reads real control text, no OCR) -->
     <Reference Include="UIAutomationClient" />
@@ -109,6 +111,9 @@
     <Compile Include="TextPicker.cs" />
     <Compile Include="NoteForm.cs" />
     <Compile Include="NoteAi.cs" />
+    <Compile Include="NoteArchiveForm.cs" />
+    <Compile Include="NoteCloud.cs" />
+    <Compile Include="NoteSyncWizardForm.cs" />
     <Compile Include="SpellCheckService.cs" />
     <Compile Include="NoteSettingsForm.cs">
       <SubType>Form</SubType>

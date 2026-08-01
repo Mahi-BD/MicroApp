@@ -65,8 +65,21 @@ namespace MicroApp
     {
         private const string FileName = ".notes-meta";
 
-        private class Entry { public bool Pinned; public bool Archived; public int Colour = -1; }
+        private class Entry
+        {
+            public bool Pinned;
+            public bool Archived;
+            public int Colour = -1;
 
+            /// <summary>
+            /// When this decoration last changed, Unix ms. Archiving or recolouring a note
+            /// does not touch the .txt file, so without a clock of its own the sync has no
+            /// way to tell a fresh flag from a stale one - and would quietly undo it.
+            /// </summary>
+            public long Stamp;
+        }
+
+        private static readonly object Gate = new object();
         private static readonly Dictionary<string, Entry> Map =
             new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
         private static readonly List<string> Order = new List<string>();   // manual order, top first
@@ -94,6 +107,8 @@ namespace MicroApp
 
         private static string MetaPath { get { return Path.Combine(NoteStore.Folder, FileName); } }
 
+        private static long Now { get { return DateTime.UtcNow.ToMs(); } }
+
         private static Entry Get(string path, bool create)
         {
             Load();
@@ -119,11 +134,14 @@ namespace MicroApp
                     if (parts.Length < 4 || parts[0].Length == 0) continue;
                     int colour;
                     if (!int.TryParse(parts[3], out colour)) colour = -1;
+                    long stamp = 0;                                  // files written before 4.6 have no clock
+                    if (parts.Length > 4) long.TryParse(parts[4], out stamp);
                     Map[parts[0]] = new Entry
                     {
                         Pinned = parts[1] == "1",
                         Archived = parts[2] == "1",
-                        Colour = colour
+                        Colour = colour,
+                        Stamp = stamp
                     };
                     Order.Add(parts[0]);
                 }
@@ -131,7 +149,7 @@ namespace MicroApp
             catch (Exception) { }   // a broken sidecar just means default decoration
         }
 
-        public static void Save()
+        private static void Save()
         {
             try
             {
@@ -141,7 +159,7 @@ namespace MicroApp
                     Entry entry;
                     if (!Map.TryGetValue(name, out entry)) continue;
                     lines.Add(name + "|" + (entry.Pinned ? "1" : "0") + "|" +
-                              (entry.Archived ? "1" : "0") + "|" + entry.Colour);
+                              (entry.Archived ? "1" : "0") + "|" + entry.Colour + "|" + entry.Stamp);
                 }
                 File.WriteAllLines(MetaPath, lines.ToArray(), Encoding.UTF8);
             }
@@ -150,34 +168,80 @@ namespace MicroApp
 
         public static bool IsPinned(string path)
         {
-            var entry = Get(path, false);
-            return entry != null && entry.Pinned;
+            lock (Gate)
+            {
+                var entry = Get(path, false);
+                return entry != null && entry.Pinned;
+            }
         }
 
         public static bool IsArchived(string path)
         {
-            var entry = Get(path, false);
-            return entry != null && entry.Archived;
+            lock (Gate)
+            {
+                var entry = Get(path, false);
+                return entry != null && entry.Archived;
+            }
         }
 
-        public static void SetPinned(string path, bool value) { Get(path, true).Pinned = value; Touch(path); }
+        public static void SetPinned(string path, bool value)
+        {
+            lock (Gate) { Get(path, true).Pinned = value; Touch(path); }
+            NoteCloud.Nudge();
+        }
 
-        public static void SetArchived(string path, bool value) { Get(path, true).Archived = value; Touch(path); }
+        public static void SetArchived(string path, bool value)
+        {
+            lock (Gate) { Get(path, true).Archived = value; Touch(path); }
+            NoteCloud.Nudge();
+        }
 
-        public static void SetColour(string path, int index) { Get(path, true).Colour = index; Touch(path); }
+        public static void SetColour(string path, int index)
+        {
+            lock (Gate) { Get(path, true).Colour = index; Touch(path); }
+            NoteCloud.Nudge();
+        }
 
         public static void Forget(string path)
         {
-            Load();
-            string key = Key(path);
-            Map.Remove(key);
-            Order.Remove(key);
-            Save();
+            lock (Gate)
+            {
+                Load();
+                string key = Key(path);
+                Map.Remove(key);
+                Order.Remove(key);
+                Save();
+            }
         }
 
+        /// <summary>When this note's decoration last changed here. Zero for notes nobody has touched.</summary>
+        public static long StampOf(string path)
+        {
+            lock (Gate)
+            {
+                var entry = Get(path, false);
+                return entry != null ? entry.Stamp : 0;
+            }
+        }
+
+        /// <summary>The newest decoration change on this PC, for deciding who owns the order.</summary>
+        public static long NewestStamp()
+        {
+            lock (Gate)
+            {
+                Load();
+                long newest = 0;
+                foreach (var entry in Map.Values) if (entry.Stamp > newest) newest = entry.Stamp;
+                return newest;
+            }
+        }
+
+        /// <summary>Caller holds the lock.</summary>
         private static void Touch(string path)
         {
             string key = Key(path);
+            Entry entry;
+            if (Map.TryGetValue(key, out entry)) entry.Stamp = Now;
             if (!Order.Contains(key)) Order.Insert(0, key);
             Save();
         }
@@ -185,16 +249,22 @@ namespace MicroApp
         /// <summary>The colour of a row: the one set by hand, else a stable one from its name.</summary>
         public static Color ColourOf(string path)
         {
-            var entry = Get(path, false);
-            int index = entry != null ? entry.Colour : -1;
-            if (index < 0 || index >= Palette.Length) index = AutoIndex(Key(path));
-            return Palette[index];
+            lock (Gate)
+            {
+                var entry = Get(path, false);
+                int index = entry != null ? entry.Colour : -1;
+                if (index < 0 || index >= Palette.Length) index = AutoIndex(Key(path));
+                return Palette[index];
+            }
         }
 
         public static int ColourIndex(string path)
         {
-            var entry = Get(path, false);
-            return entry != null ? entry.Colour : -1;
+            lock (Gate)
+            {
+                var entry = Get(path, false);
+                return entry != null ? entry.Colour : -1;
+            }
         }
 
         private static int AutoIndex(string name)
@@ -210,11 +280,14 @@ namespace MicroApp
         /// </summary>
         public static void Sort(List<string> paths)
         {
-            Load();
             var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < Order.Count; i++)
+            lock (Gate)
             {
-                if (!index.ContainsKey(Order[i])) index[Order[i]] = i;
+                Load();
+                for (int i = 0; i < Order.Count; i++)
+                {
+                    if (!index.ContainsKey(Order[i])) index[Order[i]] = i;
+                }
             }
 
             var times = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
@@ -238,24 +311,87 @@ namespace MicroApp
             });
         }
 
+        /// <summary>Where a note sits in the manual order, or -1 if it has never been placed.</summary>
+        public static int OrderOf(string path)
+        {
+            lock (Gate) { Load(); return Order.IndexOf(Key(path)); }
+        }
+
+        /// <summary>
+        /// Decoration that arrived from another PC. Applied only when it is newer than what
+        /// is here, so a change made on this PC is never undone by a stale copy.
+        /// </summary>
+        public static void ApplyRemote(string name, bool pinned, bool archived, int colour, long stamp)
+        {
+            lock (Gate)
+            {
+                Load();
+                var entry = Get(name, true);
+                if (stamp <= entry.Stamp) return;
+                if (entry.Pinned == pinned && entry.Archived == archived && entry.Colour == colour)
+                {
+                    entry.Stamp = stamp;
+                    return;
+                }
+                entry.Pinned = pinned;
+                entry.Archived = archived;
+                entry.Colour = colour;
+                entry.Stamp = stamp;
+                if (!Order.Contains(name)) Order.Add(name);
+                Save();
+            }
+        }
+
+        /// <summary>Takes the drag order from another PC, leaving notes it has never seen where they are.</summary>
+        public static void ApplyOrder(List<string> names)
+        {
+            lock (Gate)
+            {
+                Load();
+                var kept = new List<string>();
+                foreach (string name in names)
+                {
+                    if (!Map.ContainsKey(name)) continue;
+                    if (!kept.Contains(name)) kept.Add(name);
+                }
+                foreach (string name in Order)
+                {
+                    if (!kept.Contains(name)) kept.Add(name);
+                }
+                if (kept.Count == Order.Count)
+                {
+                    bool same = true;
+                    for (int i = 0; i < kept.Count && same; i++) same = kept[i] == Order[i];
+                    if (same) return;
+                }
+                Order.Clear();
+                Order.AddRange(kept);
+                Save();
+            }
+        }
+
         /// <summary>Writes the list back as the manual order after a drag.</summary>
         public static void StoreOrder(IList<string> paths)
         {
-            Load();
-            var kept = new List<string>();
-            foreach (string path in paths)
+            lock (Gate)
             {
-                string key = Key(path);
-                Get(path, true);          // every visible note now has an entry, so it has a rank
-                kept.Add(key);
+                Load();
+                var kept = new List<string>();
+                foreach (string path in paths)
+                {
+                    string key = Key(path);
+                    Get(path, true).Stamp = Now;   // the order is decoration too, and it just changed
+                    kept.Add(key);
+                }
+                foreach (string name in Order)
+                {
+                    if (!kept.Contains(name)) kept.Add(name);   // archived / filtered-out notes keep theirs
+                }
+                Order.Clear();
+                Order.AddRange(kept);
+                Save();
             }
-            foreach (string name in Order)
-            {
-                if (!kept.Contains(name)) kept.Add(name);   // archived / filtered-out notes keep theirs
-            }
-            Order.Clear();
-            Order.AddRange(kept);
-            Save();
+            NoteCloud.Nudge();
         }
     }
 
@@ -357,7 +493,7 @@ namespace MicroApp
     /// <summary>A small flat toolbar button with a hand-drawn glyph, themed like the rest of the app.</summary>
     public class NoteToolButton : Control
     {
-        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, List, Gear, CloseAll, Trash, Language, Send, Undo, Redo, SmallerText, BiggerText }
+        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, List, Gear, CloseAll, Trash, Archive, Language, Send, Undo, Redo, SmallerText, BiggerText }
 
         private readonly Glyph _glyph;
         private bool _hover;
@@ -377,6 +513,7 @@ namespace MicroApp
                 case Glyph.Gear: return "\uE713";       // Settings
                 case Glyph.CloseAll: return "\uE8BB";   // ChromeClose
                 case Glyph.Trash: return "\uE74D";      // Delete
+                case Glyph.Archive: return "\uE7B8";    // Archive
                 case Glyph.Send: return "\uE724";       // Send
                 case Glyph.Undo: return "\uE7A7";       // Undo
                 case Glyph.Redo: return "\uE7A6";       // Redo
@@ -841,6 +978,29 @@ namespace MicroApp
         }
 
         /// <summary>
+        /// A sync brought newer text down for a note that is open on screen. Notes being
+        /// typed in are left alone - the next sync pushes those up instead.
+        /// </summary>
+        public static void ReloadFromDisk()
+        {
+            foreach (var form in new List<NoteForm>(OpenForms.Values))
+            {
+                try
+                {
+                    if (form._dirty || !File.Exists(form._path)) continue;
+                    string onDisk = File.ReadAllText(form._path);
+                    if (onDisk == form._box.Text) continue;
+                    int caret = form._box.SelectionStart;
+                    form._box.Text = onDisk;
+                    form._box.SelectionStart = Math.Min(caret, onDisk.Length);
+                    form._dirty = false;
+                    form.UpdateTitle();
+                }
+                catch (Exception) { }
+            }
+        }
+
+        /// <summary>
         /// Re-applies the hide-from-taskbar setting to every open note. Flipping
         /// ShowInTaskbar recreates the window handle, so the dark title bar and the
         /// rounded corners have to be painted onto the new handle again.
@@ -1095,7 +1255,11 @@ namespace MicroApp
                 SaveNow();
                 if (_box.Text.Trim().Length == 0)
                 {
-                    try { if (File.Exists(_path)) File.Delete(_path); } catch (Exception) { }
+                    try
+                    {
+                        if (File.Exists(_path)) { File.Delete(_path); NoteTrash.Record(_path); }
+                    }
+                    catch (Exception) { }
                 }
             };
             FormClosed += (s, e) => OpenForms.Remove(_path);
@@ -1425,6 +1589,7 @@ namespace MicroApp
             {
                 File.WriteAllText(_path, _box.Text, new UTF8Encoding(false));
                 _dirty = false;
+                NoteCloud.Nudge();
             }
             catch (Exception) { }   // a locked disk should not crash typing; the timer retries
         }
@@ -1761,6 +1926,9 @@ namespace MicroApp
         private int _pressedRow = -1;
         private Point _pressedAt;
         private bool _rowDragging;
+
+        /// <summary>Off for the archive, where the order is by date and not the user's to set.</summary>
+        public bool AllowReorder { get; set; }
         private int _dropAt = -1;          // insertion index while dragging a row
 
         private struct CachedRow { public DateTime Stamp; public string When; public string Preview; }
@@ -1776,6 +1944,7 @@ namespace MicroApp
 
         public NoteListView()
         {
+            AllowReorder = true;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.Selectable, true);
             BackColor = Theme.Surface;
@@ -1878,7 +2047,7 @@ namespace MicroApp
                 return;
             }
 
-            if (_pressedRow >= 0 && (e.Button & MouseButtons.Left) == MouseButtons.Left &&
+            if (AllowReorder && _pressedRow >= 0 && (e.Button & MouseButtons.Left) == MouseButtons.Left &&
                 Math.Abs(e.Y - _pressedAt.Y) > 6)
             {
                 _rowDragging = true;      // past the threshold: this is a reorder, not a click
@@ -2128,12 +2297,11 @@ namespace MicroApp
                 var row = GetRow(path);
                 string title = Path.GetFileNameWithoutExtension(path);
                 bool pinned = NoteMeta.IsPinned(path);
-                bool archived = NoteMeta.IsArchived(path);
                 var colour = NoteMeta.ColourOf(path);
 
                 // the note's own colour: a bar down the left edge, and a wash behind the row
                 using (var wash = new SolidBrush(Color.FromArgb(Theme.Dark ? 26 : 18, colour)))
-                using (var bar = new SolidBrush(archived ? Color.FromArgb(110, colour) : colour))
+                using (var bar = new SolidBrush(colour))
                 {
                     g.FillRectangle(wash, bounds);
                     g.FillRectangle(bar, new Rectangle(bounds.X, bounds.Y + 1, 4, bounds.Height - 2));
@@ -2148,11 +2316,11 @@ namespace MicroApp
                     textLeft += 18;
                 }
 
-                var titleColour = archived ? Theme.TextDim : Theme.Text;
+                var titleColour = Theme.Text;
                 var top = new Rectangle(textLeft, bounds.Y + 6, bounds.Right - textLeft - 152, 20);
                 var stamp = new Rectangle(bounds.Right - 140, bounds.Y + 6, 122, 20);
                 var bottom = new Rectangle(bounds.X + 14, bounds.Y + 25, bounds.Width - 34, 18);
-                TextRenderer.DrawText(g, archived ? title + "  (archived)" : title, Theme.Strong, top, titleColour,
+                TextRenderer.DrawText(g, title, Theme.Strong, top, titleColour,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
                 TextRenderer.DrawText(g, row.When, Theme.Small, stamp, Theme.TextDim,
                     TextFormatFlags.Right | TextFormatFlags.VerticalCenter);
@@ -2206,7 +2374,6 @@ namespace MicroApp
         private static NoteListForm _open;
 
         private readonly NoteListView _list;
-        private bool _showArchived;
 
         public static void Open()
         {
@@ -2219,6 +2386,24 @@ namespace MicroApp
             _open = new NoteListForm();
             _open.FormClosed += (s, e) => _open = null;
             _open.Show();
+        }
+
+        /// <summary>A note came back from the archive: redraw the list if it is open.</summary>
+        public static void RefreshList()
+        {
+            if (_open == null) return;
+            try { _open.Reload(); } catch (Exception) { }
+        }
+
+        /// <summary>A sync changed the folder: redraw the list and any note open on screen.</summary>
+        public static void NotesChanged()
+        {
+            NoteForm.ReloadFromDisk();
+            if (_open != null)
+            {
+                try { _open.Reload(); } catch (Exception) { }
+            }
+            NoteArchiveForm.RefreshList();
         }
 
         private NoteListForm()
@@ -2261,6 +2446,12 @@ namespace MicroApp
             };
             tips.SetToolTip(deleteAllButton, "Delete all notes");
             deleteAllButton.Click += (s, e) => DeleteAll();
+            var archiveButton = new NoteToolButton(NoteToolButton.Glyph.Archive)
+            {
+                Boxed = true, Size = new Size(38, 32), Location = new Point(204, 10)
+            };
+            tips.SetToolTip(archiveButton, "Archive");
+            archiveButton.Click += (s, e) => NoteArchiveForm.Open();
             var openButton = new ModernButton { Text = "Open", Size = new Size(80, 32), Accent = true, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             openButton.Click += (s, e) => OpenSelected();
             var deleteButton = new ModernButton { Text = "Delete", Size = new Size(80, 32), Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -2268,6 +2459,7 @@ namespace MicroApp
             footer.Controls.Add(newButton);
             footer.Controls.Add(closeAllButton);
             footer.Controls.Add(deleteAllButton);
+            footer.Controls.Add(archiveButton);
             footer.Controls.Add(openButton);
             footer.Controls.Add(deleteButton);
             footer.Resize += (s, e) =>
@@ -2332,7 +2524,7 @@ namespace MicroApp
                 }
                 foreach (var file in files)
                 {
-                    if (!_showArchived && NoteMeta.IsArchived(file.FullName)) continue;
+                    if (NoteMeta.IsArchived(file.FullName)) continue;   // those live in the Archive window
                     paths.Add(file.FullName);
                 }
                 NoteMeta.Sort(paths);   // pinned first, then the order dragged into place
@@ -2341,7 +2533,7 @@ namespace MicroApp
             _list.SetPaths(paths, selected);
         }
 
-        /// <summary>Right-click on a row: pin, archive, colour, open, delete \u2014 plus the archive filter.</summary>
+        /// <summary>Right-click on a row: open, pin, archive, colour, delete \u2014 plus a way into the Archive.</summary>
         private void ShowRowMenu(Point where)
         {
             var menu = new ContextMenuStrip
@@ -2357,7 +2549,6 @@ namespace MicroApp
             if (path != null)
             {
                 bool pinned = NoteMeta.IsPinned(path);
-                bool archived = NoteMeta.IsArchived(path);
 
                 var open = new ToolStripMenuItem("Open") { Font = Theme.Strong };
                 open.Click += (s, e) => OpenSelected();
@@ -2367,11 +2558,12 @@ namespace MicroApp
                 pin.Click += (s, e) => { NoteMeta.SetPinned(path, !pinned); Reload(); };
                 menu.Items.Add(pin);
 
-                var archive = new ToolStripMenuItem(archived ? "Restore from archive" : "Archive");
+                var archive = new ToolStripMenuItem("Archive");
                 archive.Click += (s, e) =>
                 {
-                    NoteMeta.SetArchived(path, !archived);
-                    Reload();   // an archived note drops out of the list unless the filter is on
+                    NoteMeta.SetArchived(path, true);
+                    Reload();          // it drops out of this list...
+                    NoteArchiveForm.RefreshList();   // ...and turns up in the Archive window
                 };
                 menu.Items.Add(archive);
 
@@ -2403,9 +2595,9 @@ namespace MicroApp
                 menu.Items.Add(new ToolStripSeparator());
             }
 
-            var showArchived = new ToolStripMenuItem("Show archived notes") { Checked = _showArchived };
-            showArchived.Click += (s, e) => { _showArchived = !_showArchived; Reload(); };
-            menu.Items.Add(showArchived);
+            var openArchive = new ToolStripMenuItem("Archive\u2026");
+            openArchive.Click += (s, e) => NoteArchiveForm.Open();
+            menu.Items.Add(openArchive);
 
             menu.ShowImageMargin = path != null;   // the swatches need the margin back
             menu.Show(_list, where);
@@ -2434,8 +2626,9 @@ namespace MicroApp
             string path = _list.SelectedPath;
             if (path == null) return;
             if (!ModernDialog.Confirm("Delete note",
-                Path.GetFileName(path) + " will be deleted for good.", "Delete", "Keep it")) return;
-            try { File.Delete(path); } catch (Exception) { }
+                Path.GetFileName(path) + " will be deleted for good" +
+                (NoteCloud.IsOn ? ", on this PC and every PC it syncs with." : "."), "Delete", "Keep it")) return;
+            try { File.Delete(path); NoteTrash.Record(path); } catch (Exception) { }
             NoteMeta.Forget(path);
             Reload();
         }
@@ -2445,11 +2638,12 @@ namespace MicroApp
             var paths = new List<string>(_list.Paths);
             if (paths.Count == 0) return;
             if (!ModernDialog.Confirm("Delete all notes",
-                "All " + paths.Count + " notes will be deleted for good.", "Delete all", "Keep them")) return;
+                "All " + paths.Count + " notes will be deleted for good" +
+                (NoteCloud.IsOn ? ", on this PC and every PC it syncs with." : "."), "Delete all", "Keep them")) return;
             NoteForm.CloseAll();   // closing saves them; the files go right after
             foreach (var path in paths)
             {
-                try { File.Delete(path); } catch (Exception) { }
+                try { File.Delete(path); NoteTrash.Record(path); } catch (Exception) { }
                 NoteMeta.Forget(path);
             }
             Reload();

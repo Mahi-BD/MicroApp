@@ -58,6 +58,7 @@ namespace MicroApp
         public static readonly Color AccentHover = Color.FromArgb(124, 124, 247);
         public static readonly Color AccentPressed = Color.FromArgb(79, 70, 229);
         public static readonly Color OnAccent = Color.White;
+        public static readonly Color Danger = Color.FromArgb(244, 63, 94);   // for the one line that says what went wrong
 
         // fonts (static: created once, never disposed)
         public static Font Base { get; private set; }

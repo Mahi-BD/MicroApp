@@ -95,6 +95,19 @@ namespace MicroApp
             new System.Threading.Mutex(false, assyGuid, out createdNew);
             if (!createdNew) return;
 
+            // settings live in a per-version folder, so a new build starts out blank
+            // unless the previous version's are carried across on first run
+            try
+            {
+                if (!Properties.Settings.Default.SettingsUpgraded)
+                {
+                    Properties.Settings.Default.Upgrade();
+                    Properties.Settings.Default.SettingsUpgraded = true;
+                    Properties.Settings.Default.Save();
+                }
+            }
+            catch (Exception) { }
+
             Native.SetProcessDPIAware();
             // Fill WinForms' static Screen cache now, while the thread is DPI-aware.
             // PixelPerfectForm windows are created DPI-unaware; if one of them filled
@@ -217,6 +230,11 @@ namespace MicroApp
             StartTextPickHotKey();
             StartNoteHotKey();
             NoteForm.OpenSettings = () => NoteSettings(this, EventArgs.Empty);
+
+            // notes sync in the background; _sync is the control it marshals its
+            // "the folder changed" callback back through
+            NoteCloud.Pulled += NoteListForm.NotesChanged;
+            NoteCloud.Start(_sync);
             bool darkTray = true;
             using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
             {
