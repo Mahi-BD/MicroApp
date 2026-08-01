@@ -812,8 +812,8 @@ namespace MicroApp
     /// </summary>
     class BanglaSuggestPopup : PixelPerfectForm
     {
-        private const int RowHeight = 32;
-        private static readonly Font BanglaFont = new Font("Nirmala UI", 11F);
+        private const int RowHeight = 26;
+        private static readonly Font BanglaFont = new Font("Nirmala UI", 10F);
 
         private List<BanglaSuggestion> _items = new List<BanglaSuggestion>();
         private int _selected;
@@ -854,15 +854,15 @@ namespace MicroApp
             _items = items;
             _selected = 0;
 
-            int width = 170;
+            int width = 146;
             foreach (var item in _items)
             {
-                int w = 24 + TextRenderer.MeasureText(item.Bangla, BanglaFont).Width +
-                        TextRenderer.MeasureText(item.Phonetic, Theme.Small).Width + 46;
+                int w = 20 + TextRenderer.MeasureText(item.Bangla, BanglaFont).Width +
+                        TextRenderer.MeasureText(item.Phonetic, Theme.Small).Width + 36;
                 if (w > width) width = w;
             }
             Bounds = new Rectangle(screenLocation.X, screenLocation.Y,
-                                   Math.Min(width, 360), _items.Count * RowHeight + 2);
+                                   Math.Min(width, 320), _items.Count * RowHeight + 2);
             if (!Visible) Show(owner);
             Invalidate();
         }
@@ -907,7 +907,7 @@ namespace MicroApp
                     }
                 }
 
-                var textRect = new Rectangle(row.X + 14, row.Y, row.Width - 14, row.Height);
+                var textRect = new Rectangle(row.X + 11, row.Y, row.Width - 11, row.Height);
                 TextRenderer.DrawText(g, _items[i].Bangla, BanglaFont, textRect,
                     i == _selected ? Theme.Accent : Theme.Text,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
@@ -917,9 +917,9 @@ namespace MicroApp
                 if (!string.IsNullOrEmpty(tag))
                 {
                     var size = TextRenderer.MeasureText(tag, Theme.Small);
-                    var tagRect = new Rectangle(row.Right - size.Width - 18,
-                                                row.Y + (RowHeight - size.Height - 6) / 2,
-                                                size.Width + 10, size.Height + 6);
+                    var tagRect = new Rectangle(row.Right - size.Width - 14,
+                                                row.Y + (RowHeight - size.Height - 4) / 2,
+                                                size.Width + 8, size.Height + 4);
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                     using (var fill = new SolidBrush(Theme.FieldBg))
                     using (var path = Theme.Round(tagRect, 4))

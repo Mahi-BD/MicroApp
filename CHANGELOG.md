@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.7.2 — 2026-08-02
+
+### Changed
+
+- **The Bangla suggestion list is smaller.** It took more of the note than it needed to: rows are
+  26px instead of 32, the Bangla is 10pt instead of 11, and the panel is narrower — about 168 x 210
+  for eight suggestions, down from 240 x 258. Vowel signs that sit above the line still have their
+  room.
+
 ## 4.7.1 — 2026-08-02
 
 ### Added
