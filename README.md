@@ -122,7 +122,8 @@ lines, inserts the date, long date or a timestamp in formats you choose, undoes 
 (**Ctrl+Z** / **Ctrl+Y**), and steps the text size with **A- / A+**. **Spell check** underlines
 mistakes as you type (English, plus Bangla when a Bangla dictionary is installed) with right-click
 suggestions. A **colour button** on the toolbar sets that note's colour — and whichever you pick last
-is the colour new notes on that PC start in. The **All notes** browser
+is the colour new notes on that PC start in — while the last button **keeps the note above other
+windows** while you copy out of it. The **All notes** browser
 lists every note with a preview and has a **search box** across the top; click to select, click again to open.
 Right-click a note to **pin** it to the top, **archive** it out of the way, give it a **colour** or
 delete it — and **drag notes into whatever order you like**. Every note carries its own colour down

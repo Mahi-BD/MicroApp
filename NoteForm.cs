@@ -517,7 +517,7 @@ namespace MicroApp
     /// <summary>A small flat toolbar button with a hand-drawn glyph, themed like the rest of the app.</summary>
     public class NoteToolButton : Control
     {
-        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, Save, List, Gear, CloseAll, Trash, Archive, Colour, Language, Send, Undo, Redo, SmallerText, BiggerText }
+        public enum Glyph { NoSpaces, NoNewlines, ShortDate, LongDate, Timestamp, NewNote, Save, List, Gear, CloseAll, Trash, Archive, Colour, OnTop, Language, Send, Undo, Redo, SmallerText, BiggerText }
 
         private readonly Glyph _glyph;
         private bool _hover;
@@ -539,6 +539,7 @@ namespace MicroApp
                 case Glyph.CloseAll: return "\uE8BB";   // ChromeClose
                 case Glyph.Trash: return "\uE74D";      // Delete
                 case Glyph.Archive: return "\uE7B8";    // Archive
+                case Glyph.OnTop: return "\uE840";      // Pinned
                 case Glyph.Send: return "\uE724";       // Send
                 case Glyph.Undo: return "\uE7A7";       // Undo
                 case Glyph.Redo: return "\uE7A6";       // Redo
@@ -556,6 +557,9 @@ namespace MicroApp
 
         /// <summary>What the Colour button shows: the colour this note is wearing right now.</summary>
         public Color SwatchColour { get; set; }
+
+        /// <summary>A toggle that is currently on, drawn in the accent colour.</summary>
+        public bool Active { get; set; }
 
         private static readonly Font LangFont = new Font("Segoe UI Semibold", 10F);
 
@@ -611,7 +615,8 @@ namespace MicroApp
             string fluent = FluentGlyph(_glyph);
             if (fluent != null)
             {
-                TextRenderer.DrawText(g, fluent, IconFont, ClientRectangle, Theme.Text,
+                TextRenderer.DrawText(g, fluent, IconFont, ClientRectangle,
+                    Active ? Theme.Accent : Theme.Text,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
                     TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
                 return;
@@ -958,8 +963,6 @@ namespace MicroApp
     public class NoteForm : PixelPerfectForm
     {
         /// <summary>Wired by the tray so the gear behaves exactly like the "Note Setting" menu item.</summary>
-        public static Action OpenSettings;
-
         private static readonly Dictionary<string, NoteForm> OpenForms =
             new Dictionary<string, NoteForm>(StringComparer.OrdinalIgnoreCase);
         private static SpellCheckService _spellService;
@@ -976,6 +979,7 @@ namespace MicroApp
 
         private bool _bangla;
         private NoteToolButton _colourButton;
+        private NoteToolButton _topButton;
         private NoteToolButton _langButton;
         private ToolTip _tips;
         private BanglaSuggestPopup _suggestPopup;
@@ -1136,11 +1140,11 @@ namespace MicroApp
             _langButton.Click += (s, e) => ToggleBangla();
             toolbar.Controls.Add(_langButton);
 
-            var gear = new NoteToolButton(NoteToolButton.Glyph.Gear) { Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            gear.Location = new Point(toolbar.Width, 7);   // fixed up below, once widths are known
-            tips.SetToolTip(gear, "Note Setting");
-            gear.Click += (s, e) => { var open = OpenSettings; if (open != null) open(); };
-            toolbar.Controls.Add(gear);
+            _topButton = new NoteToolButton(NoteToolButton.Glyph.OnTop) { Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            _topButton.Location = new Point(toolbar.Width, 7);   // fixed up below, once widths are known
+            tips.SetToolTip(_topButton, "Keep this note on top: off");
+            _topButton.Click += (s, e) => ToggleOnTop();
+            toolbar.Controls.Add(_topButton);
 
             _grammarButton = new ModernButton
             {
@@ -1155,8 +1159,8 @@ namespace MicroApp
 
             toolbar.Resize += (s, e) =>
             {
-                gear.Location = new Point(toolbar.Width - gear.Width - 8, 7);
-                _grammarButton.Location = new Point(gear.Left - _grammarButton.Width - 6, 7);
+                _topButton.Location = new Point(toolbar.Width - _topButton.Width - 8, 7);
+                _grammarButton.Location = new Point(_topButton.Left - _grammarButton.Width - 6, 7);
             };
 
             _box = new SpellBox
@@ -1437,6 +1441,19 @@ namespace MicroApp
             _colourButton.SwatchColour = NoteMeta.ColourOf(_path);
             _colourButton.Invalidate();
             NoteListForm.RefreshList();
+        }
+
+        /// <summary>
+        /// Keeps this one note above other windows - handy while copying out of it into
+        /// something else. Per note and per session: a new note starts off.
+        /// </summary>
+        private void ToggleOnTop()
+        {
+            TopMost = !TopMost;
+            _topButton.Active = TopMost;
+            _topButton.Invalidate();
+            _tips.SetToolTip(_topButton, TopMost ? "Keep this note on top: on" : "Keep this note on top: off");
+            _box.Focus();
         }
 
         private void ToggleBangla()

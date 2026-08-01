@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.7.4 — 2026-08-02
+
+### Added
+
+- **Keep a note on top.** The last button on a note's toolbar pins that note above other windows —
+  useful while copying out of it into something else. It lights up while it is on, and is per note:
+  a new note starts off, and nothing is remembered between sessions.
+
+### Changed
+
+- **The settings button is gone from a note's toolbar**, replaced by the on-top toggle. Note Setting
+  is still on the tray menu, where the other settings windows live.
+
 ## 4.7.3 — 2026-08-02
 
 ### Fixed

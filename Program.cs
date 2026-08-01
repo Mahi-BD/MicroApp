@@ -229,7 +229,6 @@ namespace MicroApp
             StartVideoHotKey();
             StartTextPickHotKey();
             StartNoteHotKey();
-            NoteForm.OpenSettings = () => NoteSettings(this, EventArgs.Empty);
 
             // notes sync in the background; _sync is the control it marshals its
             // "the folder changed" callback back through
