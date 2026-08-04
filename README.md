@@ -81,13 +81,15 @@ fields are never read. Use OCR instead for images, videos and remote desktops.
 ### 4. Screen capture
 
 Press **Ctrl+Alt+S** (or tray → *Screen Capture*) and drag. The screen freezes and dims so the selection
-is easy to see, and the dimming never ends up in the picture.
+is easy to see, and the dimming never ends up in the picture. Let go and the frame waits: drag it by
+the middle to move it, pull a handle to resize it, nudge it with the arrow keys, then press **Enter**
+(or the tick) to take the shot. GIF and video recording pick their region the same way.
 
 ![Capture overlay](docs/capture-overlay.png)
 
 Two optional constraints:
 
-- **Lock ratio** — dragging snaps to 16:9, 4:3, 1:1, 21:9 … (or any `W:H` you type).
+- **Lock ratio** — dragging snaps to 16:9, 16:10, 8:5, 4:3, 1:1, 21:9 … (or any `W:H` you type).
 - **Lock pixel size** — the box becomes an exact size, follows the pointer, and one click takes the shot.
 
 The image goes to the clipboard, to a PNG, or both.

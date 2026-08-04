@@ -1,7 +1,7 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 4.5.0.
+Version 4.7.5.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
@@ -152,14 +152,22 @@ images, videos and remote desktops, where there is no real text behind the pixel
 
 1. Press **Ctrl+Alt+S**, or tray → *Screen Capture*.
 2. Drag over the area. The size badge shows the exact pixel dimensions as you drag.
-3. **Esc**, a right-click, or a click without dragging cancels.
+3. Let go and the frame stays put so you can get it right:
+   - **drag inside it** (the four-way arrow in the middle) to move the whole frame,
+   - **drag a handle** — the corners, and the edge middles once the frame is big enough — to resize it,
+   - **arrow keys** nudge it a pixel at a time, **Ctrl+arrows** ten, **Shift+arrows** resize instead,
+   - drag anywhere outside to start over.
+4. **Enter**, a double-click inside the frame, or the tick button takes the shot.
+5. **Esc**, a right-click, the cross button, or a click without dragging cancels.
 
 **Selection lock** (Capture Setting):
 
-- **Lock ratio** — the box snaps to the chosen shape while you drag: 16:9, 16:10, 4:3, 3:2, 1:1, 21:9,
-  9:16, 3:4, or any `W:H` you type. The size stays up to you.
+- **Lock ratio** — the box snaps to the chosen shape while you drag: 16:9, 16:10, 8:5, 4:3, 3:2, 1:1,
+  21:9, 9:16, 3:4, or any `W:H` you type. The size stays up to you, and the shape survives every later
+  move and resize.
 - **Lock pixel size** — the box is exactly the width and height you set, follows the pointer, and a
-  single click takes the shot. This overrides lock ratio (a fixed size already fixes the shape).
+  single click takes the shot. This overrides lock ratio (a fixed size already fixes the shape), and
+  there is nothing to adjust afterwards.
 
 **After capture** — copy the image to the clipboard, save it as a PNG, or both.
 
@@ -173,7 +181,9 @@ and nothing on screen can move between aiming and capturing.
 **How to use it**
 
 1. Press **Ctrl+Alt+G**, or tray → *Record GIF*.
-2. Pick the region (same crosshair, same locks — GIF has its own lock settings).
+2. Pick the region (same crosshair, same locks — GIF has its own lock settings). Adjust the frame
+   the same way as a screen capture — move it, resize it from the handles — and press **Enter** or
+   the tick to start.
 3. Recording starts. A red **REC 3.2s / 10s** badge appears just outside the recorded area.
 4. Stop with **Esc**, by pressing the hot key again, by clicking the badge, or by letting the time
    limit expire.
@@ -196,7 +206,9 @@ megabytes rather than the hundreds a GIF would — and it can include **sound**.
 **How to use it**
 
 1. Press **Ctrl+Alt+R**, or tray → *Record Video*.
-2. Pick the region (same crosshair, same locks — video has its own lock settings).
+2. Pick the region (same crosshair, same locks — video has its own lock settings). Adjust the frame
+   the same way as a screen capture — move it, resize it from the handles — and press **Enter** or
+   the tick to start.
 3. Recording starts, with a red **REC** badge outside the recorded area. The badge has a
    **pause/resume** button — paused stretches are left out of the file entirely — and a **save**
    button that stops the recording and keeps the MP4.

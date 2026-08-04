@@ -20,7 +20,7 @@ namespace MicroApp
     public partial class CaptureSettingsForm : PixelPerfectForm
     {
         private static readonly string[] RatioPresets =
-            { "16:9", "16:10", "4:3", "3:2", "1:1", "21:9", "9:16", "3:4" };
+            { "16:9", "16:10", "8:5", "4:3", "3:2", "1:1", "21:9", "9:16", "3:4" };
 
         private CheckBox[] _modifiers;
         private RadioButton[] _outputs;
@@ -55,6 +55,7 @@ namespace MicroApp
             {
                 ratioBox.Items.Add(preset);
             }
+            ratioBox.MaxDropDownItems = 10;   // show the whole list, no scrollbar
             string savedRatio = Properties.Settings.Default.RatioPreset;
             if (!string.IsNullOrEmpty(savedRatio) && !ratioBox.Items.Contains(savedRatio))
             {

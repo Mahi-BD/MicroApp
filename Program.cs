@@ -893,10 +893,10 @@ namespace MicroApp
                 string hint = constraint.LockPixel
                     ? $"Click to grab a {constraint.PixelSize.Width} x {constraint.PixelSize.Height} shot.   Esc cancels."
                     : constraint.LockRatio
-                        ? $"Drag a {constraint.RatioName} box.   Esc cancels."
-                        : "Drag the area you want to capture.   Esc cancels.";
+                        ? $"Drag a {constraint.RatioName} box, then adjust it.   Esc cancels."
+                        : "Drag the area you want, then adjust it.   Esc cancels.";
 
-                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint))
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint, true))
                 {
                     if (shot == null) return;   // cancelled
                     DeliverCapture(shot);
@@ -1049,10 +1049,10 @@ namespace MicroApp
                 string hint = constraint.LockPixel
                     ? $"Click to record a {constraint.PixelSize.Width} x {constraint.PixelSize.Height} GIF.   Esc cancels."
                     : constraint.LockRatio
-                        ? $"Drag a {constraint.RatioName} area to record.   Esc cancels."
-                        : "Drag the area to record as a GIF.   Esc cancels.";
+                        ? $"Drag a {constraint.RatioName} area, then adjust it.   Esc cancels."
+                        : "Drag the area to record, then adjust it.   Esc cancels.";
 
-                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint))
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint, true))
                 {
                     if (shot == null) return;                       // cancelled
                     region = RegionCaptureOverlay.LastRegion;
@@ -1234,10 +1234,10 @@ namespace MicroApp
                 string hint = constraint.LockPixel
                     ? $"Click to record a {constraint.PixelSize.Width} x {constraint.PixelSize.Height} video.   Esc cancels."
                     : constraint.LockRatio
-                        ? $"Drag a {constraint.RatioName} area to record.   Esc cancels."
-                        : "Drag the area to record as a video.   Esc cancels.";
+                        ? $"Drag a {constraint.RatioName} area, then adjust it.   Esc cancels."
+                        : "Drag the area to record, then adjust it.   Esc cancels.";
 
-                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint))
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint, true))
                 {
                     if (shot == null) return;                       // cancelled
                     region = RegionCaptureOverlay.LastRegion;

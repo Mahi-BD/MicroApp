@@ -1,5 +1,24 @@
 # Changelog
 
+## 4.7.5 — 2026-08-05
+
+### Added
+
+- **The capture frame can be moved and resized before it is taken.** Screen capture, GIF recording and
+  video recording used to take whatever you had dragged the moment you let go of the mouse, so a frame
+  a few pixels out meant starting over. The frame now stays on screen instead: drag it by the middle —
+  where a four-way arrow shows — to move the whole thing, drag any of the eight handles to resize it,
+  or nudge it with the arrow keys (Ctrl for ten pixels at a time, Shift to resize instead of move).
+  Dragging outside the frame starts a fresh one. **Enter**, a double-click inside the frame, or the
+  tick button takes it; **Esc**, a right-click or the cross button cancels.
+
+  A locked ratio is kept through every move and resize, so a 16:9 frame stays 16:9 whichever handle you
+  pull. A locked pixel size is unchanged — the box is already exactly the size you asked for and one
+  click takes it.
+
+- **8:5 in the lock-ratio list**, in Capture Setting, GIF Setting and Video Setting alike. The list now
+  shows all of its shapes without scrolling. Any `W:H` you type by hand still works, as before.
+
 ## 4.7.4 — 2026-08-02
 
 ### Added
