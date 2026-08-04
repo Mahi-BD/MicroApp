@@ -64,6 +64,8 @@ namespace MicroApp
             ratioBox.SelectedItem = string.IsNullOrEmpty(savedRatio) ? "16:9" : savedRatio;
             if (ratioBox.SelectedIndex < 0) ratioBox.SelectedIndex = 0;
 
+            delayBox.Text = Properties.Settings.Default.CaptureDelay.ToString();
+
             lockRatio.Checked = Properties.Settings.Default.LockRatio;
             lockPixel.Checked = Properties.Settings.Default.LockPixel;
             pixelWidth.Text = Properties.Settings.Default.PixelWidth.ToString();
@@ -96,12 +98,13 @@ namespace MicroApp
             modifiersLabel.Font = new Font(Theme.Small, FontStyle.Bold);
             modifiersLabel.ForeColor = Theme.TextDim;
 
-            foreach (var helper in new[] { keyLabel, byLabel, pxLabel, lockNote, folderLabel })
+            foreach (var helper in new[] { keyLabel, delayLabel, byLabel, pxLabel, lockNote, folderLabel })
             {
                 helper.Font = Theme.Base;
                 helper.ForeColor = Theme.TextDim;
             }
             lockNote.Font = Theme.Small;
+            delayLabel.Font = Theme.Small;
             folderLabel.Font = new Font(Theme.Small, FontStyle.Bold);
         }
 
@@ -199,6 +202,12 @@ namespace MicroApp
                 ? ratioBox.SelectedItem.ToString()
                 : "16:9";
             Properties.Settings.Default.LockPixel = lockPixel.Checked;
+
+            int delay;
+            if (int.TryParse(delayBox.Text.Trim(), out delay))
+            {
+                Properties.Settings.Default.CaptureDelay = Math.Max(0, Math.Min(60, delay));
+            }
 
             int w, h;
             if (int.TryParse(pixelWidth.Text, out w) && w >= 8) Properties.Settings.Default.PixelWidth = w;

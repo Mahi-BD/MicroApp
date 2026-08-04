@@ -132,6 +132,7 @@ namespace MicroApp
         private Rectangle _grabStart;
         private Rectangle _okButton, _cancelButton;
         private int _hotButton = -1;           // 0 = take, 1 = cancel
+        private bool _overFrame;               // the pointer is inside the frame, so the move icon shows
 
         /// <summary>The captured region, or null when the user cancelled.</summary>
         public Bitmap Captured { get; private set; }
@@ -315,6 +316,7 @@ namespace MicroApp
             {
                 var delta = new Point(e.X - _grabPoint.X, e.Y - _grabPoint.Y);
                 _selection = _grab == 8 ? MoveTo(_grabStart, delta) : ResizeTo(_grabStart, _grab, delta);
+                _overFrame = _grab == 8;      // keep the icon up while the frame is being dragged
                 LayoutButtons();
                 Invalidate();
                 return;
@@ -388,20 +390,22 @@ namespace MicroApp
             Close();
         }
 
-        /// <summary>Keeps the cursor and the button highlight in step with the pointer.</summary>
+        /// <summary>Keeps the cursor, the button highlight and the move icon in step with the pointer.</summary>
         private void TrackHover(Point p)
         {
             int button = _okButton.Contains(p) ? 0 : _cancelButton.Contains(p) ? 1 : -1;
-            if (button != _hotButton)
+            int handle = button >= 0 ? -1 : HitHandle(p);
+            if (button < 0 && handle < 0 && _selection.Contains(p)) handle = 8;
+
+            bool overFrame = handle == 8;
+            if (button != _hotButton || overFrame != _overFrame)
             {
                 _hotButton = button;
+                _overFrame = overFrame;
                 Invalidate();
             }
 
-            if (button >= 0) { Cursor = Cursors.Hand; return; }
-            int handle = HitHandle(p);
-            if (handle < 0 && _selection.Contains(p)) handle = 8;
-            Cursor = CursorFor(handle);
+            Cursor = button >= 0 ? Cursors.Hand : CursorFor(handle);
         }
 
         private Rectangle Normalize(Point a, Point b)
@@ -628,9 +632,14 @@ namespace MicroApp
             }
         }
 
-        /// <summary>The four-way arrow in the middle, saying the frame can be dragged.</summary>
+        /// <summary>
+        /// The four-way arrow in the middle, saying the frame can be dragged. It only
+        /// appears while the pointer is inside the frame, so it stays out of the way
+        /// of what is being framed.
+        /// </summary>
         private void DrawMoveGlyph(Graphics g)
         {
+            if (!_overFrame) return;
             if (_selection.Width < 96 || _selection.Height < 80) return;
 
             int cx = _selection.Left + _selection.Width / 2;
@@ -766,6 +775,182 @@ namespace MicroApp
 
         protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
+        }
+    }
+
+    /// <summary>
+    /// The wait between picking a region and grabbing it. The frame stays outlined and a
+    /// badge counts the seconds down, so a menu, a tooltip or a hover state can be opened
+    /// in the meantime -- neither window ever takes the focus away from what is being set
+    /// up, and both are gone before the pixels are read.
+    /// </summary>
+    public class CaptureCountdown : Form
+    {
+        const int PadOutside = 8;
+
+        private readonly System.Windows.Forms.Timer _tick = new System.Windows.Forms.Timer();
+        private readonly Rectangle _region;
+        private readonly Action<Bitmap> _done;
+        private RecordingRegionFrame _frame;
+        private int _left;
+        private bool _finished;
+
+        /// <summary>
+        /// Counts <paramref name="seconds"/> down over <paramref name="region"/>, then hands the
+        /// grabbed picture to <paramref name="done"/> -- or null if it was cancelled. Returns at
+        /// once; everything after runs on the UI thread.
+        /// </summary>
+        public static void Start(Rectangle region, int seconds, Action<Bitmap> done)
+        {
+            var badge = new CaptureCountdown(region, seconds, done);
+            badge.Show();
+        }
+
+        private CaptureCountdown(Rectangle region, int seconds, Action<Bitmap> done)
+        {
+            _region = region;
+            _left = Math.Max(1, seconds);
+            _done = done;
+
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.UserPaint, true);
+            FormBorderStyle = FormBorderStyle.None;
+            StartPosition = FormStartPosition.Manual;
+            ShowInTaskbar = false;
+            TopMost = true;
+            Size = new Size(132, 62);
+            Location = BadgeSpot(region, Size);
+            Cursor = Cursors.Hand;
+            Text = "MicroApp countdown";
+
+            _frame = new RecordingRegionFrame(region);
+            _frame.BackColor = Theme.Accent;
+
+            _tick.Interval = 1000;
+            _tick.Tick += OnSecond;
+        }
+
+        /// <summary>Just above the region, or just below it when the region is at the top.</summary>
+        private static Point BadgeSpot(Rectangle region, Size size)
+        {
+            var desktop = SystemInformation.VirtualScreen;
+            int x = region.X;
+            int y = region.Y - size.Height - PadOutside;
+            if (y < desktop.Top) y = region.Bottom + PadOutside;
+            if (y + size.Height > desktop.Bottom) y = Math.Max(desktop.Top, desktop.Bottom - size.Height);
+            x = Math.Max(desktop.Left, Math.Min(x, desktop.Right - size.Width));
+            return new Point(x, y);
+        }
+
+        protected override bool ShowWithoutActivation { get { return true; } }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var p = base.CreateParams;
+                p.ExStyle |= 0x08000000;   // WS_EX_NOACTIVATE -- never steal the focus
+                p.ExStyle |= 0x00000080;   // WS_EX_TOOLWINDOW -- keep it out of Alt+Tab
+                return p;
+            }
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            _frame.Show();
+            _tick.Start();
+        }
+
+        /// <summary>A click on the badge calls the whole thing off.</summary>
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            Finish(null);
+        }
+
+        private void OnSecond(object sender, EventArgs e)
+        {
+            _left--;
+            if (_left > 0)
+            {
+                Invalidate();
+                return;
+            }
+
+            _tick.Stop();
+
+            // both windows must be off screen before the pixels are read
+            Hide();
+            _frame.Hide();
+            Application.DoEvents();
+
+            var wait = new System.Windows.Forms.Timer { Interval = 150 };
+            wait.Tick += (s2, e2) =>
+            {
+                wait.Stop();
+                wait.Dispose();
+                Bitmap shot = null;
+                try
+                {
+                    shot = new Bitmap(_region.Width, _region.Height,
+                                      System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    using (var g = Graphics.FromImage(shot))
+                    {
+                        g.CopyFromScreen(_region.Location, Point.Empty, _region.Size,
+                                         CopyPixelOperation.SourceCopy);
+                    }
+                }
+                catch (Exception)
+                {
+                    if (shot != null) { shot.Dispose(); shot = null; }
+                }
+                Finish(shot);
+            };
+            wait.Start();
+        }
+
+        private void Finish(Bitmap shot)
+        {
+            if (_finished) return;
+            _finished = true;
+            _tick.Stop();
+            if (_done != null) _done(shot);
+            Close();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            var box = new Rectangle(0, 0, Width - 1, Height - 1);
+            using (var path = Theme.Round(box, 8))
+            using (var fill = new SolidBrush(Color.FromArgb(238, 20, 20, 24)))
+            using (var pen = new Pen(Theme.Accent, 1.5f))
+            {
+                g.FillPath(fill, path);
+                g.DrawPath(pen, path);
+            }
+
+            using (var big = new Font("Segoe UI", 20F, FontStyle.Bold, GraphicsUnit.Point))
+            {
+                TextRenderer.DrawText(g, _left.ToString(), big, new Rectangle(0, 4, Width, 34),
+                                      Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            }
+            TextRenderer.DrawText(g, "click to cancel", Theme.Small, new Rectangle(0, 38, Width, 18),
+                                  Color.FromArgb(200, 255, 255, 255),
+                                  TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _tick.Dispose();
+                if (_frame != null) { _frame.Close(); _frame.Dispose(); _frame = null; }
+            }
             base.Dispose(disposing);
         }
     }

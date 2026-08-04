@@ -87,6 +87,10 @@ the middle to move it, pull a handle to resize it, nudge it with the arrow keys,
 
 ![Capture overlay](docs/capture-overlay.png)
 
+A **delay** can be set in Capture Setting (0 by default, i.e. straight away). With one, the frame stays
+outlined and a badge counts the seconds down without taking the focus, so you can open a menu or a
+tooltip first; the shot is then read fresh off the screen.
+
 Two optional constraints:
 
 - **Lock ratio** — dragging snaps to 16:9, 16:10, 8:5, 4:3, 1:1, 21:9 … (or any `W:H` you type).

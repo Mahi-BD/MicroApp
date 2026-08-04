@@ -36,6 +36,9 @@ namespace MicroApp
             this.Cap_Shift = new ModernCheckBox();
             this.Cap_Windows = new ModernCheckBox();
 
+            this.delayHost = new FieldHost();
+            this.delayBox = new TextBox();
+            this.delayLabel = new Label();
             this.cardLock = new Card();
             this.lockRatio = new ModernCheckBox();
             this.ratioHost = new FieldHost();
@@ -63,6 +66,7 @@ namespace MicroApp
 
             ((System.ComponentModel.ISupportInitialize)(this.iconBox)).BeginInit();
             this.headerBar.SuspendLayout();
+            this.delayHost.SuspendLayout();
             this.cardHotKey.SuspendLayout();
             this.cardLock.SuspendLayout();
             this.cardOutput.SuspendLayout();
@@ -113,9 +117,11 @@ namespace MicroApp
             this.cardHotKey.Controls.Add(this.Cap_Control);
             this.cardHotKey.Controls.Add(this.Cap_Shift);
             this.cardHotKey.Controls.Add(this.Cap_Windows);
+            this.cardHotKey.Controls.Add(this.delayHost);
+            this.cardHotKey.Controls.Add(this.delayLabel);
             this.cardHotKey.Location = new Point(24, 104);
             this.cardHotKey.Name = "cardHotKey";
-            this.cardHotKey.Size = new Size(592, 124);
+            this.cardHotKey.Size = new Size(592, 168);
             this.cardHotKey.TabIndex = 1;
             this.cardHotKey.Title = "Screen capture hot key";
             this.cardHotKey.Description = "Press it anywhere to grab a picture of the screen";
@@ -186,6 +192,28 @@ namespace MicroApp
             this.Cap_Windows.Tag = "8";
             this.Cap_Windows.Text = "Win";
             //
+            // delayHost
+            //
+            this.delayHost.Controls.Add(this.delayBox);
+            this.delayHost.Location = new Point(16, 108);
+            this.delayHost.Name = "delayHost";
+            this.delayHost.Size = new Size(96, 32);
+            this.delayHost.TabIndex = 5;
+            //
+            // delayBox
+            //
+            this.delayBox.Location = new Point(10, 8);
+            this.delayBox.Name = "delayBox";
+            this.delayBox.Size = new Size(76, 16);
+            this.delayBox.TabIndex = 0;
+            //
+            // delayLabel
+            //
+            this.delayLabel.AutoSize = true;
+            this.delayLabel.Location = new Point(120, 117);
+            this.delayLabel.Name = "delayLabel";
+            this.delayLabel.Text = "seconds before it grabs (0 takes the shot straight away)";
+            //
             // cardLock
             //
             this.cardLock.Controls.Add(this.lockRatio);
@@ -196,7 +224,7 @@ namespace MicroApp
             this.cardLock.Controls.Add(this.pixelHeightHost);
             this.cardLock.Controls.Add(this.pxLabel);
             this.cardLock.Controls.Add(this.lockNote);
-            this.cardLock.Location = new Point(24, 244);
+            this.cardLock.Location = new Point(24, 288);
             this.cardLock.Name = "cardLock";
             this.cardLock.Size = new Size(592, 152);
             this.cardLock.TabIndex = 2;
@@ -295,7 +323,7 @@ namespace MicroApp
             this.cardOutput.Controls.Add(this.folderLabel);
             this.cardOutput.Controls.Add(this.folderHost);
             this.cardOutput.Controls.Add(this.browseButton);
-            this.cardOutput.Location = new Point(24, 412);
+            this.cardOutput.Location = new Point(24, 456);
             this.cardOutput.Name = "cardOutput";
             this.cardOutput.Size = new Size(592, 140);
             this.cardOutput.TabIndex = 3;
@@ -366,7 +394,7 @@ namespace MicroApp
             // cancelButton
             //
             this.cancelButton.DialogResult = DialogResult.Cancel;
-            this.cancelButton.Location = new Point(436, 564);
+            this.cancelButton.Location = new Point(436, 608);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new Size(88, 36);
             this.cancelButton.TabIndex = 4;
@@ -376,7 +404,7 @@ namespace MicroApp
             //
             this.saveButton.Accent = true;
             this.saveButton.DialogResult = DialogResult.OK;
-            this.saveButton.Location = new Point(536, 564);
+            this.saveButton.Location = new Point(536, 608);
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new Size(80, 36);
             this.saveButton.TabIndex = 5;
@@ -389,7 +417,7 @@ namespace MicroApp
             this.CancelButton = this.cancelButton;
             this.AutoScaleDimensions = new SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(640, 612);
+            this.ClientSize = new Size(640, 656);
             this.Controls.Add(this.cardHotKey);
             this.Controls.Add(this.cardLock);
             this.Controls.Add(this.cardOutput);
@@ -407,6 +435,7 @@ namespace MicroApp
             ((System.ComponentModel.ISupportInitialize)(this.iconBox)).EndInit();
             this.headerBar.ResumeLayout(false);
             this.headerBar.PerformLayout();
+            this.delayHost.ResumeLayout(false);
             this.cardHotKey.ResumeLayout(false);
             this.cardHotKey.PerformLayout();
             this.cardLock.ResumeLayout(false);
@@ -445,6 +474,9 @@ namespace MicroApp
         private TextBox pixelHeight;
         private Label pxLabel;
         private Label lockNote;
+        private FieldHost delayHost;
+        private TextBox delayBox;
+        private Label delayLabel;
 
         private Card cardOutput;
         private ModernRadioButton outputClipboard;

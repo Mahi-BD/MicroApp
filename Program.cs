@@ -887,6 +887,7 @@ namespace MicroApp
         {
             if (_ocrBusy) return;
             _ocrBusy = true;
+            bool counting = false;
             try
             {
                 var constraint = CaptureConstraint.FromSettings();
@@ -899,12 +900,34 @@ namespace MicroApp
                 using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint, true))
                 {
                     if (shot == null) return;   // cancelled
-                    DeliverCapture(shot);
+
+                    int delay = Math.Max(0, Properties.Settings.Default.CaptureDelay);
+                    if (delay <= 0)
+                    {
+                        DeliverCapture(shot);
+                        return;
+                    }
+
+                    // wait it out, then grab the region live -- the frozen copy is of no use
+                    // once the point is to catch something that only shows up in the meantime
+                    counting = true;
+                    CaptureCountdown.Start(RegionCaptureOverlay.LastRegion, delay, delayed =>
+                    {
+                        try
+                        {
+                            if (delayed == null) return;   // cancelled
+                            using (delayed) DeliverCapture(delayed);
+                        }
+                        finally
+                        {
+                            _ocrBusy = false;
+                        }
+                    });
                 }
             }
             finally
             {
-                _ocrBusy = false;
+                if (!counting) _ocrBusy = false;
             }
         }
 

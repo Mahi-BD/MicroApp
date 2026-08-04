@@ -434,6 +434,18 @@ namespace MicroApp.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int CaptureDelay {
+            get {
+                return ((int)(this["CaptureDelay"]));
+            }
+            set {
+                this["CaptureDelay"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int CaptureOutput {
             get {
                 return ((int)(this["CaptureOutput"]));

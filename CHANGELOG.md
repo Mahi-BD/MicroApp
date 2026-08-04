@@ -7,7 +7,8 @@
 - **The capture frame can be moved and resized before it is taken.** Screen capture, GIF recording and
   video recording used to take whatever you had dragged the moment you let go of the mouse, so a frame
   a few pixels out meant starting over. The frame now stays on screen instead: drag it by the middle —
-  where a four-way arrow shows — to move the whole thing, drag any of the eight handles to resize it,
+  a four-way arrow appears there while the pointer is inside — to move the whole thing, drag any of the
+  eight handles to resize it,
   or nudge it with the arrow keys (Ctrl for ten pixels at a time, Shift to resize instead of move).
   Dragging outside the frame starts a fresh one. **Enter**, a double-click inside the frame, or the
   tick button takes it; **Esc**, a right-click or the cross button cancels.
@@ -15,6 +16,13 @@
   A locked ratio is kept through every move and resize, so a 16:9 frame stays 16:9 whichever handle you
   pull. A locked pixel size is unchanged — the box is already exactly the size you asked for and one
   click takes it.
+
+- **A delay before the shot is taken**, in Capture Setting: *seconds before it grabs*, 0 by default,
+  which behaves exactly as before. Give it a few seconds and the frame stays outlined with a badge
+  counting down beside it, leaving you time to open the menu, tooltip or hover state you are trying to
+  photograph. Neither window takes the focus, so the menu you open stays open, and both are gone before
+  the picture is read. Click the badge to call it off. A delayed shot reads the screen fresh at the end
+  of the count rather than using the frozen copy, which is what makes it useful.
 
 - **8:5 in the lock-ratio list**, in Capture Setting, GIF Setting and Video Setting alike. The list now
   shows all of its shapes without scrolling. Any `W:H` you type by hand still works, as before.

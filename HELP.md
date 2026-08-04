@@ -153,12 +153,21 @@ images, videos and remote desktops, where there is no real text behind the pixel
 1. Press **Ctrl+Alt+S**, or tray → *Screen Capture*.
 2. Drag over the area. The size badge shows the exact pixel dimensions as you drag.
 3. Let go and the frame stays put so you can get it right:
-   - **drag inside it** (the four-way arrow in the middle) to move the whole frame,
+   - **drag inside it** to move the whole frame — a four-way arrow appears in the middle while the
+     pointer is over it,
    - **drag a handle** — the corners, and the edge middles once the frame is big enough — to resize it,
    - **arrow keys** nudge it a pixel at a time, **Ctrl+arrows** ten, **Shift+arrows** resize instead,
    - drag anywhere outside to start over.
 4. **Enter**, a double-click inside the frame, or the tick button takes the shot.
 5. **Esc**, a right-click, the cross button, or a click without dragging cancels.
+
+**Delay** (Capture Setting) — *seconds before it grabs*, 0 by default, which takes the shot the moment
+you confirm the frame. Set it to a few seconds and the picker gets out of the way instead: the frame
+stays outlined, a badge counts down beside it, and you have that long to open the menu, tooltip or
+hover state you are trying to photograph. Neither the outline nor the badge takes the focus — so the
+menu you open stays open — and both are gone before the picture is taken. Click the badge to call it
+off. Unlike an immediate capture, which uses the frozen copy made when the picker opened, a delayed
+one reads the screen fresh at the end of the count, which is the whole point.
 
 **Selection lock** (Capture Setting):
 
