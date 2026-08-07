@@ -206,6 +206,9 @@
     <Setting Name="NoteFontSize" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">11</Value>
     </Setting>
+    <Setting Name="NoteMonoFont" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="NoteHideTaskbar" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>

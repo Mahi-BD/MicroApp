@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.7.6 — 2026-08-08
+
+### Changed
+
+- **Notes are set in fixed-width text, the way Notepad is.** Every character now takes the same
+  width, so a Markdown table, a log or a block of code pasted into a note lines up column for column
+  instead of drifting a little further out of true on every row. The face is **Consolas**, Notepad's
+  own. A new switch in Note Setting, **Fixed-width text, like Notepad**, is on by default and turns
+  the whole thing back to Nirmala UI when you would rather write prose; open notes follow the switch
+  without being reopened.
+
+  Bangla is not left behind. No fixed-width face on Windows carries Bengali, so every Bangla run in a
+  note is drawn in **Nirmala UI** while the Latin around it keeps the fixed-width face — the columns
+  still line up, and the vowel signs still join onto their consonant. Notes with no Bangla in them do
+  no extra work at all. Phonetic typing is untouched by it: the suggestion list stays open while you
+  pick from it, and the restyling passes behind it without moving the caret or the scroll position.
+
 ## 4.7.5 — 2026-08-05
 
 ### Added

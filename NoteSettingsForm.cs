@@ -39,6 +39,7 @@ namespace MicroApp
             }
 
             hideTaskbarCheck.Checked = Properties.Settings.Default.NoteHideTaskbar;
+            monoFontCheck.Checked = Properties.Settings.Default.NoteMonoFont;
 
             dateBox.Text = Properties.Settings.Default.NoteDateFormat;
             longDateBox.Text = Properties.Settings.Default.NoteLongDateFormat;
@@ -225,6 +226,7 @@ namespace MicroApp
             Properties.Settings.Default.NoteTimestampFormat = timeBox.Text.Trim();
 
             Properties.Settings.Default.NoteHideTaskbar = hideTaskbarCheck.Checked;
+            Properties.Settings.Default.NoteMonoFont = monoFontCheck.Checked;
 
             Properties.Settings.Default.NoteAiProvider = providerBox.SelectedIndex;
             Properties.Settings.Default.NoteAiModel = modelBox.Text.Trim();
@@ -234,6 +236,7 @@ namespace MicroApp
 
             Properties.Settings.Default.Save();
             NoteForm.ApplyTaskbarSetting();   // open notes follow the toggle right away
+            NoteForm.ApplyFontSetting();      // and change face without being reopened
         }
     }
 }

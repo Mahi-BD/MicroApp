@@ -19,7 +19,7 @@ namespace MicroApp
         #region Designer generated code
 
         /// <summary>
-        /// Two columns, 984 x 580. Note Setting carries more than the other settings
+        /// Two columns, 984 x 612. Note Setting carries more than the other settings
         /// windows, and a single 640-wide column ran off the bottom of a laptop screen -
         /// so the cards sit side by side and the window always fits without scrolling.
         /// </summary>
@@ -40,6 +40,7 @@ namespace MicroApp
             this.Note_Shift = new ModernCheckBox();
             this.Note_Windows = new ModernCheckBox();
             this.hideTaskbarCheck = new ModernCheckBox();
+            this.monoFontCheck = new ModernCheckBox();
 
             this.cardDates = new Card();
             this.dateHost = new FieldHost();
@@ -132,9 +133,10 @@ namespace MicroApp
             this.cardNote.Controls.Add(this.Note_Shift);
             this.cardNote.Controls.Add(this.Note_Windows);
             this.cardNote.Controls.Add(this.hideTaskbarCheck);
+            this.cardNote.Controls.Add(this.monoFontCheck);
             this.cardNote.Location = new Point(24, 104);
             this.cardNote.Name = "cardNote";
-            this.cardNote.Size = new Size(936, 100);
+            this.cardNote.Size = new Size(936, 132);
             this.cardNote.TabIndex = 1;
             this.cardNote.Title = "Note";
             this.cardNote.Description = "Hot key that opens a new note";
@@ -213,6 +215,14 @@ namespace MicroApp
             this.hideTaskbarCheck.TabIndex = 5;
             this.hideTaskbarCheck.Text = "Hide note windows from the taskbar";
             //
+            // monoFontCheck
+            //
+            this.monoFontCheck.Location = new Point(16, 96);
+            this.monoFontCheck.Name = "monoFontCheck";
+            this.monoFontCheck.Size = new Size(560, 24);
+            this.monoFontCheck.TabIndex = 6;
+            this.monoFontCheck.Text = "Fixed-width text, like Notepad - tables and code line up";
+            //
             // cardDates
             //
             this.cardDates.Controls.Add(this.dateHost);
@@ -221,7 +231,7 @@ namespace MicroApp
             this.cardDates.Controls.Add(this.longDateLabel);
             this.cardDates.Controls.Add(this.timeHost);
             this.cardDates.Controls.Add(this.timeLabel);
-            this.cardDates.Location = new Point(24, 220);
+            this.cardDates.Location = new Point(24, 252);
             this.cardDates.Name = "cardDates";
             this.cardDates.Size = new Size(460, 164);
             this.cardDates.TabIndex = 2;
@@ -309,7 +319,7 @@ namespace MicroApp
             this.cardAi.Controls.Add(this.keyHost);
             this.cardAi.Controls.Add(this.banglaLabel);
             this.cardAi.Controls.Add(this.banglaHost);
-            this.cardAi.Location = new Point(500, 220);
+            this.cardAi.Location = new Point(500, 252);
             this.cardAi.Name = "cardAi";
             this.cardAi.Size = new Size(460, 230);
             this.cardAi.TabIndex = 3;
@@ -435,7 +445,7 @@ namespace MicroApp
             this.cardSync.Controls.Add(this.syncButton);
             this.cardSync.Controls.Add(this.syncCodeButton);
             this.cardSync.Controls.Add(this.disconnectButton);
-            this.cardSync.Location = new Point(24, 400);
+            this.cardSync.Location = new Point(24, 432);
             this.cardSync.Name = "cardSync";
             this.cardSync.Size = new Size(460, 112);
             this.cardSync.TabIndex = 4;
@@ -480,7 +490,7 @@ namespace MicroApp
             // cancelButton
             //
             this.cancelButton.DialogResult = DialogResult.Cancel;
-            this.cancelButton.Location = new Point(780, 532);
+            this.cancelButton.Location = new Point(780, 564);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new Size(88, 36);
             this.cancelButton.TabIndex = 5;
@@ -490,7 +500,7 @@ namespace MicroApp
             //
             this.saveButton.Accent = true;
             this.saveButton.DialogResult = DialogResult.OK;
-            this.saveButton.Location = new Point(880, 532);
+            this.saveButton.Location = new Point(880, 564);
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new Size(80, 36);
             this.saveButton.TabIndex = 6;
@@ -503,7 +513,7 @@ namespace MicroApp
             this.CancelButton = this.cancelButton;
             this.AutoScaleDimensions = new SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(984, 580);
+            this.ClientSize = new Size(984, 612);
             this.Controls.Add(this.cardNote);
             this.Controls.Add(this.cardDates);
             this.Controls.Add(this.cardAi);
@@ -550,6 +560,7 @@ namespace MicroApp
         private ModernCheckBox Note_Shift;
         private ModernCheckBox Note_Windows;
         private ModernCheckBox hideTaskbarCheck;
+        private ModernCheckBox monoFontCheck;
 
         private Card cardDates;
         private FieldHost dateHost;

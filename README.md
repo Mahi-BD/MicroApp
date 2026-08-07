@@ -135,6 +135,10 @@ Right-click a note to **pin** it to the top, **archive** it out of the way, give
 delete it — and **drag notes into whatever order you like**. Every note carries its own colour down
 the left edge of its row. Notes stay off the taskbar by default so they never pile up there.
 
+**The text is fixed-width**, like Notepad — paste a Markdown table or a log into a note and the
+columns line up instead of drifting. Bangla still comes out in Nirmala UI wherever it appears, so a
+mixed note stays readable; *Fixed-width text* in Note Setting turns it off again.
+
 ![All notes](docs/note-list.png)
 
 **Archive what you are done with.** Archived notes leave the list and live in their own window —
@@ -192,7 +196,7 @@ Six focused windows, all reachable from the tray menu:
 | **Capture Setting** | Screen capture hot key, selection lock, image output + folder |
 | **GIF Setting** | GIF hot key, fps and length, selection lock, GIF output + folder |
 | **Video Setting** | Video hot key, fps, quality, sound source, selection lock, output folder |
-| **Note Setting** | Note hot key, taskbar behaviour, date/time formats, AI provider + key, string.bd token, note sync |
+| **Note Setting** | Note hot key, taskbar behaviour, fixed-width text, date/time formats, AI provider + key, string.bd token, note sync |
 
 | | |
 |---|---|

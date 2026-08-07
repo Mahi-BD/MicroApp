@@ -253,9 +253,12 @@ your typing with less than a second of lag. Close the window and the note is on 
 note and its file is removed. The window title always shows the note's first line. Note windows stay
 **off the taskbar** by default (a switch in Note Setting brings them back).
 
-The text uses **Nirmala UI**, which draws Latin and Bengali letters at matching sizes, so a note that
-mixes English and Bangla reads evenly. **A-** and **A+** on the toolbar step the size between 8 and
-28 pt; the choice is remembered and applies to every open note at once.
+The text is **fixed-width**, the way Notepad is: every character takes the same space, so a pasted
+Markdown table, a log or a block of code lines up column for column instead of drifting. Bangla is
+drawn in **Nirmala UI** wherever it appears, since no fixed-width face carries Bengali — a note that
+mixes the two keeps its English lined up and its Bangla properly joined. Turn *Fixed-width text* off
+in Note Setting to put the whole note back in Nirmala UI. **A-** and **A+** on the toolbar step the
+size between 8 and 28 pt; the choice is remembered and applies to every open note at once.
 
 **The toolbar** — new note · all notes · remove every space · join all lines · insert date · insert
 long date · insert timestamp · **undo** · **redo** · **A-** · **A+** · **E / ক** (Bangla) ·
@@ -425,6 +428,7 @@ the decoration, never a note.
 |---|---|
 | New note hot key | `Ctrl + Shift + N` |
 | Hide note windows from the taskbar | on |
+| Fixed-width text, like Notepad | on |
 | Date format | `yyyy-MM-dd` |
 | Long date format | `dddd, dd MMMM yyyy` |
 | Timestamp format | `yyyy-MM-dd HH:mm:ss` |

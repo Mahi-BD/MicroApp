@@ -974,6 +974,7 @@ namespace MicroApp
         private readonly Timer _saveTimer;
         private readonly Timer _spellTimer;
         private bool _dirty;
+        private bool _restyling;   // ApplyBanglaRuns is moving the selection about
 
         private const string AskHintText = "Ask AI: e.g. rewrite this note as a Facebook post";
 
@@ -1044,6 +1045,7 @@ namespace MicroApp
                     int caret = form._box.SelectionStart;
                     form._box.Text = onDisk;
                     form._box.SelectionStart = Math.Min(caret, onDisk.Length);
+                    form.ApplyBanglaRuns();
                     form._dirty = false;
                     form.UpdateTitle();
                 }
@@ -1168,9 +1170,7 @@ namespace MicroApp
                 BorderStyle = BorderStyle.None,
                 BackColor = Theme.Surface,
                 ForeColor = Theme.Text,
-                // Nirmala UI has matching Latin and Bengali designs, so mixed text sits
-                // on one visual size (Consolas has no Bangla and the fallback ran large)
-                Font = new Font("Nirmala UI", NoteFontSize()),
+                Font = NoteEditorFont(),
                 ScrollBars = RichTextBoxScrollBars.ForcedVertical,   // always reserved, always clipped
                 AcceptsTab = true,
                 DetectUrls = false,
@@ -1257,13 +1257,14 @@ namespace MicroApp
             _saveTimer.Tick += (s, e) => { _saveTimer.Stop(); SaveNow(); };
 
             _spellTimer = new Timer { Interval = 600 };
-            _spellTimer.Tick += (s, e) => { _spellTimer.Stop(); RunSpellCheck(); };
+            _spellTimer.Tick += (s, e) => { _spellTimer.Stop(); ApplyBanglaRuns(); RunSpellCheck(); };
 
             _suggestTimer = new Timer { Interval = 120 };
             _suggestTimer.Tick += (s, e) => { _suggestTimer.Stop(); QuerySuggestions(); };
 
             _box.TextChanged += (s, e) =>
             {
+                if (_restyling) return;   // a font change is not an edit: leave the popup and the timers alone
                 _dirty = true;
                 _saveTimer.Stop(); _saveTimer.Start();
                 _spellTimer.Stop(); _spellTimer.Start();
@@ -1279,7 +1280,10 @@ namespace MicroApp
             _box.KeyPress += Box_SuggestKeyPress;
             _box.SelectionChanged += (s, e) =>
             {
-                // the caret walked away from the word the popup was for
+                // the caret walked away from the word the popup was for — but only when the
+                // caret really moved: ApplyBanglaRuns walks the selection over every Bangla
+                // run and puts it back, and that must not close the suggestions
+                if (_restyling) return;
                 if (_suggestPopup == null || !_suggestPopup.Visible) return;
                 int start; string word;
                 if (!CurrentWord(out start, out word)) HideSuggest();
@@ -1327,7 +1331,7 @@ namespace MicroApp
             Native.SetDarkModeForWindow(Handle, dark);
             Theme.RoundWindowCorners(Handle);
 
-            Shown += (s, e) => { _box.Focus(); RunSpellCheck(); };
+            Shown += (s, e) => { _box.Focus(); ApplyBanglaRuns(); RunSpellCheck(); };
         }
 
         private static int AddTool(Panel toolbar, ToolTip tips, NoteToolButton.Glyph glyph,
@@ -1372,6 +1376,19 @@ namespace MicroApp
             return Math.Max(8, Math.Min(28, Properties.Settings.Default.NoteFontSize));
         }
 
+        /// <summary>
+        /// The face the editor is set in. Consolas is Notepad's: every character is the
+        /// same width, so a pasted Markdown table or a block of code lines up column for
+        /// column. Nirmala UI is the alternative for anyone writing mixed Bangla — its
+        /// Latin and Bengali designs share one visual size, where Consolas has no Bengali
+        /// at all and the substitute Windows picks runs large beside it.
+        /// </summary>
+        private static Font NoteEditorFont()
+        {
+            return new Font(Properties.Settings.Default.NoteMonoFont ? "Consolas" : "Nirmala UI",
+                            NoteFontSize());
+        }
+
         /// <summary>A-/A+ toolbar buttons: persist the size and restyle every open note.</summary>
         private static void StepFontSize(int delta)
         {
@@ -1379,20 +1396,96 @@ namespace MicroApp
             if (size == Properties.Settings.Default.NoteFontSize) return;
             Properties.Settings.Default.NoteFontSize = size;
             Properties.Settings.Default.Save();
+            ApplyFontSetting();
+        }
 
-            var font = new Font("Nirmala UI", size);
+        /// <summary>Puts the current face and size on every open note, text and all.</summary>
+        public static void ApplyFontSetting()
+        {
+            var font = NoteEditorFont();
             foreach (var form in new List<NoteForm>(OpenForms.Values))
             {
                 try
                 {
                     int start = form._box.SelectionStart, length = form._box.SelectionLength;
                     form._box.SelectAll();
-                    form._box.SelectionFont = font;   // existing text (incl. Bangla runs) follows too
+                    form._box.SelectionFont = font;   // existing text follows the new face too
                     form._box.Font = font;
                     form._box.Select(start, length);
+                    form.ApplyBanglaRuns();           // ...except the Bangla, which needs its own
                 }
                 catch (Exception) { }
             }
+        }
+
+        private const int WM_SETREDRAW = 0x000B;
+
+        /// <summary>
+        /// Consolas has no Bengali at all. Left alone, Windows substitutes a face for each
+        /// character on its own, which stops the vowel signs joining onto their consonant
+        /// and lets the line break between every letter — a Bangla word comes out one
+        /// letter per line. So every Bangla run is given Nirmala UI instead: the Latin
+        /// around it keeps the fixed-width face and still lines up column for column.
+        /// Only mixed notes pay anything, and a run already in the right face is skipped.
+        /// </summary>
+        private void ApplyBanglaRuns()
+        {
+            if (_restyling || !Properties.Settings.Default.NoteMonoFont) return;
+
+            string text = _box.Text;
+            var runs = new List<int>();      // start, length, start, length...
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (!IsBanglaLetter(text[i])) { i++; continue; }
+                int start = i;
+                while (i < text.Length && IsBanglaRunChar(text[i])) i++;
+                runs.Add(start);
+                runs.Add(i - start);
+            }
+            if (runs.Count == 0) return;
+
+            _restyling = true;
+            int caret = _box.SelectionStart, selected = _box.SelectionLength;
+            int firstLine = (int)Native.SendMessage(_box.Handle, Native.EM_GETFIRSTVISIBLELINE,
+                                                    IntPtr.Zero, IntPtr.Zero);
+            Native.SendMessage(_box.Handle, WM_SETREDRAW, IntPtr.Zero, IntPtr.Zero);
+            try
+            {
+                using (var bangla = new Font(BanglaFace, NoteFontSize()))
+                {
+                    for (int r = 0; r < runs.Count; r += 2)
+                    {
+                        _box.Select(runs[r], runs[r + 1]);
+                        var already = _box.SelectionFont;
+                        if (already != null && already.FontFamily.Name == bangla.FontFamily.Name) continue;
+                        _box.SelectionFont = bangla;
+                    }
+                }
+                _box.Select(caret, selected);
+            }
+            catch (Exception) { }
+            finally
+            {
+                Native.SendMessage(_box.Handle, WM_SETREDRAW, (IntPtr)1, IntPtr.Zero);
+                int now = (int)Native.SendMessage(_box.Handle, Native.EM_GETFIRSTVISIBLELINE,
+                                                  IntPtr.Zero, IntPtr.Zero);
+                if (now != firstLine)
+                {
+                    Native.SendMessage(_box.Handle, Native.EM_LINESCROLL, IntPtr.Zero,
+                                       (IntPtr)(firstLine - now));
+                }
+                _box.Invalidate();
+                _restyling = false;
+            }
+        }
+
+        private const string BanglaFace = "Nirmala UI";
+
+        /// <summary>A Bangla letter, or a joiner sitting inside a Bangla word.</summary>
+        private static bool IsBanglaRunChar(char c)
+        {
+            return IsBanglaLetter(c) || c == '\u200C' || c == '\u200D';
         }
 
         #region Bangla phonetic typing

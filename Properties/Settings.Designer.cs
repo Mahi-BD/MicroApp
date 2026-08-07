@@ -817,6 +817,18 @@ namespace MicroApp.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NoteMonoFont {
+            get {
+                return ((bool)(this["NoteMonoFont"]));
+            }
+            set {
+                this["NoteMonoFont"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string NoteBanglaToken {
             get {
