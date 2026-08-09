@@ -1257,7 +1257,7 @@ namespace MicroApp
             _saveTimer.Tick += (s, e) => { _saveTimer.Stop(); SaveNow(); };
 
             _spellTimer = new Timer { Interval = 600 };
-            _spellTimer.Tick += (s, e) => { _spellTimer.Stop(); ApplyBanglaRuns(); RunSpellCheck(); };
+            _spellTimer.Tick += (s, e) => { _spellTimer.Stop(); RestyleEdited(); RunSpellCheck(); };
 
             _suggestTimer = new Timer { Interval = 120 };
             _suggestTimer.Tick += (s, e) => { _suggestTimer.Stop(); QuerySuggestions(); };
@@ -1427,58 +1427,122 @@ namespace MicroApp
         /// letter per line. So every Bangla run is given Nirmala UI instead: the Latin
         /// around it keeps the fixed-width face and still lines up column for column.
         /// Only mixed notes pay anything, and a run already in the right face is skipped.
+        ///
+        /// A long Bangla note is hundreds of runs, so this must never do more work than
+        /// the edit deserves: <see cref="RestyleEdited"/> walks only the characters that
+        /// actually changed, and the face is read and written through the rich edit
+        /// control itself rather than through SelectionFont, which would build a managed
+        /// Font per run.
         /// </summary>
         private void ApplyBanglaRuns()
+        {
+            Restyle(0, int.MaxValue);
+        }
+
+        /// <summary>
+        /// The same, but only over the text that changed since the last pass — one word
+        /// while someone types, instead of the whole note.
+        /// </summary>
+        private void RestyleEdited()
         {
             if (_restyling || !Properties.Settings.Default.NoteMonoFont) return;
 
             string text = _box.Text;
+            string was = _styledText;
+            if (text == was) return;
+
+            // the changed span is whatever sits between the common prefix and the common
+            // suffix — exact for typing, pasting, undo and a whole-note AI rewrite alike
+            int max = Math.Min(text.Length, was.Length);
+            int prefix = 0;
+            while (prefix < max && text[prefix] == was[prefix]) prefix++;
+            int suffix = 0;
+            while (suffix < max - prefix &&
+                   text[text.Length - 1 - suffix] == was[was.Length - 1 - suffix]) suffix++;
+
+            Restyle(prefix, text.Length - suffix);
+        }
+
+        /// <summary>Gives every Bangla run touching [from, to) the Bangla face.</summary>
+        private void Restyle(int from, int to)
+        {
+            if (_restyling || !Properties.Settings.Default.NoteMonoFont) return;
+
+            string text = _box.Text;
+            _styledText = text;
+
+            if (from < 0) from = 0;
+            if (to > text.Length) to = text.Length;
+            if (from >= to) return;
+
+            // a run half inside the window still has to be styled whole, or the face
+            // would change in the middle of a word
+            while (from > 0 && IsBanglaRunChar(text[from - 1])) from--;
+            while (to < text.Length && IsBanglaRunChar(text[to])) to++;
+
             var runs = new List<int>();      // start, length, start, length...
-            int i = 0;
-            while (i < text.Length)
+            int i = from;
+            while (i < to)
             {
                 if (!IsBanglaLetter(text[i])) { i++; continue; }
-                int start = i;
-                while (i < text.Length && IsBanglaRunChar(text[i])) i++;
+                int start = i, end = i;
+                while (true)
+                {
+                    while (end < text.Length && IsBanglaRunChar(text[end])) end++;
+                    // a space or a full stop between two Bangla words joins them into one
+                    // run: a Bangla sentence costs one format call instead of one per word,
+                    // and rich edit re-lays the note out once per call. The separator ends
+                    // up in the Bangla face too, which only moves it by a fraction of a
+                    // character — and a line with Bangla on it is not lining up in columns
+                    // anyway. Anything else between them, Latin or a digit, keeps the
+                    // fixed-width face and its column.
+                    int gap = end;
+                    while (gap < text.Length && IsBanglaGapChar(text[gap])) gap++;
+                    if (gap > end && gap < text.Length && IsBanglaLetter(text[gap])) { end = gap; continue; }
+                    break;
+                }
                 runs.Add(start);
-                runs.Add(i - start);
+                runs.Add(end - start);
+                i = end;
             }
             if (runs.Count == 0) return;
 
             _restyling = true;
+            IntPtr edit = _box.Handle;
             int caret = _box.SelectionStart, selected = _box.SelectionLength;
-            int firstLine = (int)Native.SendMessage(_box.Handle, Native.EM_GETFIRSTVISIBLELINE,
+            int firstLine = (int)Native.SendMessage(edit, Native.EM_GETFIRSTVISIBLELINE,
                                                     IntPtr.Zero, IntPtr.Zero);
-            Native.SendMessage(_box.Handle, WM_SETREDRAW, IntPtr.Zero, IntPtr.Zero);
+            Native.SendMessage(edit, WM_SETREDRAW, IntPtr.Zero, IntPtr.Zero);
             try
             {
-                using (var bangla = new Font(BanglaFace, NoteFontSize()))
+                for (int r = 0; r < runs.Count; r += 2)
                 {
-                    for (int r = 0; r < runs.Count; r += 2)
-                    {
-                        _box.Select(runs[r], runs[r + 1]);
-                        var already = _box.SelectionFont;
-                        if (already != null && already.FontFamily.Name == bangla.FontFamily.Name) continue;
-                        _box.SelectionFont = bangla;
-                    }
+                    Native.SelectRange(edit, runs[r], runs[r + 1]);
+                    if (Native.GetSelectionFace(edit) == BanglaFace) continue;
+                    Native.SetSelectionFace(edit, BanglaFace);
                 }
-                _box.Select(caret, selected);
+                Native.SelectRange(edit, caret, selected);
             }
             catch (Exception) { }
             finally
             {
-                Native.SendMessage(_box.Handle, WM_SETREDRAW, (IntPtr)1, IntPtr.Zero);
-                int now = (int)Native.SendMessage(_box.Handle, Native.EM_GETFIRSTVISIBLELINE,
+                Native.SendMessage(edit, WM_SETREDRAW, (IntPtr)1, IntPtr.Zero);
+                int now = (int)Native.SendMessage(edit, Native.EM_GETFIRSTVISIBLELINE,
                                                   IntPtr.Zero, IntPtr.Zero);
                 if (now != firstLine)
                 {
-                    Native.SendMessage(_box.Handle, Native.EM_LINESCROLL, IntPtr.Zero,
+                    Native.SendMessage(edit, Native.EM_LINESCROLL, IntPtr.Zero,
                                        (IntPtr)(firstLine - now));
                 }
+                // redraw was off while the faces went on, so nothing repaints itself.
+                // Only an edit gets this far, so an idle note still never flickers.
                 _box.Invalidate();
                 _restyling = false;
             }
         }
+
+        /// <summary>The text as it stood at the end of the last restyle.</summary>
+        private string _styledText = string.Empty;
 
         private const string BanglaFace = "Nirmala UI";
 
@@ -1486,6 +1550,26 @@ namespace MicroApp
         private static bool IsBanglaRunChar(char c)
         {
             return IsBanglaLetter(c) || c == '\u200C' || c == '\u200D';
+        }
+
+        /// <summary>
+        /// Punctuation that can sit between two Bangla words without ending the run:
+        /// a space, a dari, or the usual sentence marks. Never a tab or a line break,
+        /// which are what a note lines its columns up with.
+        /// </summary>
+        private static bool IsBanglaGapChar(char c)
+        {
+            switch (c)
+            {
+                case ' ':
+                case '\u0964':   // dari
+                case '\u0965':   // double dari
+                case ',': case '.': case ';': case ':': case '!': case '?':
+                case '\'': case '"': case '(': case ')':
+                case '-': case '\u2013': case '\u2014':
+                    return true;
+            }
+            return false;
         }
 
         #region Bangla phonetic typing

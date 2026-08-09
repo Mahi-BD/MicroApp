@@ -367,6 +367,99 @@ namespace MicroApp
 
         #endregion
 
+        #region Rich edit character formatting
+
+        // Reading a run's face through RichTextBox.SelectionFont builds a managed Font
+        // (and a GDI+ font behind it) for every single run, which is far too slow to do
+        // hundreds of times while someone is typing. These talk to the control directly.
+
+        public const int EM_EXSETSEL = 0x0437;        // WM_USER + 55
+        public const int EM_GETCHARFORMAT = 0x043A;   // WM_USER + 58
+        public const int EM_SETCHARFORMAT = 0x0444;   // WM_USER + 68
+
+        public const int SCF_SELECTION = 0x0001;
+        public const int CFM_CHARSET = 0x08000000;
+        public const int CFM_FACE = 0x20000000;
+
+        public const byte DEFAULT_CHARSET = 1;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CHARRANGE
+        {
+            public int cpMin;
+            public int cpMax;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 4)]
+        public struct CHARFORMAT2W
+        {
+            public int cbSize;
+            public uint dwMask;
+            public uint dwEffects;
+            public int yHeight;
+            public int yOffset;
+            public int crTextColor;
+            public byte bCharSet;
+            public byte bPitchAndFamily;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string szFaceName;
+            public ushort wWeight;
+            public short sSpacing;
+            public int crBackColor;
+            public int lcid;
+            public uint dwReserved;
+            public short sStyle;
+            public ushort wKerning;
+            public byte bUnderlineType;
+            public byte bAnimation;
+            public byte bRevAuthor;
+            public byte bReserved1;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, ref CHARFORMAT2W lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, ref CHARRANGE lParam);
+
+        /// <summary>Selects [start, start+length) without going through the managed property.</summary>
+        public static void SelectRange(IntPtr edit, int start, int length)
+        {
+            var range = new CHARRANGE { cpMin = start, cpMax = start + length };
+            SendMessage(edit, EM_EXSETSEL, IntPtr.Zero, ref range);
+        }
+
+        /// <summary>
+        /// The face name the current selection is in, or null when the selection spans
+        /// more than one face (rich edit clears CFM_FACE in that case).
+        /// </summary>
+        public static string GetSelectionFace(IntPtr edit)
+        {
+            var fmt = new CHARFORMAT2W();
+            fmt.cbSize = Marshal.SizeOf(typeof(CHARFORMAT2W));
+            fmt.szFaceName = string.Empty;
+            SendMessage(edit, EM_GETCHARFORMAT, (IntPtr)SCF_SELECTION, ref fmt);
+            if ((fmt.dwMask & CFM_FACE) == 0) return null;
+            return fmt.szFaceName;
+        }
+
+        /// <summary>
+        /// Puts one face on the current selection and leaves everything else about it
+        /// alone — size, colour and weight all stay as they were.
+        /// </summary>
+        public static void SetSelectionFace(IntPtr edit, string face)
+        {
+            var fmt = new CHARFORMAT2W();
+            fmt.cbSize = Marshal.SizeOf(typeof(CHARFORMAT2W));
+            fmt.dwMask = CFM_FACE | CFM_CHARSET;
+            fmt.bCharSet = DEFAULT_CHARSET;   // as a managed Font would have set it
+            fmt.bPitchAndFamily = 0;
+            fmt.szFaceName = face;
+            SendMessage(edit, EM_SETCHARFORMAT, (IntPtr)SCF_SELECTION, ref fmt);
+        }
+
+        #endregion
+
         // Per-window DPI awareness (Win10 1607+; UNAWARE_GDISCALED needs 1809+)
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr dpiContext);

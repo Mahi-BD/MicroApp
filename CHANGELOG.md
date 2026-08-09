@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.7.7 — 2026-08-09
+
+### Fixed
+
+- **A long Bangla note no longer freezes while you type it.** In a note of a few thousand Bangla
+  characters, the window locked up for two to three seconds shortly after every pause in typing, over
+  and over, which made a long piece of writing almost impossible to work in. The cause was the
+  fixed-width setting added in 4.7.6: to keep Bangla readable it puts Nirmala UI on every Bangla run
+  in the note, and it was redoing that for the whole note after every keystroke — several hundred
+  separate pieces of text, each one costing a font of its own.
+
+  It now only restyles the words that actually changed, and it asks the editor for the face directly
+  instead of building a font to compare against. Typing into that same note went from a **2.8 second**
+  freeze to **17 milliseconds**, and pasting the whole thing in from **2.5 seconds** to **70
+  milliseconds**. Nothing about the result changed: Bangla is still drawn in Nirmala UI with its vowel
+  signs joined, the Latin around it still lines up column for column, and the phonetic suggestion list
+  still stays open while you pick from it.
+
 ## 4.7.6 — 2026-08-08
 
 ### Changed
