@@ -994,5 +994,112 @@ namespace MicroApp.Properties {
                 this["SettingsUpgraded"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("E")]
+        public string ImageEditorHotKey {
+            get {
+                return ((string)(this["ImageEditorHotKey"]));
+            }
+            set {
+                this["ImageEditorHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int ImageEditorHotKeyModifier {
+            get {
+                return ((int)(this["ImageEditorHotKeyModifier"]));
+            }
+            set {
+                this["ImageEditorHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ImageEditorHotKeyTakeOver {
+            get {
+                return ((string)(this["ImageEditorHotKeyTakeOver"]));
+            }
+            set {
+                this["ImageEditorHotKeyTakeOver"] = value;
+            }
+        }
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("D")]
+        public string DateHotKey {
+            get {
+                return ((string)(this["DateHotKey"]));
+            }
+            set {
+                this["DateHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int DateHotKeyModifier {
+            get {
+                return ((int)(this["DateHotKeyModifier"]));
+            }
+            set {
+                this["DateHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DateHotKeyTakeOver {
+            get {
+                return ((string)(this["DateHotKeyTakeOver"]));
+            }
+            set {
+                this["DateHotKeyTakeOver"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("M")]
+        public string LongDateHotKey {
+            get {
+                return ((string)(this["LongDateHotKey"]));
+            }
+            set {
+                this["LongDateHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int LongDateHotKeyModifier {
+            get {
+                return ((int)(this["LongDateHotKeyModifier"]));
+            }
+            set {
+                this["LongDateHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LongDateHotKeyTakeOver {
+            get {
+                return ((string)(this["LongDateHotKeyTakeOver"]));
+            }
+            set {
+                this["LongDateHotKeyTakeOver"] = value;
+            }
+        }
     }
 }

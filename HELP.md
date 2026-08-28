@@ -34,7 +34,9 @@ Screen Capture
 Record GIF
 Record Video
 New Note
+Image Editor
 ────────────────
+Shortcuts
 Key Setting
 OCR Setting
 Capture Setting
@@ -365,6 +367,70 @@ the decoration, never a note.
 
 ---
 
+## Image Editor
+
+Tray → **Image Editor**, or **Ctrl+Alt+E**. The window opens on whatever image is on the
+clipboard; with nothing there, paste later (**Ctrl+V**), drop a file onto the window, or start
+blank with **File → New**.
+
+### Layers
+
+The panel on the right lists every layer, top-most first. Click the eye to hide one, the
+slider fades the selected layer's opacity, and the buttons under the list move it up or down
+the stack, duplicate it or delete it. Double-click a name to rename. A pasted image, a mark, a
+text box and an asset are all just layers — nothing is combined until you save.
+
+### Tools (left rail, or the key in brackets)
+
+| Tool | What it does |
+|---|---|
+| Move **(V)** | Click a layer to select it; drag to move. The white handles resize (**Shift** keeps proportions), the round handle above rotates (**Shift** snaps to 15°). The options bar adds Mirror ↔ / Mirror ↕ / Rotate 90° for the selected layer. |
+| Crop **(C)** | Drag the crop over the canvas, then **Enter** (or *Apply crop*) cuts the picture down. **Esc** cancels. |
+| Rectangle / Ellipse **(R / E)** | Drag to draw. Stroke colour, width and fill are in the options bar — right-click the fill swatch for none. **Shift** draws squares and circles. |
+| Line / Arrow **(L / A)** | Drag from tail to head. **Shift** snaps to 45° steps. |
+| Pen **(P)** | Freehand drawing. |
+| Text **(T)** | Click the canvas and type; click away (or **Ctrl+Enter**) commits, **Esc** cancels. Font, size, **B**/**I**/**U**, colour, background box and outline live in the options bar. Double-click a text layer later (Move tool) to edit it again; rotate and mirror it like any layer — mirrored text really renders mirrored. |
+| Blur **(B)** | Paint over an image layer and the brushed area is blurred with soft edges — made for hiding names, numbers and faces in screenshots. Brush size and strength are in the options bar. |
+
+The wheel zooms, **Ctrl+0** fits, **Ctrl+1** is 100%, and the middle button (or holding
+**Space**) pans. Arrows nudge the selected layer a pixel, **Shift+arrows** ten. **Ctrl+Z /
+Ctrl+Y** undo and redo — forty steps.
+
+### The asset library
+
+The bottom-right panel keeps logos, stamps and any PNG/JPG/vector (WMF/EMF) art you reuse,
+organised as categories and sub-categories. **＋ Folder** makes a category under the selected
+one, **＋ Import** copies image files in, and double-clicking an asset drops it onto the canvas
+as a new layer. **Layer → Save Layer as Asset** goes the other way — it renders the selected
+layer alone and stores it in the current category.
+
+It is all plain files under `%AppData%\MicroApp\Assets` — one folder per category — so you can
+also fill it straight from Explorer.
+
+### Getting the picture out
+
+- **File → Save As** — PNG keeps transparency, JPG (over white) for mail, or BMP.
+- **Ctrl+Shift+C** — puts the flattened result straight back on the clipboard.
+- **Image → Resize** scales the whole composition — layers, text sizes and stroke widths
+  included; **Image → Rotate / Mirror** turns or flips the whole canvas.
+
+---
+
+## Shortcuts
+
+Tray → **Shortcuts** shows every hot key in one window — typing, OCR, Pick Text, capture, GIF,
+video, notes, the image editor and the two typed dates. The rows edit the very same settings the
+individual feature windows do, so the two always agree: change a hot key here and the feature's
+own settings window shows the new value; change it there and this window shows it. Saving warns
+if two actions ended up on the same combination, and an empty key box disables that hot key.
+
+**Typed dates**: **Ctrl+Shift+D** types today's date and **Ctrl+Shift+M** the long form into
+whatever window has focus, using the same typing engine as the clipboard paste — so they work in
+the same places, VM consoles included. Both formats are edited on this window with a live
+preview; they are the same formats the note toolbar's date buttons use.
+
+---
+
 ## Settings reference
 
 ### Key Setting
@@ -533,6 +599,8 @@ Uninstalling removes the shortcut either way.
   writable (portable use), otherwise under `%AppData%\MicroApp\Notes`. Pins, archive flags, colours
   and the manual order sit beside them in `.notes-meta`; sync keeps `.sync-log` and `.notes-deleted`
   in the same folder.
+- **Editor assets** — the image editor's logo/stamp library lives under `%AppData%\MicroApp\Assets`,
+  one folder per category. Copying files there in Explorer works just as well as the Import button.
 - **The app itself** — `C:\Program Files\MicroApp` (standard installer),
   `%LOCALAPPDATA%\Programs\MicroApp` (per-user installer), or wherever you unzipped the portable build.
 - **Your settings** — the standard per-user .NET settings file under

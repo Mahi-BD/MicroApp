@@ -8,6 +8,7 @@ A small Windows tray tool that does a handful of things well:
 - **Captures a screen region as a PNG**, with an optional locked ratio or locked pixel size.
 - **Records a screen region as an animated GIF.**
 - **Records a screen region as an MP4 video with sound**, no time limit, with pause/resume.
+- **An image editor** — paste a screenshot, crop it, draw arrows and boxes, add styled text, blur the private parts, stamp logos from a reusable asset library — all as Photoshop-style layers, exported as one PNG/JPG.
 - **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check, **Bangla phonetic typing**, an **archive** for the ones you are done with, and an AI that fixes grammar or rewrites the note on request.
 - **Optionally, the same notes on every PC** — mirrored through a free database **you** own, set up by a wizard. Off until you turn it on.
 
@@ -185,6 +186,31 @@ local-only at any time, leaving every note where it is.
 
 ---
 
+### 8. Image Editor
+
+Press **Ctrl+Alt+E** (or tray → *Image Editor*) and paste any image — the window opens on whatever
+is on the clipboard. It is a small Photoshop: a tool rail on the left, the canvas in the middle,
+layers and the asset library on the right.
+
+- **Layers.** Every paste, mark, text box and asset is its own layer: reorder them, hide them,
+  fade their opacity, rename, duplicate, delete. Nothing is baked in until you export.
+- **Marks.** Rectangle, ellipse, line, arrow and a freehand pen, each with stroke colour, width
+  and optional fill — made for annotating screenshots.
+- **Text.** Click to type a text box; pick font, size, bold/italic/underline, colour, a
+  background box and an outline. Rotate it with the handle above the box, mirror it from the
+  options bar — mirrored and rotated text renders exactly as shown.
+- **Transform anything.** Drag to move, handles to resize (Shift keeps the proportions), the top
+  handle rotates, and every layer — image or text — can be mirrored or turned 90°.
+- **Crop and resize.** A crop tool for the canvas, and Image → Resize scales the whole
+  composition, layers included.
+- **Blur brush.** Paint over the private parts of a screenshot — the brushed area is blurred with
+  soft, feathered edges. Brush size and strength are in the options bar.
+- **Asset library.** Keep logos, stamps and PNG/vector art organised in categories and
+  sub-categories (a folder tree under `%AppData%\MicroApp\Assets`). Double-click any asset to
+  drop it in as a layer, and save any layer back into the library.
+- **Out again.** File → Save As (PNG keeps transparency, JPG for mail) or **Ctrl+Shift+C** to put
+  the finished image straight back on the clipboard.
+
 ## Settings
 
 Six focused windows, all reachable from the tray menu:
@@ -219,13 +245,18 @@ installing and first-run setup are in **[SETUP.md](SETUP.md)**.
 | Record GIF | `Ctrl + Alt + G` |
 | Record Video | `Ctrl + Alt + R` |
 | New note | `Ctrl + Shift + N` |
+| Image editor | `Ctrl + Alt + E` |
+| Type the date | `Ctrl + Shift + D` |
+| Type the long date | `Ctrl + Shift + M` |
 | Bangla / English in a note | `Ctrl + Shift + L` |
 | Cancel anything in progress | `Esc` |
 
 Hot keys act the moment the combination is pressed — the crosshair appears while the keys are still held.
 
 Global hot keys win over the focused app, so if one collides with something you use, change it — every
-hot key is editable in its settings window, and clearing the key box disables that hot key entirely.
+hot key is editable in its settings window, or all of them together under tray → **Shortcuts**, and
+clearing the key box disables that hot key entirely. **Ctrl+Shift+D / Ctrl+Shift+M** type the current
+date (short / long form) into the focused window; their formats live on the Shortcuts window too.
 
 ---
 

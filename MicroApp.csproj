@@ -107,6 +107,14 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Native.cs" />
+    <Compile Include="ImageEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImageEditorLayers.cs" />
+    <Compile Include="ImageEditorAssets.cs" />
+    <Compile Include="ShortcutSettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="TextPicker.cs" />
     <Compile Include="NoteForm.cs" />

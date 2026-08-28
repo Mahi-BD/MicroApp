@@ -1,5 +1,89 @@
 # Changelog
 
+## 4.9.3 — 2026-08-29
+
+### Fixed
+
+- **Searching the notes list now looks inside the notes.** The search box on the Notes window
+  only matched a note's name and its title line; a word that appeared further down found
+  nothing. It now searches the full text of every note, the way the Archive window always did —
+  same matching, same per-note cache, so typing stays instant.
+
+## 4.9.2 — 2026-08-29
+
+### Changed
+
+- **Image editor: the side panels got their outlines back — the soft way.** Removing the black
+  Windows borders in 4.9.1 left the layers and asset boxes floating with no edges at all; they
+  now wear a quiet one-pixel grey frame that matches the rest of the theme.
+
+## 4.9.1 — 2026-08-29
+
+### Changed
+
+- **Image editor: the options bar stays out of the way.** It only appears when the current tool
+  actually has options to show — drawing, text, blur, crop, or a selected layer. Plain Move with
+  nothing selected keeps the full height for the canvas.
+- **Image editor: no more hard black borders.** The layers list and the asset panels lost their
+  Windows-drawn black outlines; the panel buttons became soft borderless chips; the empty-state
+  icon is drawn properly instead of falling back to a hollow box glyph.
+
+## 4.9.0 — 2026-08-29
+
+### Added
+
+- **Shortcuts — every hot key in one window.** Tray → *Shortcuts* lists all ten hot keys with
+  their modifiers and keys in one place. They are the same values the feature windows edit, so a
+  change made here shows up in Key/OCR/Capture/GIF/Video/Note Setting and a change made there
+  shows up here — one setting, two doors. Duplicate combinations are caught on save, and
+  clearing a key box turns that hot key off.
+
+- **Typed dates.** Two new hot keys type the date straight into whatever window has focus,
+  through the same engine the clipboard paste uses: **Ctrl+Shift+D** for the short date and
+  **Ctrl+Shift+M** for the long one. Their formats are editable on the Shortcuts window (with a
+  live preview) and are shared with the note toolbar's date buttons.
+
+- **Asset categories can be renamed.** Right-click a category in the image editor's asset panel
+  (or press F2) → *Rename Category*; the folder on disk is renamed and the tree follows. The
+  context menu also creates sub-categories.
+
+### Changed
+
+- **The image editor looks the part now.** The tool rail got grouped sections, rounded hover
+  and active states; the options bar leads with the current tool's name; every layer row shows
+  a little preview thumbnail of what it holds, a cleaner eye toggle and a quiet accent
+  selection instead of a solid slab; the layers header counts its layers; the canvas floats on
+  a soft shadow; the empty editor greets with a proper drop-target instead of a bare line of
+  text; and the status bar separates facts (size, zoom, layer count) from the per-tool hint.
+
+## 4.8.0 — 2026-08-29
+
+### Added
+
+- **An image editor.** Tray → *Image Editor* or **Ctrl+Alt+E** opens a Photoshop-style window:
+  tool rail on the left, canvas in the middle, layers and an asset library on the right. It opens
+  on whatever image is on the clipboard, and Ctrl+V keeps adding more.
+
+  Everything you put on the canvas — a pasted screenshot, a rectangle, an arrow, a text box, a
+  logo — stays its **own layer**: show or hide it with the eye, fade its opacity, move it up or
+  down the stack, rename, duplicate, delete. Nothing is flattened until export.
+
+  The tools: move/select (with resize handles, a rotate handle, Shift to keep proportions),
+  crop, rectangle, ellipse, line, arrow, freehand pen, text and a **blur brush** that paints a
+  soft-edged blur over the private parts of a screenshot. Shapes have stroke colour, width and
+  optional fill; text has font, size, bold/italic/underline, colour, a background box and an
+  outline, and can be rotated and mirrored like any other layer — mirrored text renders truly
+  mirrored. The Image menu rotates or mirrors the whole canvas, and Resize scales the whole
+  composition, layers included.
+
+  The **asset library** keeps logos and stamps at hand, organised in categories and
+  sub-categories — it is simply a folder tree under `%AppData%\MicroApp\Assets`, so Explorer can
+  fill it too. Import images into a category, double-click one to drop it in as a layer, or save
+  any layer back into the library as a PNG asset.
+
+  Out again: File → Save As (PNG keeps transparency, JPG for mail, BMP), or Ctrl+Shift+C puts
+  the finished image straight back on the clipboard. Undo covers everything, forty steps deep.
+
 ## 4.7.7 — 2026-08-09
 
 ### Fixed

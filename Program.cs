@@ -202,6 +202,16 @@ namespace MicroApp
         int? _noteHotKey;
         EventHandler<HotKeyEventArgs> _noteHotKeyHandler = null;
 
+        // image editor: paste, mark up, layer and export screenshots
+        int? _editorHotKey;
+        EventHandler<HotKeyEventArgs> _editorHotKeyHandler = null;
+
+        // typed dates: one hot key drops today's date into the focused window, one the long form
+        int? _dateHotKey;
+        EventHandler<HotKeyEventArgs> _dateHotKeyHandler = null;
+        int? _longDateHotKey;
+        EventHandler<HotKeyEventArgs> _longDateHotKeyHandler = null;
+
         // text picker: "+" crosshair, click an element, get its real text (UI Automation, no OCR)
         int? _pickHotKey;
         EventHandler<HotKeyEventArgs> _pickHotKeyHandler = null;
@@ -229,6 +239,9 @@ namespace MicroApp
             StartVideoHotKey();
             StartTextPickHotKey();
             StartNoteHotKey();
+            StartImageEditorHotKey();
+            StartDateHotKey();
+            StartLongDateHotKey();
 
             // notes sync in the background; _sync is the control it marshals its
             // "the folder changed" callback back through
@@ -274,6 +287,7 @@ namespace MicroApp
             var gif = new ToolStripMenuItem("Record GIF", null, RecordGif) { Padding = new Padding(4, 3, 4, 3) };
             var video = new ToolStripMenuItem("Record Video", null, RecordVideo) { Padding = new Padding(4, 3, 4, 3) };
             var note = new ToolStripMenuItem("New Note", null, NewNote) { Padding = new Padding(4, 3, 4, 3) };
+            var editor = new ToolStripMenuItem("Image Editor", null, ImageEditor) { Padding = new Padding(4, 3, 4, 3) };
 
             // each feature shows its current hot key, so the menu doubles as a cheat sheet
             grab.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.OcrHotKey, Properties.Settings.Default.OcrHotKeyModifier);
@@ -282,6 +296,8 @@ namespace MicroApp
             gif.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.GifHotKey, Properties.Settings.Default.GifHotKeyModifier);
             video.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.VideoHotKey, Properties.Settings.Default.VideoHotKeyModifier);
             note.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.NoteHotKey, Properties.Settings.Default.NoteHotKeyModifier);
+            editor.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.ImageEditorHotKey, Properties.Settings.Default.ImageEditorHotKeyModifier);
+            var shortcuts = new ToolStripMenuItem("Shortcuts", null, Shortcuts) { Padding = new Padding(4, 3, 4, 3) };
             var keySettings = new ToolStripMenuItem("Key Setting", null, Settings) { Padding = new Padding(4, 3, 4, 3) };
             var ocrSettings = new ToolStripMenuItem("OCR Setting", null, OcrSettings) { Padding = new Padding(4, 3, 4, 3) };
             var captureSettings = new ToolStripMenuItem("Capture Setting", null, CaptureSettings) { Padding = new Padding(4, 3, 4, 3) };
@@ -296,7 +312,9 @@ namespace MicroApp
             menu.Items.Add(gif);
             menu.Items.Add(video);
             menu.Items.Add(note);
+            menu.Items.Add(editor);
             menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(shortcuts);
             menu.Items.Add(keySettings);
             menu.Items.Add(ocrSettings);
             menu.Items.Add(captureSettings);
@@ -1472,6 +1490,158 @@ namespace MicroApp
             RefreshTrayMenu();
         }
 
+        void StartImageEditorHotKey()
+        {
+            StopImageEditorHotKey();
+            var letter = Properties.Settings.Default.ImageEditorHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _editorHotKey = RegisterOrTakeOver("Image editor", key, (KeyModifiers)Properties.Settings.Default.ImageEditorHotKeyModifier, "ImageEditorHotKeyTakeOver");
+                if (!_editorHotKey.HasValue) return;
+                _editorHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_ImageEditorHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _editorHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Image editor hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopImageEditorHotKey()
+        {
+            if (_editorHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _editorHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_editorHotKey.Value);
+            }
+            _editorHotKey = null;
+            _editorHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_ImageEditorHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.ImageEditorHotKey, Properties.Settings.Default.ImageEditorHotKeyModifier)) return;
+            BeginImageEditor();
+        }
+
+        void ImageEditor(object sender, EventArgs e)
+        {
+            BeginImageEditor();
+        }
+
+        void BeginImageEditor()
+        {
+            if (_settingsOpen) return;
+            if (_sync.InvokeRequired) _sync.BeginInvoke(new Action(() => ImageEditorForm.Open()));
+            else ImageEditorForm.Open();
+        }
+
+        void StartDateHotKey()
+        {
+            StopDateHotKey();
+            var letter = Properties.Settings.Default.DateHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _dateHotKey = RegisterOrTakeOver("Type date", key, (KeyModifiers)Properties.Settings.Default.DateHotKeyModifier, "DateHotKeyTakeOver");
+                if (!_dateHotKey.HasValue) return;
+                _dateHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_DateHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _dateHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Date hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopDateHotKey()
+        {
+            if (_dateHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _dateHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_dateHotKey.Value);
+            }
+            _dateHotKey = null;
+            _dateHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_DateHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.DateHotKey, Properties.Settings.Default.DateHotKeyModifier)) return;
+            TypeDateNow(false);
+        }
+
+        void StartLongDateHotKey()
+        {
+            StopLongDateHotKey();
+            var letter = Properties.Settings.Default.LongDateHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _longDateHotKey = RegisterOrTakeOver("Type long date", key, (KeyModifiers)Properties.Settings.Default.LongDateHotKeyModifier, "LongDateHotKeyTakeOver");
+                if (!_longDateHotKey.HasValue) return;
+                _longDateHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_LongDateHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _longDateHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Long date hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopLongDateHotKey()
+        {
+            if (_longDateHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _longDateHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_longDateHotKey.Value);
+            }
+            _longDateHotKey = null;
+            _longDateHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_LongDateHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.LongDateHotKey, Properties.Settings.Default.LongDateHotKeyModifier)) return;
+            TypeDateNow(true);
+        }
+
+        /// <summary>Types today's date into the focused window, through the normal typing engine.</summary>
+        void TypeDateNow(bool longFormat)
+        {
+            // same guard as clipboard typing: held modifiers would corrupt the keystrokes
+            while (Native.IsModifierKeyPressed())
+            {
+                Thread.Sleep(50);
+            }
+            string fallback = longFormat ? "dddd, dd MMMM yyyy" : "yyyy-MM-dd";
+            string format = longFormat ? Properties.Settings.Default.NoteLongDateFormat : Properties.Settings.Default.NoteDateFormat;
+            if (string.IsNullOrWhiteSpace(format)) format = fallback;
+            string text;
+            try { text = DateTime.Now.ToString(format); }
+            catch (FormatException) { text = DateTime.Now.ToString(fallback); }
+            TypeText(text);
+        }
+
+        void Shortcuts(object sender, EventArgs e)
+        {
+            if (_settingsOpen)
+            {
+                return;
+            }
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new ShortcutSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+            RefreshTrayMenu();
+        }
+
         void StartTextPickHotKey()
         {
             StopTextPickHotKey();
@@ -1777,6 +1947,9 @@ namespace MicroApp
             StopVideoHotKey();
             StopTextPickHotKey();
             StopNoteHotKey();
+            StopImageEditorHotKey();
+            StopDateHotKey();
+            StopLongDateHotKey();
         }
 
         void StartAllHotKeys()
@@ -1788,6 +1961,9 @@ namespace MicroApp
             StartVideoHotKey();
             StartTextPickHotKey();
             StartNoteHotKey();
+            StartImageEditorHotKey();
+            StartDateHotKey();
+            StartLongDateHotKey();
         }
 
         void Exit(object sender, EventArgs e)

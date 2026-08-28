@@ -2685,6 +2685,8 @@ namespace MicroApp
 
         private readonly NoteListView _list;
         private readonly TextBox _searchBox;
+        // search cache: full note text keyed by path+mtime, same trick the Archive uses
+        private readonly Dictionary<string, string> _searchText = new Dictionary<string, string>();
 
         public static void Open()
         {
@@ -2742,7 +2744,7 @@ namespace MicroApp
             var listHost = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface, Padding = new Padding(6) };
             listHost.Controls.Add(_list);
 
-            // a filter bar across the top: name and first line, which is what the rows show
+            // a filter bar across the top: matches the name and anything written in the note
             var search = new Panel { Dock = DockStyle.Top, Height = 44, BackColor = Theme.Bg };
             var searchHost = new FieldHost { Location = new Point(12, 6), Size = new Size(200, 32) };
             _searchBox = new TextBox { Location = new Point(10, 8), Size = new Size(180, 16) };
@@ -2854,22 +2856,27 @@ namespace MicroApp
             _list.SetPaths(paths, selected);
         }
 
-        /// <summary>What the search box matches: the two things a row actually shows.</summary>
-        private static bool Matches(string path, string query)
+        /// <summary>Search covers the note's name and everything written in it, like the Archive.</summary>
+        private bool Matches(string path, string query)
         {
             if (Path.GetFileNameWithoutExtension(path).IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
                 return true;
-            try
+
+            string body;
+            string key = path + "|" + SearchStamp(path).Ticks;
+            if (!_searchText.TryGetValue(key, out body))
             {
-                foreach (string line in File.ReadLines(path))
-                {
-                    string trimmed = line.Trim();
-                    if (trimmed.Length == 0) continue;
-                    return trimmed.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;   // the title row
-                }
+                try { body = File.ReadAllText(path); }
+                catch (Exception) { body = ""; }
+                _searchText[key] = body;
             }
-            catch (Exception) { }
-            return false;
+            return body.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static DateTime SearchStamp(string path)
+        {
+            try { return File.GetLastWriteTimeUtc(path); }
+            catch (Exception) { return DateTime.MinValue; }
         }
 
         /// <summary>Right-click on a row: open, pin, archive, colour, delete \u2014 plus a way into the Archive.</summary>
