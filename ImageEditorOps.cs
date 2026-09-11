@@ -80,16 +80,24 @@ namespace MicroApp
             finally { bmp.UnlockBits(d); }
         }
 
-        /// <summary>Copies just one rectangle of the buffer into the bitmap (brush strokes repaint only what changed).</summary>
+        /// <summary>
+        /// Copies just one rectangle of the buffer into the bitmap (brush strokes repaint
+        /// only what changed). The bitmap is locked whole and only the rectangle's rows are
+        /// written: locking a sub-rectangle looks tidier but GDI+ implementations differ on
+        /// where that buffer maps back to - libgdiplus writes it to the image origin, which
+        /// stamps the dab in the wrong corner. Locking the whole image costs nothing (the
+        /// lock is in place) and lands every byte where it belongs.
+        /// </summary>
         public void WriteTo(Bitmap bmp, Rectangle roi)
         {
             roi.Intersect(new Rectangle(0, 0, Width, Height));
             if (roi.Width < 1 || roi.Height < 1) return;
-            BitmapData d = bmp.LockBits(roi, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            BitmapData d = bmp.LockBits(new Rectangle(0, 0, Width, Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             try
             {
-                for (int y = 0; y < roi.Height; y++)
-                    Marshal.Copy(Data, (roi.Y + y) * Stride + roi.X * 4, new IntPtr(d.Scan0.ToInt64() + (long)y * d.Stride), roi.Width * 4);
+                for (int y = roi.Top; y < roi.Bottom; y++)
+                    Marshal.Copy(Data, y * Stride + roi.X * 4,
+                                 new IntPtr(d.Scan0.ToInt64() + (long)y * d.Stride + roi.X * 4), roi.Width * 4);
             }
             finally { bmp.UnlockBits(d); }
         }

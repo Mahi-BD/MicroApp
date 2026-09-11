@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.1.2 — 2026-09-12
+
+### Added
+
+- **Straight lines with the brush, the Photoshop way.** Click once, then **Shift**-click somewhere
+  else, and the brush paints a straight line between the two points; keep Shift-clicking to chain
+  segments. **Shift**-dragging locks a stroke to horizontal or vertical. Both work for the eraser,
+  clone stamp, blur, sharpen, dodge and burn, and the pencil draws a straight stroke with Shift held.
+
+### Fixed
+
+- **A brush stroke could leave a stray mark in the corner of the layer.** Each dab wrote its
+  changed rectangle back through a locked sub-rectangle of the bitmap, and GDI+ implementations
+  disagree about where that buffer maps to — on some it landed at the image origin instead of
+  under the brush. The write now targets the image as a whole and touches only the rows the dab
+  changed.
+
 ## 5.1.1 — 2026-09-12
 
 ### Fixed

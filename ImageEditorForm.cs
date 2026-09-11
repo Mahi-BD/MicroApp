@@ -337,6 +337,7 @@ namespace MicroApp
             _cropRect = null;
             _selection = null;
             _lastSelection = null;
+            _lastStrokeEnd = null;
             // an empty layer to paint on, like a fresh Photoshop document's Background
             var first = new RasterLayer(NewTransparentBitmap(w, h)) { Name = "Layer 1", Bounds = new RectangleF(0, 0, w, h) };
             _layers.Add(first);
@@ -968,9 +969,9 @@ namespace MicroApp
                 case Tool.Wand: return "click a colour to select it · Shift adds, Alt subtracts · tolerance and contiguous in the options bar";
                 case Tool.Crop: return "drag the crop, adjust the handles, Enter applies and Esc cancels";
                 case Tool.Eyedropper: return "click to set the foreground colour · Alt-click sets the background";
-                case Tool.Brush: return "paint on the image layer · [ and ] change the size · Shift+[ ] hardness · 1-0 opacity · Alt-click picks a colour";
-                case Tool.Pencil: return "draw a hard-edged stroke · every stroke is its own layer";
-                case Tool.Eraser: return "erase pixels on the image layer · [ and ] change the size";
+                case Tool.Brush: return "paint · click then Shift+click draws a straight line · Shift+drag locks it horizontal or vertical · [ ] size · Alt-click picks a colour";
+                case Tool.Pencil: return "draw a hard-edged stroke · Shift keeps it straight · every stroke is its own layer";
+                case Tool.Eraser: return "erase · click then Shift+click erases a straight line · Shift+drag locks it to an axis · [ ] size";
                 case Tool.Clone: return "Alt-click the source, then paint to copy it";
                 case Tool.Bucket: return "click to fill a colour area with the foreground colour";
                 case Tool.Gradient: return "drag from the start colour to the end colour · fills the selection or the whole layer";
@@ -1595,6 +1596,7 @@ namespace MicroApp
         void CropTo(Rectangle r, string undoName)
         {
             PushUndo(undoName);
+            _lastStrokeEnd = null;
             _canvas = r.Size;
             foreach (EditorLayer layer in _layers)
             {
@@ -1662,6 +1664,7 @@ namespace MicroApp
             if (w == _canvas.Width && h == _canvas.Height) return;
 
             PushUndo("Image Size");
+            _lastStrokeEnd = null;
             float fx = (float)w / _canvas.Width, fy = (float)h / _canvas.Height;
             _canvas = new Size(w, h);
             if (scaleLayers)
@@ -1691,6 +1694,7 @@ namespace MicroApp
             if (!CanvasExtendDialog.Ask(this, _canvas, out size, out offset)) return;
             if (size == _canvas) return;
             PushUndo("Canvas Size");
+            _lastStrokeEnd = null;
             _canvas = size;
             foreach (EditorLayer layer in _layers)
             {
@@ -1709,6 +1713,7 @@ namespace MicroApp
             if (!EnsureDoc()) return;
             CommitTransform();
             PushUndo("Image Rotation");
+            _lastStrokeEnd = null;
             Size old = _canvas;
             if (degrees == 180)
             {
@@ -1742,6 +1747,7 @@ namespace MicroApp
             if (!EnsureDoc()) return;
             CommitTransform();
             PushUndo(horizontal ? "Flip Canvas Horizontal" : "Flip Canvas Vertical");
+            _lastStrokeEnd = null;
             foreach (EditorLayer layer in _layers)
             {
                 PointF c = layer.Center;

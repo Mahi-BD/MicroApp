@@ -41,6 +41,12 @@ namespace MicroApp
         Point? _cloneSource;               // in the layer's pixels
         Point _cloneOffset;
         bool _cloneOffsetSet;
+        // Photoshop's straight-line trick: a stroke remembers where it ended, and a
+        // Shift+click paints a straight run from there to the click
+        PointF? _lastStrokeEnd;            // canvas coords
+        Tool _lastStrokeEndTool;
+        PointF _strokeAnchor;              // canvas coords the Shift-drag constrains against
+        PointF _strokeLastCanvas;
 
         // text
         string _editTextBefore;
@@ -380,7 +386,12 @@ namespace MicroApp
                 case Drag.Draw:
                     if (_tool == Tool.Pencil)
                     {
-                        if (_penPts != null && (_penPts.Count == 0 || Dist(_penPts[_penPts.Count - 1], cp) > 1.5f / _zoom))
+                        if ((ModifierKeys & Keys.Shift) == Keys.Shift)
+                        {
+                            // Shift: a straight segment from where the stroke began
+                            _penPts = new List<PointF> { _downCanvas, cp };
+                        }
+                        else if (_penPts != null && (_penPts.Count == 0 || Dist(_penPts[_penPts.Count - 1], cp) > 1.5f / _zoom))
                             _penPts.Add(cp);
                         _draft = PenDraft();
                     }
@@ -1183,14 +1194,35 @@ namespace MicroApp
                 _cloneOffsetSet = true;
             }
             _drag = Drag.Paint;
-            PointF p = target.ToPixel(cp);
-            _lastDab = p;
-            StampDab(p);
+
+            // Shift+click paints a straight line from where the last stroke of this tool
+            // ended to the point just clicked - the way Photoshop draws straight lines
+            bool shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
+            bool lineFromLast = shift && _lastStrokeEnd.HasValue && _lastStrokeEndTool == _tool;
+            PointF start = lineFromLast ? _lastStrokeEnd.Value : cp;
+            _lastDab = target.ToPixel(start);
+            _strokeLastCanvas = start;
+            StampDab(_lastDab);
+            if (lineFromLast) ContinueStroke(cp, true);
+            _strokeAnchor = cp;             // a Shift-drag from here locks to one axis
         }
 
-        void ContinueStroke(PointF cp)
+        void ContinueStroke(PointF cp) { ContinueStroke(cp, false); }
+
+        /// <summary>
+        /// Paints from the last dab to <paramref name="cp"/>. Holding Shift while dragging
+        /// locks the stroke to a horizontal or vertical line, as Photoshop's brushes do;
+        /// <paramref name="straight"/> is the Shift+click line, which is already exact.
+        /// </summary>
+        void ContinueStroke(PointF cp, bool straight)
         {
             if (_paintLayer == null) return;
+            if (!straight && (ModifierKeys & Keys.Shift) == Keys.Shift)
+            {
+                float adx = Math.Abs(cp.X - _strokeAnchor.X), ady = Math.Abs(cp.Y - _strokeAnchor.Y);
+                cp = adx >= ady ? new PointF(cp.X, _strokeAnchor.Y) : new PointF(_strokeAnchor.X, cp.Y);
+            }
+            _strokeLastCanvas = cp;
             PointF p = _paintLayer.ToPixel(cp);
             float dist = Dist(_lastDab, p);
             if (dist <= 0.001f) return;
@@ -1238,6 +1270,8 @@ namespace MicroApp
         void EndStroke()
         {
             if (_paintLayer == null) return;
+            _lastStrokeEnd = _strokeLastCanvas;
+            _lastStrokeEndTool = _strokeTool;
             _paintLayer.ContentVersion++;
             _paintLayer = null;
             _paintOrig = _paintWork = _paintFiltered = null;

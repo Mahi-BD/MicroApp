@@ -458,8 +458,8 @@ selected). All of them share the brush ring cursor, **[** and **]** for size, **
 
 | Tool | What it does |
 |---|---|
-| Brush **(B)** | A soft or hard round brush in the foreground colour, with size, hardness, opacity and flow. **Alt**-click picks a colour from the image. |
-| Pencil **(Shift+B)** | A hard-edged freehand stroke that stays its own editable layer. |
+| Brush **(B)** | A soft or hard round brush in the foreground colour, with size, hardness, opacity and flow. **Alt**-click picks a colour from the image. Click once, then **Shift**-click somewhere else, and the brush paints a straight line between the two — keep Shift-clicking to chain more. **Shift**-drag locks the stroke horizontal or vertical. Both work for the eraser, clone stamp, blur, sharpen, dodge and burn too. |
+| Pencil **(Shift+B)** | A hard-edged freehand stroke that stays its own editable layer; hold **Shift** while drawing for a straight one. |
 | Eraser **(E)** | Erases to transparency. |
 | Clone Stamp **(S)** | **Alt**-click the source, then paint to copy it - the offset stays aligned across strokes. |
 | Gradient **(G)** | Drag from the start to the end: linear or radial, foreground to background (or to transparent), into the selection or the whole layer. |
