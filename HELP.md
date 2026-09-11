@@ -371,48 +371,160 @@ the decoration, never a note.
 
 Tray → **Image Editor**, or **Ctrl+Alt+E**. The window opens on whatever image is on the
 clipboard; with nothing there, paste later (**Ctrl+V**), drop a file onto the window, or start
-blank with **File → New**.
+blank with **File → New** (**Ctrl+N**). The layout follows Photoshop: a two-column tool rail on
+the left with the foreground/background colours under it, an options bar under the menu that
+changes with the tool, the canvas in the middle, and **Layers / History** plus the **Assets**
+library on the right. Every tool answers to Photoshop's key, every menu command to Photoshop's
+shortcut, and right-clicking the canvas or a layer opens the menu you would expect there.
+**Help → Keyboard Shortcuts** lists them all.
 
 ### Layers
 
-The panel on the right lists every layer, top-most first. Click the eye to hide one, the
-slider fades the selected layer's opacity, and the buttons under the list move it up or down
-the stack, duplicate it or delete it. Double-click a name to rename. A pasted image, a mark, a
-text box and an asset are all just layers — nothing is combined until you save.
+Every pasted image, mark, text box and asset is its own layer; nothing is combined until you
+save. The **Layers** tab lists them top-most first with a thumbnail, the kind (Image / Text /
+Shape), the blend mode and the opacity. Click the eye to hide a layer, double-click the name to
+rename it, drag a row to reorder. The row above the list sets the **blend mode** (all of
+Photoshop's - Multiply, Screen, Overlay, Soft Light, Difference, Hue, Color, Luminosity…), the
+**opacity**, and the **lock**. The buttons under it add, duplicate, delete, reorder and merge
+layers and open the **Layer Style** dialog.
 
-### Tools (left rail, or the key in brackets)
+**Layer → Layer Style** hangs non-destructive effects on a layer - **Drop Shadow**, **Outer
+Glow**, **Stroke** and **Color Overlay** - each with its own colour, size and opacity, previewed
+live. A layer with a style shows *fx* in the list; double-click it to edit.
+
+**Layer** menu: New Layer (**Shift+Ctrl+N**), Layer Via Copy / Via Cut (**Ctrl+J** /
+**Shift+Ctrl+J** - with a selection, only the selected pixels), Rasterize (text and shapes into
+pixels), Arrange (Bring to Front **Shift+Ctrl+]**, Bring Forward **Ctrl+]**, Send Backward
+**Ctrl+[**, Send to Back **Shift+Ctrl+[**), Align to Canvas, Merge Down (**Ctrl+E**), Merge
+Visible (**Shift+Ctrl+E**), Flatten Image, Lock (**Ctrl+/**), and Save Layer as Asset.
+
+The **History** tab lists every step since the image was opened - fifty of them - and clicking
+one jumps straight back (or forward) to it. **Ctrl+Z / Shift+Ctrl+Z** (or **Ctrl+Y**) step one
+at a time.
+
+### Selecting
+
+Selections work the way they do in Photoshop: a marching-ants outline, and every tool, filter,
+adjustment, fill and delete that follows respects it.
 
 | Tool | What it does |
 |---|---|
-| Move **(V)** | Click a layer to select it; drag to move. The white handles resize (**Shift** keeps proportions), the round handle above rotates (**Shift** snaps to 15°). The options bar adds Mirror ↔ / Mirror ↕ / Rotate 90° for the selected layer. |
-| Crop **(C)** | Drag the crop over the canvas, then **Enter** (or *Apply crop*) cuts the picture down. **Esc** cancels. |
-| Rectangle / Ellipse **(R / E)** | Drag to draw. Stroke colour, width and fill are in the options bar — right-click the fill swatch for none. **Shift** draws squares and circles. |
-| Line / Arrow **(L / A)** | Drag from tail to head. **Shift** snaps to 45° steps. |
-| Pen **(P)** | Freehand drawing. |
-| Text **(T)** | Click the canvas and type; click away (or **Ctrl+Enter**) commits, **Esc** cancels. Font, size, **B**/**I**/**U**, colour, background box and outline live in the options bar. Double-click a text layer later (Move tool) to edit it again; rotate and mirror it like any layer — mirrored text really renders mirrored. |
-| Blur **(B)** | Paint over an image layer and the brushed area is blurred with soft edges — made for hiding names, numbers and faces in screenshots. Brush size and strength are in the options bar. |
+| Rectangular / Elliptical Marquee **(M)** | Drag to select. **Shift** while dragging keeps it square or round, **Alt** draws from the centre. A plain click deselects. **Shift+M** switches shapes. |
+| Lasso / Polygonal Lasso **(L)** | Freehand: drag an outline. Polygonal: click each corner; double-click, **Enter** or a click on the first point closes it, **Backspace** removes the last point, **Esc** cancels. |
+| Magic Wand **(W)** | Click a colour to select everything like it. *Tolerance*, *Contiguous* and *Sample All Layers* are in the options bar. |
 
-The wheel zooms, **Ctrl+0** fits, **Ctrl+1** is 100%, and the middle button (or holding
-**Space**) pans. Arrows nudge the selected layer a pixel, **Shift+arrows** ten. **Ctrl+Z /
-Ctrl+Y** undo and redo — forty steps.
+Hold **Shift** before you start to **add** to the selection, **Alt** to **subtract**,
+**Shift+Alt** to **intersect** - or pick the mode from the four buttons in the options bar.
+*Feather* softens the edge as you make it.
+
+**Select** menu: All (**Ctrl+A**), Deselect (**Ctrl+D**), Reselect (**Shift+Ctrl+D**), Inverse
+(**Shift+Ctrl+I**), Layer Pixels (the opaque part of the current layer), Modify → Border /
+Smooth / Expand / Contract / Feather (**Shift+F6**), Grow and Similar. With a selection tool
+active, the **arrow keys** move the outline without touching the pixels.
+
+With a selection on an image layer: **Delete** clears the pixels, **Ctrl+C / Ctrl+X** copy or
+cut them (paste comes back as a layer, **Shift+Ctrl+V** pastes in place), **Ctrl+J** lifts
+them onto their own layer, **Edit → Fill** (**Shift+F5**) fills them with a colour and a blend
+mode, **Edit → Stroke** outlines them, **Image → Crop** cuts the canvas down to them, and
+dragging inside the selection with the **Move** tool moves just those pixels.
+
+### Move and Free Transform
+
+**Move (V)** selects a layer by clicking it (Auto-Select) and drags it; **Shift** keeps the
+move straight, **Alt**-drag moves a copy, arrows nudge a pixel and **Shift+arrows** ten. The
+box around the selected layer is Photoshop's transform box: drag a corner to **scale** (proportional by
+default, **Shift** for free, **Alt** about the centre), an edge to stretch, and move the cursor just
+outside a corner to **rotate** (**Shift** snaps to 15°). **Ctrl+T** (**Edit → Free Transform**)
+enters the full mode: the options bar shows X, Y, W, H, angle and the two skew angles for exact
+entry, **Ctrl**-drag an edge handle to **skew**, **Ctrl**-drag a corner to **distort**,
+**Ctrl+Alt+Shift**-drag a corner for **perspective** (both warp the pixels on commit), **Enter** or
+the tick commits, **Esc** cancels, and right-clicking inside the box switches between Scale,
+Rotate, Skew, Distort and Perspective or applies Rotate 180° / 90° and Flip. **Edit → Transform →
+Again** (**Shift+Ctrl+T**) repeats the last move/scale/rotate on another layer.
+
+### Painting
+
+The brushes paint into image layers (the **Brush** makes a new transparent layer when none is
+selected). All of them share the brush ring cursor, **[** and **]** for size, **Shift+[** and
+**Shift+]** for hardness, and the number keys for opacity (**1** = 10% … **0** = 100%).
+
+| Tool | What it does |
+|---|---|
+| Brush **(B)** | A soft or hard round brush in the foreground colour, with size, hardness, opacity and flow. **Alt**-click picks a colour from the image. |
+| Pencil **(Shift+B)** | A hard-edged freehand stroke that stays its own editable layer. |
+| Eraser **(E)** | Erases to transparency. |
+| Clone Stamp **(S)** | **Alt**-click the source, then paint to copy it - the offset stays aligned across strokes. |
+| Gradient **(G)** | Drag from the start to the end: linear or radial, foreground to background (or to transparent), into the selection or the whole layer. |
+| Paint Bucket **(Shift+G)** | Fills a colour area with the foreground colour; *Tolerance* and *Contiguous* in the options bar. |
+| Blur / Sharpen **(R)** | Paint to soften or sharpen; *Strength* sets how much. Made for hiding names and faces in screenshots. |
+| Dodge / Burn **(O)** | Paint to lighten or darken; *Exposure* sets how much. |
+| Eyedropper **(I)** | Click to set the foreground colour, **Alt**-click the background; point, 3×3 or 5×5 sample. |
+
+The foreground/background swatches sit under the tool rail: click either to change it, **X**
+swaps them, **D** resets to black and white.
+
+### Shapes and text
+
+**Shapes (U)** - Rectangle, Rounded Rectangle (with a corner radius), Ellipse, Polygon (any
+number of sides), Line and Arrow, **Shift+U** cycling through them. Drag to draw; **Shift**
+keeps proportions or snaps lines to 45°, **Alt** draws from the centre. Stroke colour, width and
+fill are in the options bar (right-click a swatch for none), and selecting a shape later brings
+its settings back for editing.
+
+**Type (T)**: click the canvas and type; **Ctrl+Enter** or a click away commits, **Esc**
+cancels. Font, size, bold/italic/underline, left/centre/right alignment, colour, a background box
+and an outline live in the options bar. Click existing text with the Type tool (or double-click
+it with Move) to edit it again. Text rotates, skews and mirrors like any layer, and a distort or
+perspective transform turns it into pixels first.
+
+### Crop and canvas
+
+**Crop (C)**: drag the crop, then adjust its handles or drag inside to move it; the options bar
+offers ratio presets (1:1, 4:3, 16:9, 3:2, original) and *Delete Cropped Pixels*. **Enter** or
+the tick applies, **Esc** cancels. **Image → Crop** crops to the selection, **Trim** drops the
+transparent border, **Reveal All** grows the canvas to show every layer. **Image Size**
+(**Alt+Ctrl+I**) scales the whole composition, **Canvas Size** (**Alt+Ctrl+C**) adds or removes
+room around it with an anchor, and **Image Rotation** turns or flips the whole canvas.
+
+### Adjustments and filters
+
+**Image → Adjustments** work on the selected image layer (text and shapes offer to become pixels
+first) and, with a selection, only inside it; every dialog previews live on the canvas with a
+*Preview* toggle and a *Reset* button: **Brightness/Contrast**, **Levels** (**Ctrl+L**, with a
+histogram and draggable black/grey/white points), **Curves** (**Ctrl+M**, click to add points and
+drag them, per channel), **Exposure**, **Vibrance**, **Hue/Saturation** (**Ctrl+U**, with
+Colorize), **Color Balance** (**Ctrl+B**), **Black & White** (**Alt+Shift+Ctrl+B**, per-colour
+weights and a tint), **Photo Filter**, **Invert** (**Ctrl+I**), **Posterize**, **Threshold**,
+**Desaturate** (**Shift+Ctrl+U**) and **Equalize**, plus **Auto Tone** (**Shift+Ctrl+L**),
+**Auto Contrast** (**Alt+Shift+Ctrl+L**) and **Auto Color** (**Shift+Ctrl+B**).
+
+**Filter**: Blur → Gaussian, Motion, Box; Sharpen → Sharpen, Sharpen More, Unsharp Mask; Noise
+→ Add Noise, Median, Reduce Noise; Pixelate → Mosaic; Stylize → Emboss, Find Edges, Solarize;
+Other → High Pass, Vignette. **Last Filter** (**Alt+Ctrl+F**) runs the previous one again.
+
+### View
+
+The wheel zooms, **Ctrl+0** fits, **Ctrl+1** is 100%, **Ctrl++ / Ctrl+-** step, the **Zoom
+(Z)** tool clicks in (**Alt** out) or drags a box to zoom to, and the **Hand (H)** tool - or
+holding **Space** - pans. The zoom box in the status bar takes a typed percentage. **Ctrl+R**
+shows rulers in pixels, **Ctrl+H** hides the selection edges and transform box while you look.
 
 ### The asset library
 
 The bottom-right panel keeps logos, stamps and any PNG/JPG/vector (WMF/EMF) art you reuse,
 organised as categories and sub-categories. **＋ Folder** makes a category under the selected
 one, **＋ Import** copies image files in, and double-clicking an asset drops it onto the canvas
-as a new layer. **Layer → Save Layer as Asset** goes the other way — it renders the selected
+as a new layer. **Layer → Save Layer as Asset** goes the other way - it renders the selected
 layer alone and stores it in the current category.
 
-It is all plain files under `%AppData%\MicroApp\Assets` — one folder per category — so you can
+It is all plain files under `%AppData%\MicroApp\Assets` - one folder per category - so you can
 also fill it straight from Explorer.
 
 ### Getting the picture out
 
-- **File → Save As** — PNG keeps transparency, JPG (over white) for mail, or BMP.
-- **Ctrl+Shift+C** — puts the flattened result straight back on the clipboard.
-- **Image → Resize** scales the whole composition — layers, text sizes and stroke widths
-  included; **Image → Rotate / Mirror** turns or flips the whole canvas.
+- **File → Save As** (**Ctrl+S**) - PNG keeps transparency, JPG (over white) for mail, BMP or TIFF.
+- **Shift+Ctrl+C** (Copy Merged) - puts the flattened result, or just the selected part of it,
+  straight back on the clipboard.
 
 ---
 

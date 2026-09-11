@@ -110,7 +110,23 @@
     <Compile Include="ImageEditorForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="ImageEditorForm.Menus.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImageEditorForm.Tools.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImageEditorForm.Transform.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImageEditorForm.Panels.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ImageEditorLayers.cs" />
+    <Compile Include="ImageEditorOps.cs" />
+    <Compile Include="ImageEditorSelection.cs" />
+    <Compile Include="ImageEditorIcons.cs" />
+    <Compile Include="ImageEditorDialogs.cs" />
     <Compile Include="ImageEditorAssets.cs" />
     <Compile Include="ShortcutSettingsForm.cs">
       <SubType>Form</SubType>

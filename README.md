@@ -189,27 +189,34 @@ local-only at any time, leaving every note where it is.
 ### 8. Image Editor
 
 Press **Ctrl+Alt+E** (or tray → *Image Editor*) and paste any image — the window opens on whatever
-is on the clipboard. It is a small Photoshop: a tool rail on the left, the canvas in the middle,
-layers and the asset library on the right.
+is on the clipboard. It is laid out like Photoshop, and it answers to Photoshop's keys, menus and
+right-click menus (**Help → Keyboard Shortcuts** lists them all).
 
-- **Layers.** Every paste, mark, text box and asset is its own layer: reorder them, hide them,
-  fade their opacity, rename, duplicate, delete. Nothing is baked in until you export.
-- **Marks.** Rectangle, ellipse, line, arrow and a freehand pen, each with stroke colour, width
-  and optional fill — made for annotating screenshots.
-- **Text.** Click to type a text box; pick font, size, bold/italic/underline, colour, a
-  background box and an outline. Rotate it with the handle above the box, mirror it from the
-  options bar — mirrored and rotated text renders exactly as shown.
-- **Transform anything.** Drag to move, handles to resize (Shift keeps the proportions), the top
-  handle rotates, and every layer — image or text — can be mirrored or turned 90°.
-- **Crop and resize.** A crop tool for the canvas, and Image → Resize scales the whole
-  composition, layers included.
-- **Blur brush.** Paint over the private parts of a screenshot — the brushed area is blurred with
-  soft, feathered edges. Brush size and strength are in the options bar.
+- **Layers.** Every paste, mark, text box and asset is its own layer, with blend modes, opacity,
+  a lock, drag-to-reorder, merge down / merge visible / flatten, and **Layer Styles** — drop
+  shadow, outer glow, stroke, colour overlay. A **History** panel jumps back fifty steps.
+- **Selections.** Rectangular and elliptical marquee, lasso, polygonal lasso and magic wand,
+  with add / subtract / intersect, feather, expand, contract, border, smooth, inverse, grow and
+  similar. Delete, fill, stroke, copy, cut, layer-via-copy, crop and every filter respect it.
+- **Free Transform (Ctrl+T).** Scale, rotate, skew, distort and perspective with Photoshop's
+  modifiers, exact numeric entry, Enter to commit.
+- **Painting.** Brush, pencil, eraser, clone stamp, gradient, paint bucket, blur, sharpen,
+  dodge, burn and an eyedropper, with size / hardness / opacity / flow and the `[` `]` keys.
+- **Adjustments and filters.** Levels, Curves, Brightness/Contrast, Exposure, Vibrance,
+  Hue/Saturation, Color Balance, Black & White, Photo Filter, Invert, Posterize, Threshold,
+  Desaturate, Equalize, Auto Tone / Contrast / Color; Gaussian / motion / box blur, unsharp
+  mask, noise, median, mosaic, emboss, find edges, solarize, high pass, vignette — all with a
+  live preview.
+- **Shapes and text.** Rectangle, rounded rectangle, ellipse, polygon, line, arrow and a
+  freehand pencil, each with stroke, width and fill; text with font, size, style, alignment,
+  colour, box and outline — all editable later, all transformable.
+- **Crop and canvas.** Crop with handles and ratio presets, Image Size, Canvas Size with an
+  anchor, Trim, Reveal All, rotate and flip the canvas.
 - **Asset library.** Keep logos, stamps and PNG/vector art organised in categories and
   sub-categories (a folder tree under `%AppData%\MicroApp\Assets`). Double-click any asset to
   drop it in as a layer, and save any layer back into the library.
-- **Out again.** File → Save As (PNG keeps transparency, JPG for mail) or **Ctrl+Shift+C** to put
-  the finished image straight back on the clipboard.
+- **Out again.** File → Save As (PNG keeps transparency, JPG for mail, BMP, TIFF) or
+  **Shift+Ctrl+C** to put the finished image — or just the selected part — on the clipboard.
 
 ## Settings
 

@@ -1,5 +1,60 @@
 # Changelog
 
+## 5.0.0 — 2026-09-11
+
+### Changed
+
+- **The image editor grew up into a Photoshop-style editor.** The layout, the tools, the keys,
+  the menus and the right-click menus now follow Photoshop, so what you know from there works
+  here: a two-column tool rail with grouped tools and flyouts, foreground/background swatches
+  (**X** swaps, **D** resets), an options bar per tool, **Layers / History** tabs and the asset
+  library on the right, a status bar with a typed zoom box, rulers (**Ctrl+R**) and marching
+  ants. **Help → Keyboard Shortcuts** lists every key.
+
+### Added
+
+- **Selections.** Rectangular and Elliptical Marquee (**M**), Lasso and Polygonal Lasso
+  (**L**), Magic Wand (**W**, with tolerance, contiguous and sample-all-layers) - **Shift** adds,
+  **Alt** subtracts, **Shift+Alt** intersects, with the four mode buttons in the options bar and a
+  feather setting. Select → All / Deselect / Reselect / Inverse / Layer Pixels / Modify (Border,
+  Smooth, Expand, Contract, Feather) / Grow / Similar. Every filter, adjustment, fill, stroke,
+  paint stroke and Delete respects the selection; **Ctrl+J** / **Shift+Ctrl+J** lift the selected
+  pixels onto a layer; **Ctrl+C / Ctrl+X** copy or cut them (with alpha, and **Shift+Ctrl+V**
+  pastes in place); dragging inside the selection with Move moves just those pixels; **Image →
+  Crop** crops to it.
+- **Free Transform (Ctrl+T).** Scale (proportional by default, **Shift** frees it, **Alt** from
+  the centre), rotate by dragging outside a corner (**Shift** snaps 15°), **Ctrl**-drag an edge to
+  skew, **Ctrl**-drag a corner to distort, **Ctrl+Alt+Shift** for perspective - the last two warp
+  the pixels on commit. Exact X / Y / W / H / angle / skew entry in the options bar, **Enter**
+  commits, **Esc** cancels, right-click for the mode menu and Rotate 180° / 90° / Flip. **Edit →
+  Transform → Again** (**Shift+Ctrl+T**) repeats the last transform.
+- **Painting.** A real Brush (**B**) with size, hardness, opacity and flow; Eraser (**E**); Clone
+  Stamp (**S**, **Alt**-click the source); Gradient (**G**, linear/radial, to background or to
+  transparent); Paint Bucket (**Shift+G**); Blur / Sharpen (**R**); Dodge / Burn (**O**);
+  Eyedropper (**I**, **Alt** for background, point/3×3/5×5). **[ ]** change the size, **Shift+[ ]**
+  the hardness, **1**…**0** the opacity. The old freehand pen lives on as the Pencil
+  (**Shift+B**) and still makes editable stroke layers.
+- **Image → Adjustments**, each with a live preview: Brightness/Contrast, Levels (**Ctrl+L**,
+  histogram, draggable points, per channel), Curves (**Ctrl+M**), Exposure, Vibrance,
+  Hue/Saturation (**Ctrl+U**, Colorize), Color Balance (**Ctrl+B**), Black & White
+  (**Alt+Shift+Ctrl+B**, with tint), Photo Filter, Invert (**Ctrl+I**), Posterize, Threshold,
+  Desaturate (**Shift+Ctrl+U**), Equalize, Auto Tone / Auto Contrast / Auto Color.
+- **Filter menu**: Gaussian / Motion / Box Blur, Sharpen / Sharpen More / Unsharp Mask, Add Noise /
+  Median / Reduce Noise, Mosaic, Emboss / Find Edges / Solarize, High Pass, Vignette, and Last
+  Filter (**Alt+Ctrl+F**). Big layers preview on a smaller copy so the sliders stay quick.
+- **Layers**: all of Photoshop's blend modes, a lock, drag-to-reorder, New Layer
+  (**Shift+Ctrl+N**), Merge Down (**Ctrl+E**), Merge Visible (**Shift+Ctrl+E**), Flatten,
+  Rasterize, Arrange (**Ctrl+]**, **Ctrl+[**, with Shift for front/back), Align to Canvas, and
+  **Layer Style** - Drop Shadow, Outer Glow, Stroke and Color Overlay, non-destructive and
+  previewed live. A **History** panel lists fifty steps; click one to jump.
+- **Shapes**: Rounded Rectangle (corner radius) and Polygon (any number of sides) join
+  Rectangle, Ellipse, Line and Arrow under **U** (**Shift+U** cycles); **Alt** draws from the
+  centre. Text gained left/centre/right alignment.
+- **Crop** with handles, ratio presets (1:1, 4:3, 16:9, 3:2, original) and *Delete Cropped
+  Pixels*; **Image → Canvas Size** with an anchor; **Trim**; **Reveal All**; **Image Rotation →
+  180°**; **Edit → Fill** (**Shift+F5**, with blend mode and *Preserve transparency*) and **Edit
+  → Stroke**; Zoom (**Z**) and Hand (**H**) tools; **Ctrl+H** hides the extras.
+
 ## 4.9.3 — 2026-08-29
 
 ### Fixed

@@ -9,7 +9,7 @@
   <Identity
     Name="RampsBD.MicroApp"
     Publisher="CN=8C8AE894-B66F-4CE1-9805-33D3F83BC5CF"
-    Version="4.9.3.0"
+    Version="5.0.0.0"
     ProcessorArchitecture="neutral" />
 
   <Properties>
