@@ -776,6 +776,7 @@ namespace MicroApp
         void LandOrphans()
         {
             if (_xf != null || _drag == Drag.FloatMove) return;
+            ClearHolePreview();
             for (int i = _layers.Count - 1; i >= 0; i--)
             {
                 if (!_layers[i].Floating) continue;
@@ -802,7 +803,7 @@ namespace MicroApp
         {
             if (!_compositeDirty && _composite != null) return _composite;
             if (_composite != null) _composite.Dispose();
-            _composite = EditorRender.Compose(_layers, _canvas, _canvasBg, TransformPreviewOf);
+            _composite = EditorRender.Compose(_layers, _canvas, _canvasBg, PreviewOf);
             _compositeDirty = false;
             return _composite;
         }

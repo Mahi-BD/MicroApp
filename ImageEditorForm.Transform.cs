@@ -231,6 +231,7 @@ namespace MicroApp
                 var floating = _layers[_sel] as RasterLayer;
                 if (floating != null && _layers.Contains(xf.FloatHost))
                 {
+                    ClearHolePreview();
                     CutSelectionFromHost(xf.FloatHost, xf.Selection0);
                     using (Bitmap alone = floating.RenderAlone(_canvas, false))
                     {
@@ -253,6 +254,7 @@ namespace MicroApp
             if (_xf == null) return;
             TransformState xf = _xf;
             _xf = null;
+            ClearHolePreview();
             if (xf.Preview != null) xf.Preview.Dispose();
             if (xf.PreviewSource != null && !(xf.Layer is RasterLayer && ((RasterLayer)xf.Layer).Image == xf.PreviewSource)) xf.PreviewSource.Dispose();
             if (xf.Matrix0 != null) xf.Matrix0.Dispose();

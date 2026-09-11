@@ -24,6 +24,10 @@ namespace MicroApp
         RasterLayer _floatLayer, _floatHost;
         EditorSelection _floatSel0;
         int _floatHostIndex;
+        // while a piece floats, its host is painted with the hole where the piece came from -
+        // a preview only; the host's own pixels change at the apply
+        RasterLayer _holeHost;
+        Bitmap _holePreview;
 
         // painting
         RasterLayer _paintLayer;
@@ -595,6 +599,7 @@ namespace MicroApp
                     if (_dragUndoPushed) RevertLastUndo();
                     break;
                 case Drag.FloatMove:
+                    ClearHolePreview();
                     if (_floatLayer != null) RevertLastUndo();
                     _floatLayer = null; _floatHost = null;
                     break;
@@ -753,6 +758,35 @@ namespace MicroApp
             int hostIndex = _layers.IndexOf(host);
             _layers.Insert(hostIndex + 1, floating);
             _sel = hostIndex + 1;
+            // the hole: the host as it will look once the piece has left, shown in its place
+            ClearHolePreview();
+            try
+            {
+                using (Bitmap alone = host.RenderAlone(_canvas, false))
+                {
+                    Pixels p = Pixels.From(alone);
+                    byte[] d = p.Data, m = sel.Mask;
+                    for (int i = 0, k = 0; k < m.Length && i < d.Length; i += 4, k++)
+                        if (m[k] != 0) d[i + 3] = (byte)(d[i + 3] * (255 - m[k]) / 255);
+                    _holePreview = p.ToBitmap();
+                    _holeHost = host;
+                }
+            }
+            catch { ClearHolePreview(); }
+        }
+
+        void ClearHolePreview()
+        {
+            if (_holePreview != null) { try { _holePreview.Dispose(); } catch { } }
+            _holePreview = null;
+            _holeHost = null;
+        }
+
+        /// <summary>Compose() asks for every layer: a host with a piece floating answers with its hole, the piece being warped with its warp.</summary>
+        Bitmap PreviewOf(EditorLayer layer)
+        {
+            if (_holePreview != null && layer == _holeHost) return _holePreview;
+            return TransformPreviewOf(layer);
         }
 
         /// <summary>The apply step: the pixels the piece came from are cleared out of the host.</summary>
@@ -825,6 +859,7 @@ namespace MicroApp
             _floatHost = null; _floatLayer = null;
             if (host == null) return;
             if (floating == null) { _canvasPanel.Invalidate(); return; }
+            ClearHolePreview();
             CutSelectionFromHost(host, from);
             MergeFloating(host, floating);
             _sel = _layers.IndexOf(host);
