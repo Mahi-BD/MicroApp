@@ -707,10 +707,11 @@ namespace MicroApp
             };
             d.Kick();
             DialogResult result = d.ShowDialog(this);
-            if (current != small) current.Dispose();
-            if (small != original) small.Dispose();
+            d.StopPreview();                      // a late debounce tick must never touch the freed previews
             layer.Image = original;
             layer.ContentVersion++;
+            if (current != small) current.Dispose();
+            if (small != original) small.Dispose();
 
             if (result == DialogResult.OK)
             {

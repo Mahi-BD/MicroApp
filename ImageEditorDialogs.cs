@@ -63,11 +63,27 @@ namespace MicroApp
 
         public bool PreviewOn { get { return _preview == null || _preview.Checked; } }
 
+        bool _closed;
+
         void Bump()
         {
-            if (_syncing) return;
+            if (_syncing || _closed) return;
             _debounce.Stop();
             _debounce.Start();
+        }
+
+        /// <summary>No preview may fire once the dialog is gone: the caller has freed its preview bitmaps by then.</summary>
+        public void StopPreview()
+        {
+            _closed = true;
+            _debounce.Stop();
+            Changed = null;
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            StopPreview();
+            base.OnFormClosed(e);
         }
 
         Label Caption(string text, int x, int y)
@@ -578,7 +594,17 @@ namespace MicroApp
             HandleCreated += delegate { Native.SetDarkModeForWindow(Handle, ThemeHelper.IsDarkMode); };
         }
 
-        void Bump() { _debounce.Stop(); _debounce.Start(); }
+        bool _closed;
+
+        void Bump() { if (_closed) return; _debounce.Stop(); _debounce.Start(); }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _closed = true;
+            _debounce.Stop();
+            Changed = null;
+            base.OnFormClosed(e);
+        }
 
         bool IsOn(int i)
         {

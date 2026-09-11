@@ -322,13 +322,21 @@ namespace MicroApp
         protected override void DrawContent(Graphics g, RectangleF r, int alpha)
         {
             if (Image == null) return;
+            RectangleF src;
+            try { src = new RectangleF(0, 0, Image.Width, Image.Height); }
+            catch (ArgumentException ex)
+            {
+                // a disposed bitmap: a bug upstream, but the picture must keep painting
+                Program.LogError("layer '" + Name + "' has a disposed bitmap", ex);
+                Image = null;
+                return;
+            }
             PointF[] dest =
             {
                 new PointF(r.Left, r.Top),
                 new PointF(r.Right, r.Top),
                 new PointF(r.Left, r.Bottom)
             };
-            RectangleF src = new RectangleF(0, 0, Image.Width, Image.Height);
             if (alpha >= 255)
             {
                 g.DrawImage(Image, dest, src, GraphicsUnit.Pixel);
