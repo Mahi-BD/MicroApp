@@ -1354,6 +1354,8 @@ namespace MicroApp
             return outp.ToBitmap();
         }
 
+        public static double[] SquareToQuadPublic(PointF[] q) { return SquareToQuad(q); }
+
         /// <summary>Homography taking the unit square (0,0)-(1,1) to the quad TL,TR,BR,BL (Heckbert).</summary>
         static double[] SquareToQuad(PointF[] q)
         {

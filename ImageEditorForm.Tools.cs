@@ -129,12 +129,14 @@ namespace MicroApp
 
                 case Tool.MarqueeRect:
                 case Tool.MarqueeEllipse:
+                    if (StartSelectionMove(cp, shift, alt)) break;
                     _selMode = ModeFromModifiers(shift, alt);
                     _drag = Drag.Marquee;
                     _marqueeDraft = new RectangleF(cp, SizeF.Empty);
                     break;
 
                 case Tool.Lasso:
+                    if (StartSelectionMove(cp, shift, alt)) break;
                     _selMode = ModeFromModifiers(shift, alt);
                     _drag = Drag.Lasso;
                     _lassoPts = new List<PointF> { cp };
@@ -224,6 +226,21 @@ namespace MicroApp
                     _zoomRect = new Rectangle(e.Location, Size.Empty);
                     break;
             }
+        }
+
+        /// <summary>
+        /// A selection tool pressed inside the existing selection (no Shift/Alt): the drag
+        /// slides the outline, as it does in Photoshop. The pixels do not move.
+        /// </summary>
+        bool StartSelectionMove(PointF cp, bool shift, bool alt)
+        {
+            if (!HasSelection || shift || alt || _selModeOption != SelectionMode.New) return false;
+            if (!_selection.Contains((int)Math.Floor(cp.X), (int)Math.Floor(cp.Y))) return false;
+            _floatSel0 = _selection;
+            _drag = Drag.SelectionMove;
+            _dragUndoPushed = false;
+            _canvasPanel.Cursor = Cursors.SizeAll;
+            return true;
         }
 
         static SelectionMode ModeFromModifiers(bool shift, bool alt)
@@ -345,6 +362,20 @@ namespace MicroApp
                     FloatMoveTo(cp);
                     return;
 
+                case Drag.SelectionMove:
+                {
+                    float dx = cp.X - _downCanvas.X, dy = cp.Y - _downCanvas.Y;
+                    if ((ModifierKeys & Keys.Shift) == Keys.Shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
+                    int ix = (int)Math.Round(dx), iy = (int)Math.Round(dy);
+                    if (ix == 0 && iy == 0 && !_dragUndoPushed) return;
+                    if (!_dragUndoPushed) { PushUndo("Move Selection"); _dragUndoPushed = true; }
+                    _selection = _floatSel0.Offset(ix, iy);
+                    _antsScreenPath = null;
+                    UpdateStatus();
+                    _canvasPanel.Invalidate();
+                    return;
+                }
+
                 case Drag.Draw:
                     if (_tool == Tool.Pencil)
                     {
@@ -416,6 +447,13 @@ namespace MicroApp
             {
                 Color c = PixelOps.Sample(Composite(), (int)cp.X, (int)cp.Y, 1);
                 _statusColor.Text = c.A == 0 ? "" : string.Format("#{0:X2}{1:X2}{2:X2}   R{3} G{4} B{5}", c.R, c.G, c.B, c.R, c.G, c.B);
+                return;
+            }
+            if ((_tool == Tool.MarqueeRect || _tool == Tool.MarqueeEllipse || _tool == Tool.Lasso) && HasSelection &&
+                _selModeOption == SelectionMode.New && (ModifierKeys & (Keys.Shift | Keys.Alt)) == 0 &&
+                _selection.Contains((int)Math.Floor(cp.X), (int)Math.Floor(cp.Y)))
+            {
+                _canvasPanel.Cursor = Cursors.SizeAll;
                 return;
             }
             if (_tool == Tool.Crop && _cropRect.HasValue)
@@ -557,6 +595,10 @@ namespace MicroApp
                     LandFloat();
                     break;
 
+                case Drag.SelectionMove:
+                    _canvasPanel.Invalidate();
+                    break;
+
                 case Drag.Zoom:
                 {
                     Rectangle r = _zoomRect ?? Rectangle.Empty;
@@ -602,6 +644,9 @@ namespace MicroApp
                     ClearHolePreview();
                     if (_floatLayer != null) RevertLastUndo();
                     _floatLayer = null; _floatHost = null;
+                    break;
+                case Drag.SelectionMove:
+                    if (_dragUndoPushed) RevertLastUndo();
                     break;
             }
             _canvasPanel.Cursor = ToolCursor(_tool);

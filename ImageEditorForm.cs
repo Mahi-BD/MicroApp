@@ -891,7 +891,7 @@ namespace MicroApp
                 _syncingZoom = false;
             }
             _statusRight.Text = ToolHint(_tool);
-            if (_optToolLbl != null) _optToolLbl.Text = _xf != null ? "Free Transform" : ToolName(_tool);
+            if (_optToolLbl != null) _optToolLbl.Text = _xf != null ? (_xf.SelectionOnly ? "Transform Selection" : "Free Transform") : ToolName(_tool);
         }
 
         static string ToolName(Tool t)
@@ -931,6 +931,7 @@ namespace MicroApp
 
         string ToolHint(Tool t)
         {
+            if (_xf != null && _xf.SelectionOnly) return "Transform Selection: drag inside moves the outline · handles scale it · outside a corner rotates · Enter commits, Esc cancels · the pixels stay put";
             if (_xf != null) return "drag inside moves · handles scale · outside a corner rotates · Ctrl-drag a corner distorts · Enter commits, Esc cancels";
             switch (t)
             {
@@ -1075,6 +1076,30 @@ namespace MicroApp
 
         void PaintSelectionAnts(Graphics g)
         {
+            if (_xf != null && _xf.SelectionOnly)
+            {
+                // the outline as the pending Transform Selection would leave it
+                using (GraphicsPath preview = TransformedOutline())
+                {
+                    if (preview == null || preview.PointCount == 0) return;
+                    using (var m = new Matrix())
+                    {
+                        m.Translate(_origin.X, _origin.Y);
+                        m.Scale(_zoom, _zoom);
+                        preview.Transform(m);
+                    }
+                    GraphicsState st2 = g.Save();
+                    g.SmoothingMode = SmoothingMode.None;
+                    using (var white = new Pen(Color.White, 1f))
+                    using (var black = new Pen(Color.Black, 1f) { DashPattern = new[] { 4f, 4f }, DashOffset = _antsPhase })
+                    {
+                        g.DrawPath(white, preview);
+                        g.DrawPath(black, preview);
+                    }
+                    g.Restore(st2);
+                }
+                return;
+            }
             if (!HasSelection) return;
             if (_antsScreenPath == null || _antsFor != _selection || _antsZoom != _zoom || _antsOrigin != _origin)
             {

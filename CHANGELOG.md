@@ -1,6 +1,6 @@
 # Changelog
 
-## 5.0.0 — 2026-09-11
+## 5.1.0 — 2026-09-12
 
 ### Changed
 
@@ -19,7 +19,10 @@
   (**L**), Magic Wand (**W**, with tolerance, contiguous and sample-all-layers) - **Shift** adds,
   **Alt** subtracts, **Shift+Alt** intersects, with the four mode buttons in the options bar and a
   feather setting. Select → All / Deselect / Reselect / Inverse / Layer Pixels / Modify (Border,
-  Smooth, Expand, Contract, Feather) / Grow / Similar. Every filter, adjustment, fill, stroke,
+  Smooth, Expand, Contract, Feather) / Grow / Similar. **Transform Selection** (right-click the
+  selection, or Select → Transform Selection) puts the transform box around the marching ants
+  themselves: move, scale, rotate, skew, distort or perspective the outline and press Enter - the
+  pixels stay put. With a marquee or lasso tool, dragging inside the selection slides the outline. Every filter, adjustment, fill, stroke,
   paint stroke and Delete respects the selection; **Ctrl+J** / **Shift+Ctrl+J** lift the selected
   pixels onto a layer; **Ctrl+C / Ctrl+X** copy or cut them (with alpha, and **Shift+Ctrl+V**
   pastes in place); dragging inside the selection with Move moves just those pixels; **Image →

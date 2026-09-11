@@ -419,8 +419,14 @@ Hold **Shift** before you start to **add** to the selection, **Alt** to **subtra
 
 **Select** menu: All (**Ctrl+A**), Deselect (**Ctrl+D**), Reselect (**Shift+Ctrl+D**), Inverse
 (**Shift+Ctrl+I**), Layer Pixels (the opaque part of the current layer), Modify → Border /
-Smooth / Expand / Contract / Feather (**Shift+F6**), Grow and Similar. With a selection tool
-active, the **arrow keys** move the outline without touching the pixels.
+Smooth / Expand / Contract / Feather (**Shift+F6**), Grow and Similar.
+
+**Reshaping the selection itself.** Right-click the selection (or **Select → Transform
+Selection**) and the transform box appears around the marching ants: drag inside to move the
+outline, pull the handles to resize it, rotate from just outside a corner, **Ctrl**-drag for
+skew, distort and perspective, then **Enter** (or the tick) - the pixels do not move, only the
+selected area changes. With a marquee or lasso tool active, dragging *inside* the selection
+slides the outline, and the **arrow keys** nudge it.
 
 With a selection on an image layer: **Delete** clears the pixels, **Ctrl+C / Ctrl+X** copy or
 cut them (paste comes back as a layer, **Shift+Ctrl+V** pastes in place), **Ctrl+J** lifts

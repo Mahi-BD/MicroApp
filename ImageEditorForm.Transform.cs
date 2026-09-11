@@ -30,6 +30,8 @@ namespace MicroApp
             public RasterLayer FloatHost;     // set when the box holds a selection lifted out of this layer
             public bool Activated;            // the lift really happened (first move / scale / rotate)
             public EditorSelection Selection0;// the selection the transform started from
+            public bool SelectionOnly;        // Select > Transform Selection: the outline moves, the pixels stay
+            public RectangleF Bounds0;        // where the outline started (SelectionOnly)
 
             // the drag in flight
             public int Handle = -1;
@@ -86,6 +88,121 @@ namespace MicroApp
             RelayoutOptions();
             UpdateStatus();
             _canvasPanel.Invalidate();
+        }
+
+        /// <summary>
+        /// Select &gt; Transform Selection: the same box, but it reshapes the marching ants
+        /// only - move, scale, rotate, skew, distort or perspective the outline, then Enter.
+        /// The pixels of every layer stay exactly where they are.
+        /// </summary>
+        void BeginTransformSelection(TransformMode mode)
+        {
+            if (!EnsureDoc()) return;
+            if (!HasSelection) { Toast.Show("Make a selection first."); return; }
+            if (_xf != null) CommitTransform();
+            CommitInlineEdit();
+            PushUndo("Transform Selection");
+            Rectangle b = _selection.Bounds;
+            // a stand-in layer that holds the mask cropped to the outline's box; it is never
+            // drawn, it only gives the transform its geometry
+            var maskBmp = new Bitmap(Math.Max(1, b.Width), Math.Max(1, b.Height), PixelFormat.Format32bppArgb);
+            using (Bitmap full = _selection.MaskBitmap())
+            using (Graphics g = Graphics.FromImage(maskBmp))
+            {
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.DrawImage(full, new Rectangle(0, 0, maskBmp.Width, maskBmp.Height), b, GraphicsUnit.Pixel);
+            }
+            var stand = new RasterLayer(maskBmp) { Name = "Selection", Bounds = new RectangleF(b.X, b.Y, Math.Max(1, b.Width), Math.Max(1, b.Height)), Floating = true };
+            _xf = new TransformState { Layer = stand, Mode = mode, SelectionOnly = true, Selection0 = _selection, Bounds0 = stand.Bounds };
+            _xf.Inside = screen => _xf != null && (_xf.Quad ? PointInQuad(_xf.QuadPts, ScreenToCanvas(screen)) : _xf.Layer.HitTest(ScreenToCanvas(screen)));
+            if (mode == TransformMode.Distort || mode == TransformMode.Perspective) EnterQuadMode();
+            RelayoutOptions();
+            UpdateStatus();
+            _canvasPanel.Invalidate();
+        }
+
+        /// <summary>The outline as the pending selection transform would leave it, in canvas coordinates.</summary>
+        GraphicsPath TransformedOutline()
+        {
+            if (_xf == null || !_xf.SelectionOnly) return null;
+            var path = (GraphicsPath)_xf.Selection0.Outline.Clone();
+            RectangleF b0 = _xf.Bounds0;
+            if (_xf.Quad)
+            {
+                PointF[] pts = path.PathPoints;
+                byte[] types = path.PathTypes;
+                double[] H = PixelOps.SquareToQuadPublic(_xf.QuadPts);
+                for (int i = 0; i < pts.Length; i++)
+                {
+                    double u = (pts[i].X - b0.X) / Math.Max(1f, b0.Width), v = (pts[i].Y - b0.Y) / Math.Max(1f, b0.Height);
+                    double den = H[6] * u + H[7] * v + H[8];
+                    if (Math.Abs(den) < 1e-9) den = 1e-9;
+                    pts[i] = new PointF((float)((H[0] * u + H[1] * v + H[2]) / den), (float)((H[3] * u + H[4] * v + H[5]) / den));
+                }
+                path.Dispose();
+                return new GraphicsPath(pts, types);
+            }
+            using (Matrix m = SelectionTransformMatrix())
+                path.Transform(m);
+            return path;
+        }
+
+        /// <summary>Original outline coordinates → current box (scale about the box, then the layer's rotation/shear/flips).</summary>
+        Matrix SelectionTransformMatrix()
+        {
+            EditorLayer l = _xf.Layer;
+            RectangleF b0 = _xf.Bounds0, b = l.Bounds;
+            Matrix m = l.GetMatrix();
+            // prepend: original point → scaled into the current box → then the layer matrix
+            m.Translate(b.X, b.Y);
+            m.Scale(b.Width / Math.Max(1f, b0.Width), b.Height / Math.Max(1f, b0.Height));
+            m.Translate(-b0.X, -b0.Y);
+            return m;
+        }
+
+        /// <summary>Enter on a selection transform: the mask is reshaped, nothing else changes.</summary>
+        void CommitSelectionTransform(TransformState xf)
+        {
+            var stand = (RasterLayer)xf.Layer;
+            EditorSelection result;
+            if (!xf.Changed)
+            {
+                PopUndo();
+                result = xf.Selection0;
+            }
+            else
+            {
+                var canvasBmp = new Bitmap(Math.Max(1, _canvas.Width), Math.Max(1, _canvas.Height), PixelFormat.Format32bppArgb);
+                using (Graphics g = Graphics.FromImage(canvasBmp))
+                {
+                    g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    g.PixelOffsetMode = PixelOffsetMode.Half;
+                    if (xf.Quad)
+                    {
+                        Point origin;
+                        using (Bitmap warped = PixelOps.WarpQuad(stand.Image, xf.QuadPts, out origin, false))
+                            g.DrawImageUnscaled(warped, origin.X, origin.Y);
+                    }
+                    else
+                    {
+                        using (Matrix m = stand.GetMatrix()) g.MultiplyTransform(m, MatrixOrder.Prepend);
+                        g.DrawImage(stand.Image, stand.Bounds);
+                    }
+                }
+                Pixels p = Pixels.From(canvasBmp);
+                var mask = new byte[p.Width * p.Height];
+                for (int i = 0, k = 0; k < mask.Length; i += 4, k++) mask[k] = p.Data[i + 3];
+                canvasBmp.Dispose();
+                result = EditorSelection.FromMask(mask, _canvas, xf.Selection0.Feather);
+            }
+            if (xf.Preview != null) xf.Preview.Dispose();
+            if (xf.PreviewSource != null && xf.PreviewSource != stand.Image) xf.PreviewSource.Dispose();
+            stand.Image.Dispose();
+            if (xf.Matrix0 != null) xf.Matrix0.Dispose();
+            _selection = result;
+            _antsScreenPath = null;
+            RelayoutOptions();
+            AfterDocumentChange();
         }
 
         void SetTransformMode(TransformMode mode)
@@ -170,6 +287,7 @@ namespace MicroApp
             TransformState xf = _xf;
             _xf = null;
             EditorLayer layer = xf.Layer;
+            if (xf.SelectionOnly) { CommitSelectionTransform(xf); return; }
             if (xf.FloatHost != null && !xf.Activated)
             {
                 // Ctrl+T on a selection, then Enter: the selection simply comes back
@@ -255,6 +373,20 @@ namespace MicroApp
             TransformState xf = _xf;
             _xf = null;
             ClearHolePreview();
+            if (xf.SelectionOnly)
+            {
+                // the outline never moved for real: just forget the stand-in
+                var stand = xf.Layer as RasterLayer;
+                if (xf.PreviewSource != null && stand != null && xf.PreviewSource != stand.Image) xf.PreviewSource.Dispose();
+                if (stand != null && stand.Image != null) stand.Image.Dispose();
+                if (xf.Preview != null) xf.Preview.Dispose();
+                if (xf.Matrix0 != null) xf.Matrix0.Dispose();
+                PopUndo();
+                _antsScreenPath = null;
+                RelayoutOptions();
+                AfterDocumentChange();
+                return;
+            }
             if (xf.Preview != null) xf.Preview.Dispose();
             if (xf.PreviewSource != null && !(xf.Layer is RasterLayer && ((RasterLayer)xf.Layer).Image == xf.PreviewSource)) xf.PreviewSource.Dispose();
             if (xf.Matrix0 != null) xf.Matrix0.Dispose();

@@ -166,6 +166,8 @@ namespace MicroApp
             select.DropDownItems.Add(new ToolStripSeparator());
             select.DropDownItems.Add(Item("Layer Pixels", Keys.None, delegate { SelectLayerPixels(); }));
             select.DropDownItems.Add(new ToolStripSeparator());
+            select.DropDownItems.Add(Item("Transform Selection", Keys.None, delegate { BeginTransformSelection(TransformMode.Free); }));
+            select.DropDownItems.Add(new ToolStripSeparator());
             var modify = new ToolStripMenuItem("Modify");
             modify.DropDownItems.Add(Item("Border…", Keys.None, delegate { ModifySelection("Border"); }));
             modify.DropDownItems.Add(Item("Smooth…", Keys.None, delegate { ModifySelection("Smooth"); }));
@@ -354,7 +356,6 @@ namespace MicroApp
                 m.Items.Add(new ToolStripMenuItem("Layer Via Cut", null, delegate { LayerViaCopy(true); }) { ShortcutKeyDisplayString = "Shift+Ctrl+J", Enabled = HasSelection });
                 m.Items.Add(new ToolStripMenuItem("New Layer", null, delegate { NewLayer(); }) { ShortcutKeyDisplayString = "Shift+Ctrl+N" });
                 m.Items.Add(new ToolStripSeparator());
-                m.Items.Add(new ToolStripMenuItem("Free Transform", null, delegate { BeginTransform(SelectedLayer(), TransformMode.Free); }) { ShortcutKeyDisplayString = "Ctrl+T" });
                 m.Items.Add(new ToolStripMenuItem("Fill…", null, delegate { FillCommand(); }) { ShortcutKeyDisplayString = "Shift+F5" });
                 m.Items.Add(new ToolStripMenuItem("Stroke…", null, delegate { StrokeCommand(); }));
                 m.Items.Add(new ToolStripMenuItem("Crop", null, delegate { CropToSelection(); }) { Enabled = HasSelection });
@@ -420,6 +421,9 @@ namespace MicroApp
 
         void AddSelectionItems(ContextMenuStrip m)
         {
+            m.Items.Add(new ToolStripMenuItem("Transform Selection", null, delegate { BeginTransformSelection(TransformMode.Free); }) { Enabled = HasSelection });
+            m.Items.Add(new ToolStripMenuItem("Free Transform (pixels)", null, delegate { BeginTransform(SelectedLayer(), TransformMode.Free); }) { ShortcutKeyDisplayString = "Ctrl+T", Enabled = HasSelection && SelectedLayer() != null });
+            m.Items.Add(new ToolStripSeparator());
             m.Items.Add(new ToolStripMenuItem("Select All", null, delegate { SelectAll(); }) { ShortcutKeyDisplayString = "Ctrl+A" });
             m.Items.Add(new ToolStripMenuItem("Deselect", null, delegate { Deselect(); }) { ShortcutKeyDisplayString = "Ctrl+D", Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Reselect", null, delegate { Reselect(); }) { ShortcutKeyDisplayString = "Shift+Ctrl+D", Enabled = _lastSelection != null });
