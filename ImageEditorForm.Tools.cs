@@ -243,6 +243,15 @@ namespace MicroApp
                 }
             }
 
+            // with a selection on an image layer, the Move tool moves the selected pixels -
+            // wherever on the canvas the drag starts, as in Photoshop
+            var selRaster = sel as RasterLayer;
+            if (selRaster != null && HasSelection && !sel.Locked && sel.Visible && !alt)
+            {
+                BeginFloatMove(selRaster, _sel, cp);
+                return;
+            }
+
             // pick the topmost layer under the cursor (Auto-Select), else keep the current one
             int hit = -1;
             if (_autoSelect || ctrl || sel == null || !sel.HitTest(cp))
@@ -275,7 +284,7 @@ namespace MicroApp
             if (_layers[hit].Locked) { Toast.Show("The layer is locked."); _canvasPanel.Invalidate(); return; }
 
             var raster = _layers[hit] as RasterLayer;
-            if (raster != null && HasSelection && _selection.Contains((int)cp.X, (int)cp.Y))
+            if (raster != null && HasSelection && !raster.Locked)
             {
                 BeginFloatMove(raster, hit, cp);
                 return;

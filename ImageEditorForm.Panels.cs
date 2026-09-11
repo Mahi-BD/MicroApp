@@ -16,31 +16,31 @@ namespace MicroApp
         // shape
         Label _optStrokeLbl, _optFillLbl, _optWidthLbl, _optRadiusLbl, _optSidesLbl;
         SwatchButton _optStroke, _optFill;
-        NumericUpDown _optWidth, _optRadius, _optSides;
+        ModernNumber _optWidth, _optRadius, _optSides;
         // text
         Label _optFontLbl, _optSizeLbl, _optTextColorLbl, _optTextBackLbl, _optTextOutlineLbl;
-        ComboBox _optFont;
-        NumericUpDown _optSize;
+        ModernCombo _optFont;
+        ModernNumber _optSize;
         Button _optBold, _optItalic, _optUnderline, _optAlignL, _optAlignC, _optAlignR;
         SwatchButton _optTextColor, _optTextBack, _optTextOutline;
         // brushes
         Label _optBrushLbl, _optHardLbl, _optOpacityLbl, _optFlowLbl, _optStrengthLbl, _optExposureLbl;
-        NumericUpDown _optBrush, _optHard, _optOpacity, _optFlow, _optStrength, _optExposure;
+        ModernNumber _optBrush, _optHard, _optOpacity, _optFlow, _optStrength, _optExposure;
         // selection
         Button _optSelNew, _optSelAdd, _optSelSub, _optSelInt;
         Label _optFeatherLbl, _optTolLbl;
-        NumericUpDown _optFeather, _optTol;
+        ModernNumber _optFeather, _optTol;
         ModernCheckBox _optAntialias, _optContiguous, _optSampleAll;
         // crop
         Label _optCropRatioLbl, _optCropLbl;
-        ComboBox _optCropRatio;
+        ModernCombo _optCropRatio;
         ModernCheckBox _optCropDelete;
         Button _optCropOk, _optCropCancel;
         // eyedropper
         Label _optSampleLbl;
-        ComboBox _optSample;
+        ModernCombo _optSample;
         // gradient
-        ComboBox _optGradKind;
+        ModernCombo _optGradKind;
         ModernCheckBox _optGradReverse, _optGradTransparent;
         // move
         ModernCheckBox _optAutoSelect, _optShowControls;
@@ -56,8 +56,8 @@ namespace MicroApp
         int _rightTab;                       // 0 layers, 1 history
         Panel _layersPage, _historyPage;
         Label _layersTitle, _assetsTitle;
-        ComboBox _blendCombo;
-        NumericUpDown _opacityNum;
+        ModernCombo _blendCombo;
+        ModernNumber _opacityNum;
         Label _opacityLbl;
         Button _lockBtn;
         ListBox _layerList;
@@ -319,6 +319,7 @@ namespace MicroApp
             _optSelInt = OptGlyphButton("selint", "Intersect with selection (Shift+Alt)", delegate { SetSelModeOption(SelectionMode.Intersect); });
             _optFeatherLbl = OptLabel("Feather");
             _optFeather = OptNumeric(0, 250, _marqueeFeather, delegate { _marqueeFeather = (int)_optFeather.Value; });
+            _optFeather.Suffix = "px";
             _optAntialias = OptCheck("Anti-alias", _marqueeAntialias, delegate { _marqueeAntialias = _optAntialias.Checked; });
             _optTolLbl = OptLabel("Tolerance");
             _optTol = OptNumeric(0, 255, _wandTolerance, delegate
@@ -343,15 +344,7 @@ namespace MicroApp
 
             // text tool
             _optFontLbl = OptLabel("Font");
-            _optFont = new ComboBox
-            {
-                Width = 150,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Theme.FieldBg,
-                ForeColor = Theme.Text,
-                Font = Theme.Base
-            };
+            _optFont = new ModernCombo { Width = 160 };
             try
             {
                 foreach (FontFamily fam in FontFamily.Families) _optFont.Items.Add(fam.Name);
@@ -370,6 +363,7 @@ namespace MicroApp
 
             _optSizeLbl = OptLabel("Size");
             _optSize = OptNumeric(4, 600, (int)_fontSize, delegate { _fontSize = (float)_optSize.Value; ApplyTextOptions(); });
+            _optSize.Suffix = "px";
             _optBold = OptToggle("B", new Font("Segoe UI", 9.5F, FontStyle.Bold), delegate { _bold = !_bold; StyleToggle(_optBold, _bold); ApplyTextOptions(); });
             _optItalic = OptToggle("I", new Font("Segoe UI", 9.5F, FontStyle.Italic), delegate { _italic = !_italic; StyleToggle(_optItalic, _italic); ApplyTextOptions(); });
             _optUnderline = OptToggle("U", new Font("Segoe UI", 9.5F, FontStyle.Underline), delegate { _underline = !_underline; StyleToggle(_optUnderline, _underline); ApplyTextOptions(); });
@@ -387,16 +381,21 @@ namespace MicroApp
             // brushes
             _optBrushLbl = OptLabel("Size");
             _optBrush = OptNumeric(1, 2000, _brushSize, delegate { _brushSize = (int)_optBrush.Value; _canvasPanel.Invalidate(); });
+            _optBrush.Suffix = "px"; _optBrush.Width = 76;
             _optHardLbl = OptLabel("Hardness");
             _optHard = OptNumeric(0, 100, _brushHardness, delegate { _brushHardness = (int)_optHard.Value; _canvasPanel.Invalidate(); });
-            _optOpacityLbl = OptLabel("Opacity %");
+            _optHard.Suffix = "%";
+            _optOpacityLbl = OptLabel("Opacity");
             _optOpacity = OptNumeric(1, 100, _brushOpacity, delegate { _brushOpacity = (int)_optOpacity.Value; });
-            _optFlowLbl = OptLabel("Flow %");
+            _optOpacity.Suffix = "%";
+            _optFlowLbl = OptLabel("Flow");
             _optFlow = OptNumeric(1, 100, _brushFlow, delegate { _brushFlow = (int)_optFlow.Value; });
+            _optFlow.Suffix = "%";
             _optStrengthLbl = OptLabel("Strength");
             _optStrength = OptNumeric(1, 50, _blurStrength, delegate { _blurStrength = (int)_optStrength.Value; });
-            _optExposureLbl = OptLabel("Exposure %");
+            _optExposureLbl = OptLabel("Exposure");
             _optExposure = OptNumeric(1, 100, _exposure, delegate { _exposure = (int)_optExposure.Value; });
+            _optExposure.Suffix = "%";
 
             // gradient
             _optGradKind = OptCombo(new[] { "Linear", "Radial" }, _gradientKind, delegate { _gradientKind = _optGradKind.SelectedIndex; });
@@ -471,19 +470,10 @@ namespace MicroApp
             return b;
         }
 
-        NumericUpDown OptNumeric(int min, int max, int value, EventHandler changed)
+        ModernNumber OptNumeric(int min, int max, int value, EventHandler changed)
         {
-            var n = new NumericUpDown
-            {
-                Minimum = min,
-                Maximum = max,
-                Value = Math.Max(min, Math.Min(max, value)),
-                Width = 58,
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Theme.FieldBg,
-                ForeColor = Theme.Text,
-                Font = Theme.Base
-            };
+            var n = new ModernNumber { Minimum = min, Maximum = max, Width = 66 };
+            n.Value = Math.Max(min, Math.Min(max, value));
             n.ValueChanged += delegate(object s, EventArgs e) { if (!_syncingOptions) changed(s, e); };
             _optionsBar.Controls.Add(n);
             _optionOrder.Add(n);
@@ -492,17 +482,7 @@ namespace MicroApp
 
         Button OptToggle(string text, Font font, EventHandler onClick)
         {
-            var b = new Button
-            {
-                Text = text,
-                Font = font,
-                Size = new Size(28, 24),
-                FlatStyle = FlatStyle.Flat,
-                ForeColor = Theme.Text,
-                BackColor = Theme.Surface,
-                TabStop = false
-            };
-            b.FlatAppearance.BorderColor = Theme.Border;
+            var b = new GlyphButton(null) { Text = text, Font = font, Size = new Size(28, 26) };
             b.Click += delegate(object s, EventArgs e) { if (!_syncingOptions) onClick(s, e); };
             _optionsBar.Controls.Add(b);
             _optionOrder.Add(b);
@@ -550,17 +530,9 @@ namespace MicroApp
             return c;
         }
 
-        ComboBox OptCombo(string[] items, int index, EventHandler changed)
+        ModernCombo OptCombo(string[] items, int index, EventHandler changed)
         {
-            var c = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Theme.FieldBg,
-                ForeColor = Theme.Text,
-                Font = Theme.Base,
-                Width = 130
-            };
+            var c = new ModernCombo { Width = 140 };
             c.Items.AddRange(items);
             c.SelectedIndex = Math.Max(0, Math.Min(items.Length - 1, index));
             c.SelectedIndexChanged += delegate(object s, EventArgs e) { if (!_syncingOptions) changed(s, e); };
@@ -843,11 +815,7 @@ namespace MicroApp
             _layersPage = new Panel { BackColor = Theme.Surface };
             _layersTitle = new Label { Text = "", Visible = false };
 
-            _blendCombo = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat,
-                BackColor = Theme.FieldBg, ForeColor = Theme.Text, Font = Theme.Small, Width = 128
-            };
+            _blendCombo = new ModernCombo { Width = 132, Height = 24 };
             _blendCombo.Items.AddRange(BlendModes.Names);
             _blendCombo.SelectedIndex = 0;
             _blendCombo.SelectedIndexChanged += delegate
@@ -862,11 +830,8 @@ namespace MicroApp
                 InvalidateDoc();
             };
             _opacityLbl = new Label { Text = "Opacity", Font = Theme.Small, ForeColor = Theme.TextDim, AutoSize = true, BackColor = Color.Transparent };
-            _opacityNum = new NumericUpDown
-            {
-                Minimum = 0, Maximum = 100, Value = 100, Width = 56,
-                BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.FieldBg, ForeColor = Theme.Text, Font = Theme.Small
-            };
+            _opacityNum = new ModernNumber { Minimum = 0, Maximum = 100, Width = 70, Height = 24, Suffix = "%" };
+            _opacityNum.Value = 100;
             _opacityNum.ValueChanged += Opacity_ValueChanged;
             _lockBtn = new GlyphButton("unlock") { Size = new Size(26, 24) };
             _tips.SetToolTip(_lockBtn, "Lock / unlock the layer (Ctrl+/)");
@@ -1012,7 +977,7 @@ namespace MicroApp
 
             // layers page
             _blendCombo.Location = new Point(0, 4);
-            _opacityLbl.Location = new Point(_blendCombo.Right + 8, 8);
+            _opacityLbl.Location = new Point(_blendCombo.Right + 8, 9);
             _opacityNum.Location = new Point(_opacityLbl.Right + 2, 4);
             _lockBtn.Location = new Point(w - 26, 3);
             int listTop = 34;
@@ -1068,18 +1033,7 @@ namespace MicroApp
 
         Button SmallButton(string text, string tip)
         {
-            var b = new Button
-            {
-                Text = text,
-                Size = new Size(34, 26),
-                FlatStyle = FlatStyle.Flat,
-                ForeColor = Theme.Text,
-                BackColor = Theme.FieldBg,
-                Font = Theme.Small,
-                TabStop = false
-            };
-            b.FlatAppearance.BorderSize = 0;
-            b.FlatAppearance.MouseOverBackColor = Theme.Border;
+            var b = new ModernButton { Text = text, Size = new Size(34, 26), Font = Theme.Small, TabStop = false, BackColor = Theme.Surface };
             _tips.SetToolTip(b, tip);
             return b;
         }
@@ -1107,22 +1061,11 @@ namespace MicroApp
                 using (var p = new Pen(Theme.Border))
                     e.Graphics.DrawLine(p, 0, 0, _status.Width, 0);
             };
-            _zoomBox = new TextBox
-            {
-                Width = 58, BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.FieldBg, ForeColor = Theme.Text, Font = Theme.Small,
-                TextAlign = HorizontalAlignment.Right, Location = new Point(10, 3)
-            };
-            _zoomBox.KeyDown += delegate(object s, KeyEventArgs e)
-            {
-                if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; ApplyZoomBox(); }
-            };
+            _zoomBox = new ModernNumber { Width = 84, Height = 22, Location = new Point(8, 2), Minimum = 2, Maximum = 3200, DecimalPlaces = 1, Suffix = "%" };
+            _zoomBox.Value = 100;
+            _zoomBox.ValueChanged += delegate { if (!_syncingZoom) SetZoom((float)_zoomBox.Value / 100f); };
             _tips.SetToolTip(_zoomBox, "Zoom - type a percentage and press Enter");
-            var zoomMenuBtn = new Button
-            {
-                Text = "▾", Size = new Size(20, 20), Location = new Point(70, 3), FlatStyle = FlatStyle.Flat,
-                ForeColor = Theme.TextDim, BackColor = Theme.Surface, TabStop = false, Font = Theme.Small
-            };
-            zoomMenuBtn.FlatAppearance.BorderSize = 0;
+            var zoomMenuBtn = new GlyphButton("menu") { Size = new Size(22, 22), Location = new Point(94, 2) };
             zoomMenuBtn.Click += delegate
             {
                 var menu = new ContextMenuStrip { Renderer = new ModernMenuRenderer(), BackColor = Theme.Surface, ForeColor = Theme.Text, Font = Theme.Base };
@@ -1141,7 +1084,7 @@ namespace MicroApp
                 ForeColor = Theme.Text,
                 BackColor = Color.Transparent,
                 Font = Theme.Small,
-                Location = new Point(100, 6)
+                Location = new Point(126, 6)
             };
             _statusColor = new Label
             {
@@ -1975,7 +1918,10 @@ namespace MicroApp
                     g.FillPath(b, rp);
             }
             Color ink = !Enabled ? Theme.TextDim : _checked ? Theme.OnAccent : Theme.Text;
-            EditorIcons.DrawGlyph(g, _glyph, new Rectangle(2, 2, Width - 5, Height - 5), ink);
+            if (string.IsNullOrEmpty(_glyph))
+                TextRenderer.DrawText(g, Text, Font, r, ink, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            else
+                EditorIcons.DrawGlyph(g, _glyph, new Rectangle(2, 2, Width - 5, Height - 5), ink);
         }
     }
 }

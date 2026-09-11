@@ -33,6 +33,7 @@ namespace MicroApp
         readonly Panel _body;
         readonly Dictionary<string, Control> _controls = new Dictionary<string, Control>();
         readonly Dictionary<string, object> _defaults = new Dictionary<string, object>();
+        readonly Dictionary<string, ModernNumber> _numbers = new Dictionary<string, ModernNumber>();
         readonly Timer _debounce = new Timer { Interval = 60 };
         ModernCheckBox _preview;
         int _y = 16;
@@ -77,25 +78,17 @@ namespace MicroApp
         }
 
         /// <summary>A slider with a number box; <paramref name="suffix"/> decorates the read-out ("px", "%", "°").</summary>
-        public TrackBar AddSlider(string key, string label, int min, int max, int value, string suffix = "")
+        public ModernSlider AddSlider(string key, string label, int min, int max, int value, string suffix = "")
         {
-            Caption(label, 24, _y);
-            var num = new NumericUpDown
+            Caption(label, 24, _y + 3);
+            int numW = suffix.Length > 0 ? 92 : 78;
+            var num = new ModernNumber { Minimum = min, Maximum = max, Suffix = suffix, Location = new Point(W - 24 - numW, _y - 1), Size = new Size(numW, 26) };
+            num.Value = Math.Max(min, Math.Min(max, value));
+            var bar = new ModernSlider
             {
                 Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)),
-                Location = new Point(W - 24 - 78, _y - 3), Width = 78,
-                BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle, Font = Theme.Base,
-                TextAlign = HorizontalAlignment.Right
+                Location = new Point(18, _y + 26), Size = new Size(W - 36, 24)
             };
-            var bar = new TrackBar
-            {
-                Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)),
-                TickStyle = TickStyle.None, AutoSize = false,
-                Location = new Point(20, _y + 18), Size = new Size(W - 40, 26),
-                BackColor = Theme.Bg,
-                LargeChange = Math.Max(1, (max - min) / 20), SmallChange = 1
-            };
-            if (suffix.Length > 0) Caption(suffix, W - 24 - 78 - 4 - TextRenderer.MeasureText(suffix, Theme.Small).Width, _y);
             bar.ValueChanged += delegate
             {
                 if (_syncing) return;
@@ -111,8 +104,9 @@ namespace MicroApp
             _body.Controls.Add(num);
             _body.Controls.Add(bar);
             _controls[key] = bar;
+            _numbers[key] = num;
             _defaults[key] = value;
-            _y += 50;
+            _y += 56;
             return bar;
         }
 
@@ -127,15 +121,10 @@ namespace MicroApp
             return c;
         }
 
-        public ComboBox AddCombo(string key, string label, string[] items, int index)
+        public ModernCombo AddCombo(string key, string label, string[] items, int index)
         {
-            Caption(label, 24, _y + 4);
-            var c = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat,
-                BackColor = Theme.FieldBg, ForeColor = Theme.Text, Font = Theme.Base,
-                Location = new Point(W - 24 - 190, _y), Width = 190
-            };
+            Caption(label, 24, _y + 5);
+            var c = new ModernCombo { Location = new Point(W - 24 - 190, _y), Width = 190 };
             c.Items.AddRange(items);
             c.SelectedIndex = Math.Max(0, Math.Min(items.Length - 1, index));
             c.SelectedIndexChanged += delegate { Bump(); };
@@ -201,20 +190,17 @@ namespace MicroApp
             foreach (KeyValuePair<string, Control> kv in _controls)
             {
                 object def = _defaults[kv.Key];
-                var bar = kv.Value as TrackBar;
+                var bar = kv.Value as ModernSlider;
                 if (bar != null)
                 {
                     bar.Value = (int)def;
-                    foreach (Control sib in _body.Controls)
-                    {
-                        var num = sib as NumericUpDown;
-                        if (num != null && num.Top == bar.Top - 21) num.Value = (int)def;
-                    }
+                    ModernNumber num;
+                    if (_numbers.TryGetValue(kv.Key, out num)) num.Value = (int)def;
                     continue;
                 }
                 var chk = kv.Value as ModernCheckBox;
                 if (chk != null) { chk.Checked = (bool)def; continue; }
-                var combo = kv.Value as ComboBox;
+                var combo = kv.Value as ModernCombo;
                 if (combo != null) { combo.SelectedIndex = (int)def; continue; }
                 var sw = kv.Value as SwatchButton;
                 if (sw != null) { sw.Color = (Color)def; continue; }
@@ -223,21 +209,18 @@ namespace MicroApp
             Bump();
         }
 
-        public int Value(string key) { return ((TrackBar)_controls[key]).Value; }
+        public int Value(string key) { return ((ModernSlider)_controls[key]).Value; }
         public bool Check(string key) { return ((ModernCheckBox)_controls[key]).Checked; }
-        public int Index(string key) { return ((ComboBox)_controls[key]).SelectedIndex; }
+        public int Index(string key) { return ((ModernCombo)_controls[key]).SelectedIndex; }
         public Color ColorOf(string key) { return ((SwatchButton)_controls[key]).Color; }
 
         public void SetValue(string key, int v)
         {
-            var bar = (TrackBar)_controls[key];
+            var bar = (ModernSlider)_controls[key];
             _syncing = true;
             bar.Value = Math.Max(bar.Minimum, Math.Min(bar.Maximum, v));
-            foreach (Control sib in _body.Controls)
-            {
-                var num = sib as NumericUpDown;
-                if (num != null && num.Top == bar.Top - 21) num.Value = bar.Value;
-            }
+            ModernNumber num;
+            if (_numbers.TryGetValue(key, out num)) num.Value = bar.Value;
             _syncing = false;
             Bump();
         }
@@ -686,21 +669,18 @@ namespace MicroApp
         void Slider(ref int y, string label, int min, int max, int value, Action<int> set)
         {
             var l = new Label { Text = label, Location = new Point(16, y), AutoSize = true, ForeColor = Theme.TextDim, BackColor = Color.Transparent, Font = Theme.Small };
-            var num = new NumericUpDown
+            var num = new ModernNumber { Minimum = min, Maximum = max, Size = new Size(74, 26), Location = new Point(_page.Width - 16 - 74, y - 4) };
+            num.Value = Math.Max(min, Math.Min(max, value));
+            var bar = new ModernSlider
             {
-                Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)), Width = 70,
-                Location = new Point(_page.Width - 16 - 70, y - 3), BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle
-            };
-            var bar = new TrackBar
-            {
-                Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)), TickStyle = TickStyle.None, AutoSize = false,
-                Location = new Point(12, y + 18), Size = new Size(_page.Width - 24, 24), BackColor = Theme.Surface
+                Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)),
+                Location = new Point(12, y + 22), Size = new Size(_page.Width - 24, 24)
             };
             bool sync = false;
             bar.ValueChanged += delegate { if (sync || _building) return; sync = true; num.Value = bar.Value; sync = false; set(bar.Value); Bump(); };
             num.ValueChanged += delegate { if (sync || _building) return; sync = true; bar.Value = (int)num.Value; sync = false; set(bar.Value); Bump(); };
             _page.Controls.Add(l); _page.Controls.Add(num); _page.Controls.Add(bar);
-            y += 46;
+            y += 50;
         }
 
         void ColorRow(ref int y, string label, Color value, Action<Color> set)
@@ -715,7 +695,7 @@ namespace MicroApp
         void Combo(ref int y, string label, string[] items, int index, Action<int> set)
         {
             var l = new Label { Text = label, Location = new Point(16, y + 4), AutoSize = true, ForeColor = Theme.TextDim, BackColor = Color.Transparent, Font = Theme.Small };
-            var c = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Theme.FieldBg, ForeColor = Theme.Text, Location = new Point(_page.Width - 16 - 140, y), Width = 140 };
+            var c = new ModernCombo { Location = new Point(_page.Width - 16 - 140, y), Width = 140 };
             c.Items.AddRange(items);
             c.SelectedIndex = index;
             c.SelectedIndexChanged += delegate { if (_building) return; set(c.SelectedIndex); Bump(); };
@@ -727,7 +707,7 @@ namespace MicroApp
     /// <summary>Width/height dialog for File &gt; New and Image &gt; Image Size, in the app's style.</summary>
     class CanvasSizeDialog : PixelPerfectForm
     {
-        readonly NumericUpDown _w, _h;
+        readonly ModernNumber _w, _h;
         readonly ModernCheckBox _scale;
         readonly ModernRadioButton _white, _transparent, _fg;
         readonly Size _original;
@@ -749,19 +729,11 @@ namespace MicroApp
             Font = Theme.Base;
 
             var wl = new Label { Text = "Width (px)", Location = new Point(24, 24), AutoSize = true, ForeColor = Theme.TextDim };
-            _w = new NumericUpDown
-            {
-                Minimum = 1, Maximum = 20000, Value = Math.Max(1, Math.Min(20000, w)),
-                Location = new Point(24, 44), Width = 130,
-                BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle
-            };
+            _w = new ModernNumber { Minimum = 1, Maximum = 20000, Location = new Point(24, 44), Width = 130, Suffix = "px" };
+            _w.Value = Math.Max(1, Math.Min(20000, w));
             var hl = new Label { Text = "Height (px)", Location = new Point(182, 24), AutoSize = true, ForeColor = Theme.TextDim };
-            _h = new NumericUpDown
-            {
-                Minimum = 1, Maximum = 20000, Value = Math.Max(1, Math.Min(20000, h)),
-                Location = new Point(182, 44), Width = 130,
-                BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle
-            };
+            _h = new ModernNumber { Minimum = 1, Maximum = 20000, Location = new Point(182, 44), Width = 130, Suffix = "px" };
+            _h.Value = Math.Max(1, Math.Min(20000, h));
             Controls.Add(wl); Controls.Add(_w); Controls.Add(hl); Controls.Add(_h);
 
             int y = 78;
@@ -853,7 +825,7 @@ namespace MicroApp
     /// <summary>Image &gt; Canvas Size: new dimensions plus the anchor that says which side grows.</summary>
     class CanvasExtendDialog : PixelPerfectForm
     {
-        readonly NumericUpDown _w, _h;
+        readonly ModernNumber _w, _h;
         readonly ModernCheckBox _relative;
         readonly Button[] _anchors = new Button[9];
         int _anchor = 4;
@@ -879,9 +851,11 @@ namespace MicroApp
             };
             Controls.Add(cur);
             var wl = new Label { Text = "Width", Location = new Point(24, 44), AutoSize = true, ForeColor = Theme.TextDim };
-            _w = new NumericUpDown { Minimum = -20000, Maximum = 20000, Value = original.Width, Location = new Point(24, 64), Width = 110, BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle };
+            _w = new ModernNumber { Minimum = -20000, Maximum = 20000, Location = new Point(24, 64), Width = 120, Suffix = "px" };
+            _w.Value = original.Width;
             var hl = new Label { Text = "Height", Location = new Point(24, 96), AutoSize = true, ForeColor = Theme.TextDim };
-            _h = new NumericUpDown { Minimum = -20000, Maximum = 20000, Value = original.Height, Location = new Point(24, 116), Width = 110, BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle };
+            _h = new ModernNumber { Minimum = -20000, Maximum = 20000, Location = new Point(24, 116), Width = 120, Suffix = "px" };
+            _h.Value = original.Height;
             _relative = new ModernCheckBox { Text = "Relative", Location = new Point(24, 150), Size = new Size(120, 22) };
             _relative.CheckedChanged += delegate
             {
@@ -1003,7 +977,7 @@ namespace MicroApp
     /// <summary>"Feather Radius: [ 5 ] pixels" - one number, for Select &gt; Modify and friends.</summary>
     class NumberPrompt : PixelPerfectForm
     {
-        readonly NumericUpDown _num;
+        readonly ModernNumber _num;
 
         NumberPrompt(string title, string label, int min, int max, int value, string unit)
         {
@@ -1017,13 +991,8 @@ namespace MicroApp
             BackColor = Theme.Bg;
             Font = Theme.Base;
             var caption = new Label { Text = label, Location = new Point(24, 26), AutoSize = true, ForeColor = Theme.TextDim };
-            _num = new NumericUpDown
-            {
-                Minimum = min, Maximum = max, Value = Math.Max(min, Math.Min(max, value)),
-                Location = new Point(caption.Right + 90, 22), Width = 90,
-                BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.FieldBg, ForeColor = Theme.Text
-            };
-            _num.Location = new Point(190, 22);
+            _num = new ModernNumber { Minimum = min, Maximum = max, Location = new Point(190, 22), Width = 90 };
+            _num.Value = Math.Max(min, Math.Min(max, value));
             var unitL = new Label { Text = unit, Location = new Point(286, 26), AutoSize = true, ForeColor = Theme.TextDim };
             var ok = new ModernButton { Text = "OK", Accent = true, Size = new Size(96, 32), DialogResult = DialogResult.OK, Location = new Point(220, 72) };
             var cancel = new ModernButton { Text = "Cancel", Size = new Size(96, 32), DialogResult = DialogResult.Cancel, Location = new Point(116, 72) };
@@ -1032,7 +1001,7 @@ namespace MicroApp
             CancelButton = cancel;
             Theme.Apply(this);
             HandleCreated += delegate { Native.SetDarkModeForWindow(Handle, ThemeHelper.IsDarkMode); };
-            Shown += delegate { _num.Select(0, 10); _num.Focus(); };
+            Shown += delegate { _num.Focus(); _num.SelectAll(); };
         }
 
         public static int? Ask(IWin32Window owner, string title, string label, int min, int max, int value, string unit)
@@ -1067,8 +1036,8 @@ namespace MicroApp
             Font = Theme.Base;
 
             var cl = new Label { Text = "Contents", Location = new Point(24, 22), AutoSize = true, ForeColor = Theme.TextDim };
-            var contents = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Theme.FieldBg, ForeColor = Theme.Text, Location = new Point(130, 18), Width = 150 };
-            contents.Items.AddRange(new object[] { "Foreground Color", "Background Color", "Color…", "Black", "50% Gray", "White" });
+            var contents = new ModernCombo { Location = new Point(130, 18), Width = 150 };
+            contents.Items.AddRange(new[] { "Foreground Color", "Background Color", "Color…", "Black", "50% Gray", "White" });
             contents.SelectedIndex = 0;
             var swatch = new SwatchButton(false) { Color = fg, Location = new Point(290, 18), Size = new Size(46, 26) };
             contents.SelectedIndexChanged += delegate
@@ -1083,14 +1052,15 @@ namespace MicroApp
             };
             swatch.ColorChanged += delegate { CustomColor = swatch.Color; contents.SelectedIndex = 2; };
             var ml = new Label { Text = "Mode", Location = new Point(24, 62), AutoSize = true, ForeColor = Theme.TextDim };
-            var mode = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Theme.FieldBg, ForeColor = Theme.Text, Location = new Point(130, 58), Width = 150 };
+            var mode = new ModernCombo { Location = new Point(130, 58), Width = 150 };
             mode.Items.AddRange(BlendModes.Names);
             mode.SelectedIndex = 0;
             mode.SelectedIndexChanged += delegate { Mode = (BlendMode)mode.SelectedIndex; };
             var ol = new Label { Text = "Opacity", Location = new Point(24, 102), AutoSize = true, ForeColor = Theme.TextDim };
-            var op = new NumericUpDown { Minimum = 1, Maximum = 100, Value = 100, Location = new Point(130, 98), Width = 70, BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle };
+            var op = new ModernNumber { Minimum = 1, Maximum = 100, Location = new Point(130, 98), Width = 80, Suffix = "%" };
+            op.Value = 100;
             op.ValueChanged += delegate { FillOpacity = (int)op.Value; };
-            var pl = new Label { Text = "%", Location = new Point(204, 102), AutoSize = true, ForeColor = Theme.TextDim };
+            var pl = new Label { Text = "", Location = new Point(204, 102), AutoSize = true, ForeColor = Theme.TextDim };
             var pres = new ModernCheckBox { Text = "Preserve transparency", Location = new Point(24, 136), Size = new Size(240, 22) };
             pres.CheckedChanged += delegate { PreserveTransparency = pres.Checked; };
             Controls.Add(cl); Controls.Add(contents); Controls.Add(swatch); Controls.Add(ml); Controls.Add(mode);
@@ -1147,9 +1117,10 @@ namespace MicroApp
             Font = Theme.Base;
 
             var wl = new Label { Text = "Width", Location = new Point(24, 22), AutoSize = true, ForeColor = Theme.TextDim };
-            var w = new NumericUpDown { Minimum = 1, Maximum = 250, Value = 3, Location = new Point(120, 18), Width = 70, BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle };
+            var w = new ModernNumber { Minimum = 1, Maximum = 250, Location = new Point(120, 18), Width = 84, Suffix = "px" };
+            w.Value = 3;
             w.ValueChanged += delegate { StrokeWidth = (int)w.Value; };
-            var pxl = new Label { Text = "px", Location = new Point(194, 22), AutoSize = true, ForeColor = Theme.TextDim };
+            var pxl = new Label { Text = "", Location = new Point(194, 22), AutoSize = true, ForeColor = Theme.TextDim };
             var cl = new Label { Text = "Colour", Location = new Point(24, 60), AutoSize = true, ForeColor = Theme.TextDim };
             var sw = new SwatchButton(false) { Color = initial, Location = new Point(120, 56), Size = new Size(60, 26) };
             sw.ColorChanged += delegate { StrokeColor = sw.Color; };
@@ -1161,9 +1132,10 @@ namespace MicroApp
             centre.CheckedChanged += delegate { if (centre.Checked) StrokeLocation = 1; };
             outside.CheckedChanged += delegate { if (outside.Checked) StrokeLocation = 2; };
             var ol = new Label { Text = "Opacity", Location = new Point(24, 156), AutoSize = true, ForeColor = Theme.TextDim };
-            var op = new NumericUpDown { Minimum = 1, Maximum = 100, Value = 100, Location = new Point(120, 152), Width = 70, BackColor = Theme.FieldBg, ForeColor = Theme.Text, BorderStyle = BorderStyle.FixedSingle };
+            var op = new ModernNumber { Minimum = 1, Maximum = 100, Location = new Point(120, 152), Width = 84, Suffix = "%" };
+            op.Value = 100;
             op.ValueChanged += delegate { StrokeOpacity = (int)op.Value; };
-            var pl = new Label { Text = "%", Location = new Point(194, 156), AutoSize = true, ForeColor = Theme.TextDim };
+            var pl = new Label { Text = "", Location = new Point(194, 156), AutoSize = true, ForeColor = Theme.TextDim };
             Controls.Add(wl); Controls.Add(w); Controls.Add(pxl); Controls.Add(cl); Controls.Add(sw); Controls.Add(ll);
             Controls.Add(inside); Controls.Add(centre); Controls.Add(outside); Controls.Add(ol); Controls.Add(op); Controls.Add(pl);
             var ok = new ModernButton { Text = "OK", Accent = true, Size = new Size(96, 32), DialogResult = DialogResult.OK, Location = new Point(340 - 96 - 24, 236 - 44) };

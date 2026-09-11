@@ -48,7 +48,7 @@ namespace MicroApp
 
         // options bar controls for the transform
         Label _xfXLbl, _xfYLbl, _xfWLbl, _xfHLbl, _xfALbl, _xfSxLbl, _xfSyLbl;
-        NumericUpDown _xfX, _xfY, _xfW, _xfH, _xfA, _xfSx, _xfSy;
+        ModernNumber _xfX, _xfY, _xfW, _xfH, _xfA, _xfSx, _xfSy;
         Button _xfLink, _xfOk, _xfCancel;
         bool _xfLinked = true;
 
@@ -724,7 +724,10 @@ namespace MicroApp
             _xfOk = OptGlyphButton("check", "Commit transform (Enter)", delegate { CommitTransform(); });
             _xfX.DecimalPlaces = _xfY.DecimalPlaces = _xfW.DecimalPlaces = _xfH.DecimalPlaces = 0;
             _xfA.DecimalPlaces = 1;
-            _xfX.Width = _xfY.Width = _xfW.Width = _xfH.Width = 68;
+            _xfX.Width = _xfY.Width = _xfW.Width = _xfH.Width = 74;
+            _xfX.Suffix = _xfY.Suffix = _xfW.Suffix = _xfH.Suffix = "px";
+            _xfA.Suffix = _xfSx.Suffix = _xfSy.Suffix = "°";
+            _xfA.Width = _xfSx.Width = _xfSy.Width = 70;
             StyleToggle(_xfLink, _xfLinked);
         }
 
@@ -756,7 +759,7 @@ namespace MicroApp
             finally { _syncingOptions = false; }
         }
 
-        static decimal Clamp(NumericUpDown n, decimal v)
+        static decimal Clamp(ModernNumber n, decimal v)
         {
             return Math.Max(n.Minimum, Math.Min(n.Maximum, v));
         }

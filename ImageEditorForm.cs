@@ -142,7 +142,8 @@ namespace MicroApp
         CanvasPanel _canvasPanel;
         Panel _status;
         Label _statusLeft, _statusRight, _statusColor;
-        TextBox _zoomBox;
+        ModernNumber _zoomBox;
+        bool _syncingZoom;
         Label _optToolLbl;
         readonly List<Control> _optionOrder = new List<Control>();
         readonly ToolTip _tips = new ToolTip();
@@ -747,7 +748,12 @@ namespace MicroApp
                                 _layers.Count, _layers.Count == 1 ? "" : "s",
                                 HasSelection ? "    selection " + _selection.Bounds.Width + " × " + _selection.Bounds.Height : "")
                 : "No image yet";
-            if (_zoomBox != null && !_zoomBox.Focused) _zoomBox.Text = string.Format("{0:0.#}%", _zoom * 100);
+            if (_zoomBox != null && !_zoomBox.ContainsFocus)
+            {
+                _syncingZoom = true;
+                _zoomBox.Value = (decimal)Math.Round(_zoom * 100, 1);
+                _syncingZoom = false;
+            }
             _statusRight.Text = ToolHint(_tool);
             if (_optToolLbl != null) _optToolLbl.Text = _xf != null ? "Free Transform" : ToolName(_tool);
         }
@@ -1096,12 +1102,12 @@ namespace MicroApp
         {
             if (_inlineEdit != null && _inlineEdit.Visible) return true;
             if (_renameBox != null && _renameBox.Visible) return true;
-            if (_zoomBox != null && _zoomBox.Focused) return true;
+            if (_zoomBox != null && _zoomBox.ContainsFocus) return true;
             Control c = ActiveControl;
-            // focus may sit on the inner edit of a NumericUpDown/ComboBox
+            // focus may sit on the inner edit of a number field, or on a combo / slider that wants the arrows
             while (c != null)
             {
-                if (c is TextBoxBase || c is NumericUpDown || c is ComboBox) return true;
+                if (c is TextBoxBase || c is ModernNumber || c is ModernCombo || c is ModernSlider) return true;
                 var cc = c as ContainerControl;
                 c = cc != null ? cc.ActiveControl : null;
             }
@@ -1126,7 +1132,7 @@ namespace MicroApp
             {
                 if (_editing != null) { CancelInlineEdit(true); return true; }
                 if (_renameBox != null && _renameBox.Visible) { _renameBox.Visible = false; return true; }
-                if (_zoomBox != null && _zoomBox.Focused) { _canvasPanel.Focus(); UpdateStatus(); return true; }
+                if (_zoomBox != null && _zoomBox.ContainsFocus) { _canvasPanel.Focus(); UpdateStatus(); return true; }
                 if (_xf != null) { CancelTransform(); return true; }
                 if (_polyPts != null) { _polyPts = null; _canvasPanel.Invalidate(); return true; }
                 if (_cropRect.HasValue) { _cropRect = null; RelayoutOptions(); _canvasPanel.Invalidate(); return true; }
@@ -1139,7 +1145,6 @@ namespace MicroApp
             {
                 // hand the standard editing combos to the text box instead of the menu
                 if (Array.IndexOf(TextEditingKeys, keyData) >= 0) return false;
-                if (_zoomBox != null && _zoomBox.Focused && keyData == Keys.Enter) { ApplyZoomBox(); return true; }
                 return base.ProcessCmdKey(ref msg, keyData);
             }
 
@@ -1246,15 +1251,6 @@ namespace MicroApp
                 }
             }
             return base.ProcessCmdKey(ref msg, keyData);
-        }
-
-        void ApplyZoomBox()
-        {
-            string t = _zoomBox.Text.Trim().TrimEnd('%');
-            float v;
-            if (float.TryParse(t, out v) && v > 0) SetZoom(Math.Max(2f, Math.Min(3200f, v)) / 100f);
-            _canvasPanel.Focus();
-            UpdateStatus();
         }
 
         static bool IsBrushTool(Tool t)

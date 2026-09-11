@@ -9,7 +9,9 @@
   here: a two-column tool rail with grouped tools and flyouts, foreground/background swatches
   (**X** swaps, **D** resets), an options bar per tool, **Layers / History** tabs and the asset
   library on the right, a status bar with a typed zoom box, rulers (**Ctrl+R**) and marching
-  ants. **Help → Keyboard Shortcuts** lists every key.
+  ants. Number fields, drop-downs and sliders are drawn in the app's own style (type a value,
+  click or hold the chevrons, roll the wheel, or use the arrow keys) instead of the stock
+  Windows controls. **Help → Keyboard Shortcuts** lists every key.
 
 ### Added
 
