@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace MicroApp
@@ -73,6 +74,20 @@ namespace MicroApp
         Tool _tool = Tool.Move;
         Tool _toolBeforeSpace;
         bool _spaceDown;
+
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int vKey);
+
+        /// <summary>
+        /// Is the space bar physically down right now? The _spaceDown flag alone can stick:
+        /// its KeyUp goes elsewhere when Space clicked a focused button that opened a
+        /// dialog, or when the window lost activation - and then every drag would pan.
+        /// </summary>
+        static bool SpaceHeld()
+        {
+            try { return (GetAsyncKeyState(0x20) & 0x8000) != 0; }
+            catch { return false; }
+        }
 
         // shape / text defaults
         Color _stroke = Color.FromArgb(244, 63, 94);
@@ -212,6 +227,7 @@ namespace MicroApp
             DragEnter += Form_DragEnter;
             DragDrop += Form_DragDrop;
             FormClosing += Form_FormClosing;
+            Deactivate += delegate { _spaceDown = false; if (_canvasPanel != null && _drag == Drag.None) _canvasPanel.Cursor = ToolCursor(_tool); };
             FormClosed += delegate
             {
                 _antsTimer.Stop();

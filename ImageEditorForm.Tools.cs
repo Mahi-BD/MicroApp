@@ -95,7 +95,8 @@ namespace MicroApp
             bool alt = (ModifierKeys & Keys.Alt) == Keys.Alt;
             bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
 
-            if (e.Button == MouseButtons.Middle || (_spaceDown && e.Button == MouseButtons.Left) || (_tool == Tool.Hand && e.Button == MouseButtons.Left))
+            if (_spaceDown && !SpaceHeld()) { _spaceDown = false; _canvasPanel.Cursor = ToolCursor(_tool); }
+            if (e.Button == MouseButtons.Middle || (_spaceDown && SpaceHeld() && e.Button == MouseButtons.Left) || (_tool == Tool.Hand && e.Button == MouseButtons.Left))
             {
                 _drag = Drag.Pan;
                 _panOrigin0 = _origin;
@@ -437,6 +438,7 @@ namespace MicroApp
                     _canvasPanel.Cursor = over ? Cursors.SizeAll : Cursors.Default;
                 return;
             }
+            if (_spaceDown && !SpaceHeld()) _spaceDown = false;
             _canvasPanel.Cursor = _spaceDown ? Cursors.Hand : ToolCursor(_tool);
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -222,6 +223,8 @@ namespace MicroApp
             var help = new ToolStripMenuItem("Help");
             help.DropDownItems.Add(Item("Keyboard Shortcuts…", Keys.None, delegate { ShowShortcuts(); }));
             help.DropDownItems.Add(Item("Image Editor Help", Keys.F1, delegate { OpenHelp(); }));
+            help.DropDownItems.Add(new ToolStripSeparator());
+            help.DropDownItems.Add(Item("Save Diagnostic Snapshot", Keys.F12, delegate { SaveDiagnostic(); }));
 
             _menu.Items.Add(file);
             _menu.Items.Add(edit);
@@ -1089,6 +1092,58 @@ namespace MicroApp
         }
 
         // =================================================================== help
+
+        /// <summary>
+        /// F12: writes what the editor is doing to %LocalAppData%\MicroApp\diag - a text
+        /// dump of the tool, drag, layers and selection, plus a JPEG of the window as the
+        /// editor itself renders it. For bug reports where a screenshot cannot be taken.
+        /// </summary>
+        void SaveDiagnostic()
+        {
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MicroApp", "diag");
+                Directory.CreateDirectory(dir);
+                string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("MicroApp image editor diagnostic " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                sb.AppendLine("version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+                sb.AppendLine("tool=" + _tool + " drag=" + _drag + " transform=" + (_xf == null ? "none" : _xf.Mode + (_xf.Quad ? " quad" : "") + (_xf.FloatHost != null ? " on-selection" : "")));
+                sb.AppendLine("spaceDown=" + _spaceDown + " spaceHeld=" + SpaceHeld() + " autoSelect=" + _autoSelect + " showTransformControls=" + _showTransformControls);
+                sb.AppendLine("canvas=" + _canvas.Width + "x" + _canvas.Height + " zoom=" + _zoom + " origin=" + _origin + " window=" + Size + " dpi=" + DeviceDpi);
+                sb.AppendLine("selectedLayer=" + _sel + " undo=" + _undo.Count + " redo=" + _redo.Count + " floating=" + (_floatLayer != null));
+                sb.AppendLine("selection=" + (HasSelection ? _selection.Bounds + " feather=" + _selection.Feather : "none") + " lastSelection=" + (_lastSelection != null));
+                for (int i = _layers.Count - 1; i >= 0; i--)
+                {
+                    EditorLayer l = _layers[i];
+                    var r = l as RasterLayer;
+                    sb.AppendLine(string.Format("  [{0}] {1} ({2}) bounds={3} rot={4} shear={5},{6} flip={7}{8} vis={9} lock={10} op={11} blend={12}{13}",
+                        i, l.Name, l.KindLabel, l.Bounds, l.RotationDeg, l.ShearX, l.ShearY, l.FlipH ? "H" : "", l.FlipV ? "V" : "",
+                        l.Visible, l.Locked, l.Opacity, l.Blend, r != null ? " image=" + r.Image.Width + "x" + r.Image.Height : ""));
+                }
+                foreach (Snapshot s in _undo) sb.Append(s.Name).Append(" | ");
+                sb.AppendLine();
+                File.WriteAllText(Path.Combine(dir, "editor-" + stamp + ".txt"), sb.ToString());
+
+                // the window as the editor draws it (its own rendering, not the screen)
+                using (var bmp = new Bitmap(Math.Max(1, Width), Math.Max(1, Height)))
+                {
+                    DrawToBitmap(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height));
+                    float scale = Math.Min(1f, 1100f / bmp.Width);
+                    using (var small = new Bitmap(Math.Max(1, (int)(bmp.Width * scale)), Math.Max(1, (int)(bmp.Height * scale))))
+                    {
+                        using (Graphics g = Graphics.FromImage(small))
+                        {
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                            g.DrawImage(bmp, 0, 0, small.Width, small.Height);
+                        }
+                        SaveJpeg(small, Path.Combine(dir, "editor-" + stamp + ".jpg"), 70);
+                    }
+                }
+                Toast.Show("Diagnostic saved.\r\n" + dir);
+            }
+            catch (Exception ex) { ModernDialog.Info("Could not save the diagnostic", ex.Message); }
+        }
 
         void ShowShortcuts()
         {
