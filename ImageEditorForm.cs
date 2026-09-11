@@ -220,6 +220,7 @@ namespace MicroApp
             {
                 Native.SetDarkModeForWindow(Handle, ThemeHelper.IsDarkMode);
                 LayoutRightSide();
+                RelayoutOptions();
                 RefreshAssetTree();
             };
             _antsTimer.Tick += delegate

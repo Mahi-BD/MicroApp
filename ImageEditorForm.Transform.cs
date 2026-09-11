@@ -27,6 +27,7 @@ namespace MicroApp
             public string PreviewKey;
             public Bitmap PreviewSource;      // possibly downscaled copy of the layer's pixels
             public bool Changed;
+            public RasterLayer FloatHost;     // set when the box holds a selection lifted out of this layer
 
             // the drag in flight
             public int Handle = -1;
@@ -62,7 +63,17 @@ namespace MicroApp
             }
             CommitInlineEdit();
             PushUndo("Free Transform");
-            _xf = new TransformState { Layer = layer, Mode = mode };
+            RasterLayer floatHost = null;
+            var hostRaster = layer as RasterLayer;
+            if (hostRaster != null && HasSelection && !_selection.IsAll)
+            {
+                // Photoshop transforms the selected pixels, not the whole layer: float them
+                floatHost = hostRaster;
+                layer = LiftSelection(hostRaster);
+                _selection = null;
+                _antsScreenPath = null;
+            }
+            _xf = new TransformState { Layer = layer, Mode = mode, FloatHost = floatHost };
             _xf.Inside = screen => _xf != null && (_xf.Quad ? PointInQuad(_xf.QuadPts, ScreenToCanvas(screen)) : _xf.Layer.HitTest(ScreenToCanvas(screen)));
             if (mode == TransformMode.Distort || mode == TransformMode.Perspective) EnterQuadMode();
             _sel = _layers.IndexOf(layer);
@@ -169,7 +180,7 @@ namespace MicroApp
             }
             else
             {
-                Snapshot before = _undo.Count > 0 ? _undo[_undo.Count - 1] : null;
+                Snapshot before = _undo.Count > 0 && xf.FloatHost == null ? _undo[_undo.Count - 1] : null;
                 if (before != null)
                 {
                     int idx = _layers.IndexOf(layer);
@@ -186,6 +197,24 @@ namespace MicroApp
                 }
             }
             if (xf.Matrix0 != null) xf.Matrix0.Dispose();
+            if (xf.FloatHost != null)
+            {
+                // the selection follows the transformed pixels, then they land back in their layer
+                var floating = _layers[_sel] as RasterLayer;
+                if (floating != null && _layers.Contains(xf.FloatHost))
+                {
+                    using (Bitmap alone = floating.RenderAlone(_canvas, false))
+                    {
+                        Pixels p = Pixels.From(alone);
+                        var mask = new byte[p.Width * p.Height];
+                        for (int i = 0, k = 0; k < mask.Length; i += 4, k++) mask[k] = p.Data[i + 3];
+                        _selection = EditorSelection.FromMask(mask, _canvas, 0);
+                        _antsScreenPath = null;
+                    }
+                    MergeFloating(xf.FloatHost, floating);
+                    _sel = _layers.IndexOf(xf.FloatHost);
+                }
+            }
             RelayoutOptions();
             AfterDocumentChange();
         }
@@ -701,8 +730,8 @@ namespace MicroApp
 
         void ShowTransformOptions(bool show)
         {
-            foreach (Control c in new Control[] { _xfXLbl, _xfX, _xfYLbl, _xfY, _xfWLbl, _xfW, _xfLink, _xfHLbl, _xfH, _xfALbl, _xfA, _xfSxLbl, _xfSx, _xfSyLbl, _xfSy, _xfCancel, _xfOk })
-                c.Visible = show;
+            if (show)
+                ShowOpts(_xfXLbl, _xfX, _xfYLbl, _xfY, _xfWLbl, _xfW, _xfLink, _xfHLbl, _xfH, _xfALbl, _xfA, _xfSxLbl, _xfSx, _xfSyLbl, _xfSy, _xfCancel, _xfOk);
             bool numeric = show && !(_xf != null && _xf.Quad);
             foreach (Control c in new Control[] { _xfX, _xfY, _xfW, _xfH, _xfA, _xfSx, _xfSy, _xfLink })
                 c.Enabled = numeric;
@@ -711,7 +740,7 @@ namespace MicroApp
 
         void SyncTransformOptions()
         {
-            if (_xf == null || _xfX == null || !_xfX.Visible) return;
+            if (_xf == null || _xfX == null || !_shownOptions.Contains(_xfX)) return;
             EditorLayer l = _xf.Layer;
             _syncingOptions = true;
             try

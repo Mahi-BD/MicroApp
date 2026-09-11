@@ -716,15 +716,19 @@ namespace MicroApp
 
         // ============================================================ floating move
 
-        void BeginFloatMove(RasterLayer host, int hostIndex, PointF cp)
+        /// <summary>
+        /// Cuts the selected pixels out of <paramref name="host"/> into a new floating layer
+        /// (inserted just above it, selected) - the start of a Move-drag or a Free Transform
+        /// on a selection. Call after PushUndo: the snapshot still holds the untouched host.
+        /// </summary>
+        RasterLayer LiftSelection(RasterLayer host)
         {
-            PushUndo("Move");
+            RasterLayer floating;
             using (Bitmap alone = host.RenderAlone(_canvas, false))
             {
-                Bitmap floating = CutOut(alone, _selection);
-                _floatLayer = new RasterLayer(floating) { Name = host.Name, Bounds = _selection.Bounds, Opacity = host.Opacity, Blend = host.Blend };
+                Bitmap cut = CutOut(alone, _selection);
+                floating = new RasterLayer(cut) { Name = host.Name, Bounds = _selection.Bounds, Opacity = host.Opacity, Blend = host.Blend };
             }
-            // lift the pixels out of the host
             byte[] mask = _selection.MaskForLayer(host);
             Pixels px = Pixels.From(host.Image);
             byte[] d = px.Data;
@@ -734,11 +738,20 @@ namespace MicroApp
                 if (m != 0) d[i + 3] = (byte)(d[i + 3] * (255 - m) / 255);
             }
             host.Image = px.ToBitmap();
+            host.ContentVersion++;
+            int hostIndex = _layers.IndexOf(host);
+            _layers.Insert(hostIndex + 1, floating);
+            _sel = hostIndex + 1;
+            return floating;
+        }
+
+        void BeginFloatMove(RasterLayer host, int hostIndex, PointF cp)
+        {
+            PushUndo("Move");
+            _floatLayer = LiftSelection(host);
             _floatHost = host;
             _floatHostIndex = hostIndex;
             _floatSel0 = _selection;
-            _layers.Insert(hostIndex + 1, _floatLayer);
-            _sel = hostIndex + 1;
             _bounds0 = _floatLayer.Bounds;
             _drag = Drag.FloatMove;
             _dragUndoPushed = true;
@@ -765,8 +778,18 @@ namespace MicroApp
             RasterLayer host = _floatHost, floating = _floatLayer;
             _floatHost = null; _floatLayer = null;
             if (host == null || floating == null) return;
+            MergeFloating(host, floating);
+            _sel = _layers.IndexOf(host);
+            AfterDocumentChange();
+        }
+
+        /// <summary>Merges a floating layer back into its host and removes it from the stack.</summary>
+        void MergeFloating(RasterLayer host, RasterLayer floating)
+        {
             _layers.Remove(floating);
-            bool plain = host.RotationDeg == 0 && host.ShearX == 0 && host.ShearY == 0 && !host.FlipH && !host.FlipV &&
+            bool floatingPlain = floating.RotationDeg == 0 && floating.ShearX == 0 && floating.ShearY == 0 && !floating.FlipH && !floating.FlipV &&
+                                 Math.Abs(floating.Bounds.Width - floating.Image.Width) < 0.01f && Math.Abs(floating.Bounds.Height - floating.Image.Height) < 0.01f;
+            bool plain = floatingPlain && host.RotationDeg == 0 && host.ShearX == 0 && host.ShearY == 0 && !host.FlipH && !host.FlipV &&
                          Math.Abs(host.Bounds.Width - host.Image.Width) < 0.01f && Math.Abs(host.Bounds.Height - host.Image.Height) < 0.01f;
             if (plain)
             {
@@ -790,16 +813,17 @@ namespace MicroApp
             }
             else
             {
-                // a transformed host: bake it flat in canvas space
+                // a transformed host or a scaled/rotated floater: bake both flat in canvas space
                 var two = new List<EditorLayer> { host, floating };
+                bool v = host.Visible; host.Visible = true; floating.Visible = true;
                 Bitmap baked = EditorRender.Compose(two, _canvas, Color.Transparent, null);
+                host.Visible = v;
                 host.Image = baked;
                 host.Bounds = new RectangleF(0, 0, _canvas.Width, _canvas.Height);
                 host.RotationDeg = 0; host.ShearX = host.ShearY = 0; host.FlipH = host.FlipV = false;
             }
+            host.ContentVersion++;
             floating.Image.Dispose();
-            _sel = _layers.IndexOf(host);
-            AfterDocumentChange();
         }
 
         // ================================================================== crop

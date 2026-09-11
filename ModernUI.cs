@@ -102,17 +102,30 @@ namespace MicroApp
         /// <summary>
         /// Fills a custom-painted control's backdrop. ButtonBase-derived controls
         /// (radio/check) do not paint their own background once UserPaint is on, so
-        /// every OnPaint here starts with this. A transparent BackColor is left alone:
-        /// the parent surface has already shown through.
+        /// every OnPaint here starts with this. A transparent BackColor is left alone
+        /// on panels and labels (the parent surface has already shown through) but
+        /// painted from the parent's colour on ButtonBase controls, which WinForms
+        /// treats as opaque and never paints behind.
         /// </summary>
         public static void PaintBackdrop(Control c, Graphics g)
         {
-            if (c.BackColor.A < 255) return;
+            Color fill = c.BackColor;
+            if (fill.A < 255)
+            {
+                // ButtonBase-derived controls (check boxes, radios, buttons) tell WinForms
+                // they are opaque, so nothing paints behind them: a transparent BackColor
+                // would leave stale buffer contents (other controls' text) showing through.
+                // Paint the parent's colour instead; plain panels/labels really are transparent.
+                if (!(c is ButtonBase)) return;
+                Control p = c.Parent;
+                while (p != null && p.BackColor.A < 255) p = p.Parent;
+                fill = p != null ? p.BackColor : SystemColors.Control;
+            }
             // aliased fill: antialiasing here blends the edge row with the stale
             // double-buffer contents and leaves a hairline along the control's top
             var mode = g.SmoothingMode;
             g.SmoothingMode = SmoothingMode.None;
-            using (var brush = new SolidBrush(c.BackColor))
+            using (var brush = new SolidBrush(fill))
             {
                 g.FillRectangle(brush, c.ClientRectangle);
             }

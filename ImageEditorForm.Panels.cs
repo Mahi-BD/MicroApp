@@ -542,7 +542,7 @@ namespace MicroApp
                 Text = text,
                 Checked = value,
                 Size = new Size(TextRenderer.MeasureText(text, Theme.Base).Width + 32, 24),
-                BackColor = Color.Transparent
+                BackColor = Theme.Surface     // opaque: a ButtonBase never gets its background painted for it
             };
             c.CheckedChanged += delegate(object s, EventArgs e) { if (!_syncingOptions) changed(s, e); };
             _optionsBar.Controls.Add(c);
@@ -577,11 +577,16 @@ namespace MicroApp
             b.ForeColor = on ? Theme.OnAccent : Theme.Text;
         }
 
+        readonly HashSet<Control> _shownOptions = new HashSet<Control>();
+
         /// <summary>Shows the options that belong to the current tool, laid out left to right.</summary>
         void RelayoutOptions()
         {
             if (_optionsBar == null) return;
-            foreach (Control c in _optionOrder) if (c != _optToolLbl) c.Visible = false;
+            // Control.Visible also reports false while the window is not shown yet, so the
+            // layout works from its own list of what should be visible, not from the getter
+            _shownOptions.Clear();
+            _shownOptions.Add(_optToolLbl);
 
             bool xform = _xf != null;
             ShowTransformOptions(xform);
@@ -666,16 +671,21 @@ namespace MicroApp
             int x = 12;
             foreach (Control c in _optionOrder)
             {
-                if (!c.Visible) continue;
-                c.Location = new Point(x, (_optionsBar.Height - c.Height) / 2);
-                x += c.Width + (c is Label ? 4 : 8);
+                bool on = _shownOptions.Contains(c);
+                if (on)
+                {
+                    c.Location = new Point(x, (_optionsBar.Height - c.Height) / 2);
+                    x += c.Width + (c is Label ? 4 : 8);
+                }
+                if (c.Visible != on || !on) c.Visible = on;
             }
             _optionsBar.Visible = true;
+            _optionsBar.Invalidate();
         }
 
-        static void ShowOpts(params Control[] controls)
+        void ShowOpts(params Control[] controls)
         {
-            foreach (Control c in controls) c.Visible = true;
+            foreach (Control c in controls) _shownOptions.Add(c);
         }
 
         void ShowShapeOptions(ShapeKind kind)
