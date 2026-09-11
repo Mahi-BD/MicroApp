@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.1.1 — 2026-09-12
+
+### Fixed
+
+- **Image editor: Shift now sends a move along the nearest 45°.** Holding Shift while moving a
+  layer, a floating selection, a selection outline or a Free Transform box snapped the drag to
+  horizontal or vertical only. It follows the nearest axis *or diagonal* now — and travels as far
+  along it as the mouse has — which is what Photoshop does and what a diagonal drag should do.
+
 ## 5.1.0 — 2026-09-12
 
 ### Changed
