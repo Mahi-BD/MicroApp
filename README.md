@@ -1,5 +1,7 @@
 # MicroApp
 
+**[microapp website](https://mahi-bd.github.io/MicroApp/)** · **[download 5.1.0](https://github.com/Mahi-BD/MicroApp/releases/latest)** · [changelog](CHANGELOG.md) · [manual](HELP.md)
+
 A small Windows tray tool that does a handful of things well:
 
 - **Types the clipboard as real keystrokes** into any window — including ones that block paste (VM consoles, remote desktops, KVM/IPMI consoles, fields that refuse Ctrl+V). Handles every script, Bangla included.

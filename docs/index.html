@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MicroApp — types your clipboard as real keystrokes</title>
+<meta name="description" content="A small Windows tray tool that types the clipboard as real key presses into VM consoles and anything that blocks paste — plus OCR, screen capture, GIF and MP4 recording, notes, and a Photoshop-style image editor.">
+<link rel="icon" href="icon.png" type="image/png">
+<meta property="og:title" content="MicroApp — types your clipboard as real keystrokes">
+<meta property="og:description" content="Windows tray tool: paste as keystrokes, OCR, capture, GIF and MP4 recording, notes, and a Photoshop-style image editor. Free, 1.2 MB.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mahi-bd.github.io/MicroApp/">
+<meta property="og:image" content="https://mahi-bd.github.io/MicroApp/social-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* the app's own palette: cool keycap grey, white surfaces, its indigo accent */
+    --paper: #ECEDF1;
+    --cap: #FFFFFF;
+    --edge: #C6C9D4;
+    --rule: #DADCE4;
+    --ink: #191A20;
+    --ink-2: #5F6473;
+    --indigo: #4F46E5;
+    --indigo-soft: #EEEDFD;
+    --rec: #DB2777;
+    --shadow: 0 1px 2px rgba(24, 26, 36, .08), 0 8px 24px -14px rgba(24, 26, 36, .35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #131318;
+      --cap: #1F2027;
+      --edge: #3B3D49;
+      --rule: #2B2D36;
+      --ink: #EEEFF4;
+      --ink-2: #A2A6B5;
+      --indigo: #A5A3FB;
+      --indigo-soft: #24243A;
+      --rec: #F472B6;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 26px -16px rgba(0, 0, 0, .9);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding-inline: 22px; }
+  section[id] { scroll-margin-top: 70px; }
+  p { max-width: 66ch; }
+  a { color: var(--indigo); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--indigo); outline-offset: 3px; border-radius: 3px; }
+  img { max-width: 100%; height: auto; display: block; }
+
+  /* ---------- keycaps: the page's structural device ---------- */
+  kbd.cap {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--ink);
+    background: var(--cap);
+    border: 1px solid var(--edge);
+    border-bottom-width: 3px;
+    border-radius: 5px;
+    padding: 5px 7px 4px;
+    white-space: nowrap;
+  }
+  .combo { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .combo i { font-style: normal; color: var(--ink-2); font-size: 12px; padding-inline: 1px; }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .bar { display: flex; align-items: center; gap: 14px; height: 58px; }
+  .mark { display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: -.01em; }
+  .mark img { width: 24px; height: 24px; border-radius: 5px; }
+  .ver {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--indigo);
+    background: var(--indigo-soft); border-radius: 999px; padding: 3px 9px;
+  }
+  .bar nav { margin-left: auto; display: flex; align-items: center; gap: 18px; font-size: 14.5px; }
+  .bar nav a { color: var(--ink-2); text-decoration: none; }
+  .bar nav a:hover { color: var(--ink); text-decoration: underline; }
+  .bar .btn-sm {
+    background: var(--indigo); color: #fff; border-radius: 7px; padding: 7px 13px;
+    font-weight: 500; text-decoration: none; font-size: 14px;
+  }
+  .bar .btn-sm:hover { filter: brightness(1.08); text-decoration: none; }
+  @media (max-width: 620px) { .bar nav .hide-sm { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero { padding-block: 62px 34px; }
+  h1 {
+    font-size: clamp(2.3rem, 6.4vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -.035em;
+    font-weight: 600;
+    margin: 0 0 20px;
+    max-width: 24ch;
+  }
+  h1 br { display: none; }
+  @media (min-width: 680px) { h1 br { display: block; } }
+  .lede { font-size: 1.125rem; color: var(--ink-2); margin: 0 0 28px; }
+  .lede strong { color: var(--ink); font-weight: 500; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn {
+    display: inline-block; background: var(--indigo); color: #fff; text-decoration: none;
+    font-weight: 500; font-size: 15.5px; padding: 12px 20px; border-radius: 9px;
+    box-shadow: var(--shadow);
+  }
+  .btn:hover { filter: brightness(1.08); text-decoration: none; }
+  .btn-2 {
+    display: inline-block; background: var(--cap); color: var(--ink); text-decoration: none;
+    font-weight: 500; font-size: 15.5px; padding: 11px 18px; border-radius: 9px;
+    border: 1px solid var(--edge); border-bottom-width: 2px;
+  }
+  .btn-2:hover { text-decoration: none; border-color: var(--indigo); }
+
+  .spec {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 2px 26px; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--rule);
+    max-width: 760px;
+  }
+  .spec div { display: flex; flex-direction: column; gap: 2px; }
+  .spec dt, .spec .k { font-size: 12.5px; color: var(--ink-2); }
+  .spec dd, .spec .v { margin: 0; font-family: "IBM Plex Mono", monospace; font-size: 14px; }
+
+  /* ---------- the demo console ---------- */
+  .demo { padding-bottom: 66px; }
+  .console {
+    background: #16171D; border-radius: 11px; box-shadow: var(--shadow);
+    overflow: hidden; max-width: 720px; border: 1px solid #2A2C36;
+  }
+  .console .tb {
+    display: flex; align-items: center; gap: 8px; padding: 9px 13px;
+    background: #1E2029; border-bottom: 1px solid #2A2C36;
+    font-size: 12.5px; color: #8E93A6;
+  }
+  .console .tb b { width: 9px; height: 9px; border-radius: 50%; background: #3A3D4A; display: block; }
+  .console pre {
+    margin: 0; padding: 16px 18px 22px;
+    font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    font-size: 13.5px; line-height: 1.75; color: #CFD3E0;
+    white-space: pre-wrap; word-break: break-word; min-height: 168px;
+  }
+  .console .pr { color: #7FD1AE; }
+  .console .cm { color: #6E7488; }
+  .caret {
+    display: inline-block; width: 8px; height: 1.05em; background: #B7BCFF;
+    vertical-align: -.18em; animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .demo figcaption {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    margin-top: 14px; font-size: 14px; color: var(--ink-2); max-width: 720px;
+  }
+  .replay {
+    margin-left: auto; background: none; border: 1px solid var(--edge); border-radius: 7px;
+    color: var(--ink); font: inherit; font-size: 13.5px; padding: 5px 11px; cursor: pointer;
+  }
+  .replay:hover { border-color: var(--indigo); color: var(--indigo); }
+
+  /* ---------- bands ---------- */
+  .band { background: var(--cap); border-block: 1px solid var(--rule); padding-block: 70px; }
+  h2 {
+    font-size: clamp(1.6rem, 3.4vw, 2.1rem); letter-spacing: -.025em; font-weight: 600;
+    margin: 0 0 14px; line-height: 1.18;
+  }
+  .band > .wrap > p:first-of-type { margin-top: 0; }
+
+  .editor-grid { display: grid; gap: 34px; grid-template-columns: 1.15fr 1fr; align-items: start; margin-top: 34px; }
+  @media (max-width: 860px) { .editor-grid { grid-template-columns: 1fr; } }
+  .diagram { border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); padding: 14px; }
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .diagram p { font-size: 13px; color: var(--ink-2); margin: 12px 4px 2px; }
+
+  .edit-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+  .edit-list li { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: baseline; }
+  .edit-list b { font-weight: 500; }
+  .edit-list span { color: var(--ink-2); font-size: 15px; display: block; }
+
+  /* ---------- features ---------- */
+  .features { padding-block: 70px 34px; }
+  .feat {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+    padding-block: 42px; border-top: 1px solid var(--rule);
+  }
+  .feat:first-of-type { border-top: none; padding-top: 22px; }
+  @media (max-width: 780px) { .feat { grid-template-columns: 1fr; gap: 24px; } }
+  .feat h3 { font-size: 1.28rem; font-weight: 600; letter-spacing: -.015em; margin: 12px 0 8px; }
+  .feat p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+  .feat figure { margin: 0; }
+  .feat img, .shot {
+    border: 1px solid var(--rule); border-radius: 9px; background: var(--cap); box-shadow: var(--shadow);
+  }
+  .tray-note { display: flex; gap: 26px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .tray-note img { width: 210px; }
+  .tray-note p { margin: 0; }
+
+  /* ---------- download ---------- */
+  .files { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 14px; max-width: 760px; }
+  .files li {
+    display: grid; grid-template-columns: 1fr auto; gap: 6px 18px; align-items: baseline;
+    padding-bottom: 14px; border-bottom: 1px solid var(--rule);
+  }
+  .files a { font-family: "IBM Plex Mono", monospace; font-size: 14.5px; font-weight: 500; }
+  .files .size { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-2); }
+  .files .what { grid-column: 1 / -1; color: var(--ink-2); font-size: 14.5px; }
+  .aside { margin-top: 26px; font-size: 14.5px; color: var(--ink-2); max-width: 66ch; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 1px solid var(--rule); padding-block: 34px 46px; font-size: 14.5px; color: var(--ink-2); }
+  footer .links { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 14px; }
+  footer a { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <span class="mark"><img src="icon.png" alt="" width="24" height="24">MicroApp</span>
+    <span class="ver">5.1.0</span>
+    <nav>
+      <a href="#editor" class="hide-sm">Image editor</a>
+      <a href="#features" class="hide-sm">Features</a>
+      <a href="https://github.com/Mahi-BD/MicroApp" class="hide-sm">Source</a>
+      <a class="btn-sm" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.1.0/MicroApp-5.1.0-setup.exe">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="wrap hero">
+  <h1>It types your clipboard, <br>key by key.</h1>
+  <p class="lede">
+    MicroApp sits in the Windows tray. Press <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">V</kbd></span>
+    and it types whatever you copied as <strong>real key presses</strong> — scan codes, not a paste — so the text arrives in VM
+    consoles, remote desktops, KVM and IPMI windows, and any field that refuses Ctrl+V. Every script, Bangla included.
+  </p>
+  <div class="actions">
+    <a class="btn" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.1.0/MicroApp-5.1.0-setup.exe">Download for Windows</a>
+    <a class="btn-2" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.1.0/MicroApp-5.1.0-win-x64.zip">Portable zip, no install</a>
+  </div>
+  <dl class="spec">
+    <div><dt>Version</dt><dd>5.1.0</dd></div>
+    <div><dt>Download</dt><dd>1.2 MB</dd></div>
+    <div><dt>Runs on</dt><dd>Windows 10, 11</dd></div>
+    <div><dt>Licence</dt><dd>BSD 3-Clause</dd></div>
+  </dl>
+</section>
+
+<section class="wrap demo">
+  <figure style="margin:0">
+    <div class="console" aria-hidden="true">
+      <div class="tb"><b></b><b></b><b></b><span>vSphere console — paste is not available</span></div>
+      <pre id="term"><span class="pr">root@edge-01:~#</span> cat &gt; /etc/netplan/50-static.yaml
+</pre>
+    </div>
+    <figcaption>
+      <span>The clipboard, typed into a console that has no clipboard.</span>
+      <button class="replay" id="replay" type="button">Type it again</button>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="band" id="editor">
+  <div class="wrap">
+    <h2>New in 5.1: the image editor works like Photoshop</h2>
+    <p>
+      <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">E</kbd></span>
+      opens on whatever image is on the clipboard. The tools, the keys, the menus and the right-click menus follow
+      Photoshop, so what you already know works here — and a screenshot goes from paste to annotated PNG without
+      leaving the tray.
+    </p>
+
+    <div class="editor-grid">
+      <ul class="edit-list">
+        <li><span class="combo"><kbd class="cap">M</kbd></span>
+          <b>Selections that behave.<span>Marquee, lasso, magic wand, with add, subtract and intersect. Transform Selection reshapes the marching ants and leaves the pixels alone; Free Transform moves them.</span></b></li>
+        <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">T</kbd></span>
+          <b>Scale, rotate, skew, distort, perspective.<span>Photoshop's modifiers, numeric entry in the options bar, Enter to apply.</span></b></li>
+        <li><span class="combo"><kbd class="cap">B</kbd></span>
+          <b>Brush, eraser, clone stamp, gradient, dodge and burn.<span>Size, hardness, opacity and flow, with the bracket keys where you expect them.</span></b></li>
+        <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">L</kbd></span>
+          <b>Levels, Curves, Hue/Saturation, Color Balance.<span>Every adjustment previews live, and the filters run over the selection only.</span></b></li>
+        <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">J</kbd></span>
+          <b>Layers with blend modes and styles.<span>Lift a selection onto its own layer, then give it a drop shadow, glow, stroke or colour overlay. Fifty steps of history, and an asset library for the logos you stamp on everything.</span></b></li>
+      </ul>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 420 300" role="img" aria-label="Diagram of the image editor window: tool rail on the left, options bar across the top, canvas in the middle with a selection, layers and history panel on the right.">
+          <rect x="1" y="1" width="418" height="298" rx="9" fill="var(--cap)" stroke="var(--edge)"/>
+          <!-- menu + options -->
+          <rect x="1" y="1" width="418" height="20" rx="9" fill="var(--indigo-soft)"/>
+          <rect x="1" y="12" width="418" height="9" fill="var(--indigo-soft)"/>
+          <g fill="var(--ink-2)" opacity=".75">
+            <rect x="12" y="8" width="16" height="5" rx="2"/><rect x="34" y="8" width="16" height="5" rx="2"/>
+            <rect x="56" y="8" width="20" height="5" rx="2"/><rect x="82" y="8" width="18" height="5" rx="2"/>
+          </g>
+          <rect x="1" y="21" width="418" height="22" fill="var(--paper)"/>
+          <g fill="var(--ink-2)" opacity=".5">
+            <rect x="12" y="28" width="26" height="8" rx="3"/>
+            <rect x="48" y="28" width="40" height="8" rx="3"/><rect x="94" y="28" width="34" height="8" rx="3"/>
+            <rect x="134" y="28" width="40" height="8" rx="3"/>
+          </g>
+          <!-- tool rail -->
+          <rect x="1" y="43" width="42" height="256" fill="var(--paper)"/>
+          <g>
+            <rect x="7" y="49" width="14" height="14" rx="4" fill="var(--indigo)"/>
+            <rect x="23" y="49" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="7" y="67" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="23" y="67" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="7" y="85" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="23" y="85" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="7" y="103" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="23" y="103" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="7" y="121" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="23" y="121" width="14" height="14" rx="4" fill="var(--ink-2)" opacity=".28"/>
+            <rect x="9" y="150" width="17" height="17" rx="3" fill="var(--ink)"/>
+            <rect x="18" y="159" width="17" height="17" rx="3" fill="var(--cap)" stroke="var(--edge)"/>
+          </g>
+          <!-- canvas -->
+          <rect x="43" y="43" width="267" height="256" fill="var(--paper)"/>
+          <rect x="63" y="60" width="227" height="222" fill="var(--cap)" stroke="var(--edge)"/>
+          <g opacity=".5">
+            <rect x="64" y="61" width="225" height="132" fill="var(--indigo)" opacity=".13"/>
+            <rect x="64" y="193" width="225" height="88" fill="var(--ink-2)" opacity=".16"/>
+            <circle cx="240" cy="96" r="17" fill="var(--indigo)" opacity=".22"/>
+            <path d="M64 193 L118 146 L163 178 L205 150 L289 193 Z" fill="var(--ink-2)" opacity=".22"/>
+          </g>
+          <rect x="96" y="92" width="120" height="96" fill="var(--indigo)" opacity=".10"/>
+          <rect x="96" y="92" width="120" height="96" fill="none" stroke="var(--indigo)" stroke-dasharray="5 4"/>
+          <g fill="var(--cap)" stroke="var(--indigo)">
+            <rect x="92" y="88" width="8" height="8"/><rect x="152" y="88" width="8" height="8"/><rect x="212" y="88" width="8" height="8"/>
+            <rect x="92" y="136" width="8" height="8"/><rect x="212" y="136" width="8" height="8"/>
+            <rect x="92" y="184" width="8" height="8"/><rect x="152" y="184" width="8" height="8"/><rect x="212" y="184" width="8" height="8"/>
+          </g>
+          <!-- right panels -->
+          <rect x="310" y="43" width="109" height="256" fill="var(--paper)"/>
+          <line x1="310" y1="43" x2="310" y2="299" stroke="var(--edge)"/>
+          <g fill="var(--ink-2)" opacity=".55">
+            <rect x="320" y="52" width="34" height="6" rx="3" fill="var(--indigo)" opacity="1"/>
+            <rect x="362" y="52" width="38" height="6" rx="3"/>
+          </g>
+          <rect x="318" y="70" width="92" height="24" rx="4" fill="var(--cap)" stroke="var(--edge)"/>
+          <rect x="322" y="74" width="16" height="16" rx="2" fill="var(--indigo)" opacity=".35"/>
+          <rect x="344" y="78" width="46" height="5" rx="2" fill="var(--ink-2)" opacity=".6"/>
+          <rect x="344" y="86" width="28" height="4" rx="2" fill="var(--ink-2)" opacity=".35"/>
+          <rect x="318" y="98" width="92" height="24" rx="4" fill="var(--cap)" stroke="var(--edge)"/>
+          <rect x="322" y="102" width="16" height="16" rx="2" fill="var(--ink-2)" opacity=".2"/>
+          <rect x="344" y="106" width="38" height="5" rx="2" fill="var(--ink-2)" opacity=".6"/>
+          <rect x="344" y="114" width="24" height="4" rx="2" fill="var(--ink-2)" opacity=".35"/>
+          <g fill="var(--ink-2)" opacity=".4">
+            <rect x="320" y="264" width="12" height="12" rx="3"/><rect x="338" y="264" width="12" height="12" rx="3"/>
+            <rect x="356" y="264" width="12" height="12" rx="3"/><rect x="374" y="264" width="12" height="12" rx="3"/>
+            <rect x="392" y="264" width="12" height="12" rx="3"/>
+          </g>
+        </svg>
+        <p>The window at a glance: tools, the options for the tool in your hand, the canvas, and layers with history. A diagram, not a screenshot.</p>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="wrap features" id="features">
+  <h2>The rest of the tray menu</h2>
+  <div class="tray-note">
+    <img class="shot" src="tray-menu.png" alt="The MicroApp tray menu, listing every feature with its hot key." width="340" height="320" loading="lazy">
+    <p>Every feature has a hot key you can change, and the menu lists them all. Nothing runs in the background except the tray
+      icon itself; there is no account, no telemetry and no server.</p>
+  </div>
+
+  <div class="feat">
+    <div>
+      <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">V</kbd></span>
+      <h3>Paste as keystrokes</h3>
+      <p>Three typing engines, because no single one works everywhere. The default sends scan codes, which is what gets text
+        into VM consoles and locked-down fields. Set the speed, a start delay, and whether Enter is pressed at the end.</p>
+    </div>
+    <figure><img src="key-setting.png" alt="MicroApp's Key Setting window: typing engine, speed and delay." width="636" height="644" loading="lazy"></figure>
+  </div>
+
+  <div class="feat">
+    <div>
+      <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Shift</kbd><i>+</i><kbd class="cap">O</kbd></span>
+      <h3>Read text off the screen</h3>
+      <p>Drag over a browser, a PDF, a video frame or a screenshot and the text comes back through Windows' own OCR — no
+        upload. <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">T</kbd></span>
+        does it without OCR: it picks the exact text out of any control, like a colour picker for words.</p>
+    </div>
+    <figure><img src="ocr-result.png" alt="The OCR result window showing text grabbed from the screen." width="616" height="491" loading="lazy"></figure>
+  </div>
+
+  <div class="feat">
+    <div>
+      <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">S</kbd></span>
+      <h3>Capture a region</h3>
+      <p>The screen freezes, you drag a frame, and the handles let you fix it before you take it. Lock the ratio or the exact
+        pixel size when you need every capture to match.</p>
+    </div>
+    <figure><img src="capture-overlay.png" alt="The capture overlay with an adjustable frame over the screen." width="666" height="506" loading="lazy"></figure>
+  </div>
+
+  <div class="feat">
+    <div>
+      <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">G</kbd></span>
+      <h3>Record a GIF or an MP4</h3>
+      <p>The same frame records: an animated GIF for a bug report, or
+        <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">R</kbd></span>
+        an H.264 video with system sound and microphone, no time limit, pause and resume.</p>
+    </div>
+    <figure><img src="demo-recording.gif" alt="A recording of MicroApp capturing a region of the screen as a GIF." width="600" height="338" loading="lazy"></figure>
+  </div>
+
+  <div class="feat">
+    <div>
+      <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Shift</kbd><i>+</i><kbd class="cap">N</kbd></span>
+      <h3>Notes that save themselves</h3>
+      <p>A scratch-pad opens where the cursor is and keeps every word as you type, with spell check, an archive, and Bangla
+        phonetic typing — write <em>ami</em>, get আমি. Optionally the same notes on every PC, mirrored through a free database
+        you own.</p>
+    </div>
+    <figure><img src="note-bangla.png" alt="A MicroApp note with Bangla phonetic typing." width="570" height="445" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="band" id="download">
+  <div class="wrap">
+    <h2>Download 5.1.0</h2>
+    <p>Free, and small enough to keep on a USB stick. Installing over an older version keeps your settings and notes.</p>
+    <ul class="files">
+      <li>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.1.0/MicroApp-5.1.0-setup.exe">MicroApp-5.1.0-setup.exe</a>
+        <span class="size">1.19 MB</span>
+        <span class="what">Installs for everyone, into Program Files. Needs an administrator.</span>
+      </li>
+      <li>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.1.0/MicroApp-5.1.0-peruser-setup.exe">MicroApp-5.1.0-peruser-setup.exe</a>
+        <span class="size">1.19 MB</span>
+        <span class="what">Installs for you only. No administrator needed.</span>
+      </li>
+      <li>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.1.0/MicroApp-5.1.0-win-x64.zip">MicroApp-5.1.0-win-x64.zip</a>
+        <span class="size">0.94 MB</span>
+        <span class="what">Portable. Unzip it anywhere and run MicroApp.exe.</span>
+      </li>
+    </ul>
+    <p class="aside">
+      Windows may warn that the publisher is unknown: the builds are not code-signed. The
+      <a href="https://apps.microsoft.com/detail/9MXDQG6Q35D0">Microsoft Store listing</a> is signed by the Store, and is
+      currently version 4.9.3 — new versions land here first.
+      Read the <a href="https://github.com/Mahi-BD/MicroApp/blob/main/CHANGELOG.md">changelog</a>,
+      the <a href="https://github.com/Mahi-BD/MicroApp/blob/main/HELP.md">manual</a>, or
+      <a href="https://github.com/Mahi-BD/MicroApp/blob/main/SETUP.md">how to install and start with Windows</a>.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/Mahi-BD/MicroApp">Source on GitHub</a>
+      <a href="https://github.com/Mahi-BD/MicroApp/releases">All releases</a>
+      <a href="https://github.com/Mahi-BD/MicroApp/blob/main/HELP.md">Manual</a>
+      <a href="https://github.com/Mahi-BD/MicroApp/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/Mahi-BD/MicroApp/issues">Report a problem</a>
+    </div>
+    <p style="margin:0">
+      Built by <a href="https://github.com/Mahi-BD">Mahi</a> in Bangladesh. BSD 3-Clause, forked from ClickPaste by
+      Collective Software. Windows, Photoshop and Microsoft Store are trademarks of their owners.
+    </p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var term = document.getElementById('term');
+  var replay = document.getElementById('replay');
+  if (!term) return;
+
+  var head = '<span class="pr">root@edge-01:~#</span> cat &gt; /etc/netplan/50-static.yaml\n';
+  var body = [
+    'network:',
+    '  version: 2',
+    '  ethernets:',
+    '    ens192:',
+    '      addresses: [10.44.7.21/24]',
+    '      gateway4: 10.44.7.1',
+    '      nameservers: { addresses: [1.1.1.1] }'
+  ].join('\n');
+  var tail = '\n<span class="cm"># typed by MicroApp, one key at a time</span>';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var timer = null;
+
+  function done() {
+    term.innerHTML = head + body + tail + '<span class="caret"></span>';
+  }
+
+  function type() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (reduce.matches) { done(); return; }
+    var i = 0;
+    (function step() {
+      term.innerHTML = head + body.slice(0, i) + '<span class="caret"></span>';
+      if (i >= body.length) { timer = setTimeout(done, 260); return; }
+      var ch = body.charAt(i);
+      i++;
+      timer = setTimeout(step, ch === '\n' ? 120 : 14 + Math.random() * 26);
+    })();
+  }
+
+  if (replay) replay.addEventListener('click', type);
+
+  if (reduce.matches) { done(); return; }
+  if (!('IntersectionObserver' in window)) { type(); return; }
+  var seen = false;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting && !seen) { seen = true; io.disconnect(); setTimeout(type, 420); }
+    });
+  }, { threshold: 0.35 });
+  io.observe(term);
+})();
+</script>
+
+</body>
+</html>
