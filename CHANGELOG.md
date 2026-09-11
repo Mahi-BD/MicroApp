@@ -56,6 +56,12 @@
   Pixels*; **Image → Canvas Size** with an anchor; **Trim**; **Reveal All**; **Image Rotation →
   180°**; **Edit → Fill** (**Shift+F5**, with blend mode and *Preserve transparency*) and **Edit
   → Stroke**; Zoom (**Z**) and Hand (**H**) tools; **Ctrl+H** hides the extras.
+- MicroApp now runs as a **64-bit** process on 64-bit Windows, so the editor is no longer
+  capped at what a 32-bit process can address. The history keeps its bitmaps within a memory
+  budget (the status bar shows how much it holds), **Edit → Purge History** frees it all, and
+  **Help → Save Diagnostic Snapshot** (**F12**) writes the editor's state and a picture of the
+  window to `%LocalAppData%\MicroApp\diag`. An error on the UI thread is now logged to
+  `diag\errors.log` and shown in the app's own dialog instead of the Windows crash box.
 
 ## 4.9.3 — 2026-08-29
 

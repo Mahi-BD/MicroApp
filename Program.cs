@@ -126,6 +126,9 @@ namespace MicroApp
             // try to make sure we don't die leaving the cursor in "+" state
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+            // an exception on the UI thread is logged and shown, not fatal
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += Application_ThreadException;
 
             Application.Run(new TrayApplicationContext());
 
@@ -141,6 +144,41 @@ namespace MicroApp
         {
             // reset cursors
             Native.SystemParametersInfo(0x0057, 0, null, 0);
+            LogError("unhandled", e.ExceptionObject as Exception);
+        }
+
+        private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
+        {
+            Native.SystemParametersInfo(0x0057, 0, null, 0);
+            LogError("ui-thread", e.Exception);
+            try
+            {
+                string what = e.Exception is OutOfMemoryException
+                    ? "Windows ran out of memory for this. Close other windows or, in the image editor, Edit → Purge History, then try again."
+                    : e.Exception.Message;
+                ModernDialog.Info("Something went wrong", what + "\r\n\r\nDetails were written to " + ErrorLogPath);
+            }
+            catch { }
+        }
+
+        /// <summary>%LocalAppData%\MicroApp\diag\errors.log - what to read when a user says "it got an error".</summary>
+        public static string ErrorLogPath
+        {
+            get { return System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MicroApp", "diag", "errors.log"); }
+        }
+
+        public static void LogError(string where, Exception ex)
+        {
+            try
+            {
+                string path = ErrorLogPath;
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+                string text = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + where + " v" + Assembly.GetExecutingAssembly().GetName().Version +
+                              (Environment.Is64BitProcess ? " x64" : " x86") + " ws=" + (Environment.WorkingSet / 1048576) + "MB\r\n" +
+                              (ex == null ? "(no exception object)" : ex.ToString()) + "\r\n\r\n";
+                System.IO.File.AppendAllText(path, text);
+            }
+            catch { }
         }
     }
     public static class Extensions

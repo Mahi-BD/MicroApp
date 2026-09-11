@@ -194,8 +194,7 @@ namespace MicroApp
             other.FlipH = FlipH;
             other.FlipV = FlipV;
             other.Fx = Fx == null ? null : Fx.Clone();
-            other._cacheKey = _cacheKey;
-            other._cache = _cache;
+            // the render cache stays with this layer: a clone re-renders when it needs to
         }
 
         protected static Color Fade(Color c, int alpha)
@@ -247,7 +246,7 @@ namespace MicroApp
         public void DropCache()
         {
             _cacheKey = null;
-            _cache = null;   // snapshots may share it - never dispose here
+            if (_cache != null) { try { _cache.Dispose(); } catch { } _cache = null; }
         }
 
         /// <summary>

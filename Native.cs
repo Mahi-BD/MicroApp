@@ -485,8 +485,12 @@ namespace MicroApp
         public static uint IBEAM = 32513;
         public static uint HAND = 32649;
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int X; public int Y; }
+
+        // x64 passes a POINT packed in one register, so it must be a struct, not two ints
         [DllImport("user32.dll")]
-        public static extern IntPtr WindowFromPoint(int x, int y);
+        public static extern IntPtr WindowFromPoint(POINT pt);
 
         [DllImport("user32.dll")]
         public static extern uint GetKeyboardLayoutList(int nBuff, [Out] IntPtr[] lpList);
@@ -520,7 +524,7 @@ namespace MicroApp
         [DllImport("user32.dll")]
         public static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);
         [DllImport("user32.dll")]
-        public static extern int ActivateKeyboardLayout(int HKL, int flags);
+        public static extern IntPtr ActivateKeyboardLayout(IntPtr HKL, int flags);
 
         [DllImport("user32.dll")]
         public static extern void GetWindowText(IntPtr hWnd, StringBuilder lpString, Int32 nMaxCount);

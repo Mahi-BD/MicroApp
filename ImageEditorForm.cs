@@ -49,6 +49,9 @@ namespace MicroApp
         string _coalesceKey;
         DateTime _coalesceAt;
         const int UndoLimit = 50;
+        // the history keeps a bitmap per destructive step; GDI+ memory is invisible to the
+        // GC, so the editor budgets it itself and frees bitmaps no snapshot refers to
+        static readonly long HistoryBudget = Environment.Is64BitProcess ? 1_200_000_000L : 320_000_000L;
 
         // ---- view ------------------------------------------------------------------
         float _zoom = 1f;
@@ -232,6 +235,18 @@ namespace MicroApp
             {
                 _antsTimer.Stop();
                 if (_open == this) _open = null;
+                try
+                {
+                    var all = new List<Snapshot>(_undo);
+                    all.AddRange(_redo);
+                    all.Add(TakeSnapshot("closing"));
+                    _undo.Clear(); _redo.Clear(); _layers.Clear();
+                    ReleaseDropped(all);
+                    if (_composite != null) { _composite.Dispose(); _composite = null; }
+                    if (_clipBitmap != null) { _clipBitmap.Dispose(); _clipBitmap = null; }
+                    GC.Collect();
+                }
+                catch { }
             };
             Shown += delegate
             {
@@ -295,9 +310,13 @@ namespace MicroApp
             if (_hasDoc && _dirty &&
                 !ModernDialog.Confirm("Start over?", "The current layers will be discarded.", "Start new", "Keep working")) return;
 
+            var old = new List<Snapshot>(_undo);
+            old.AddRange(_redo);
+            old.Add(TakeSnapshot("old"));   // the current layers count as dropped too
             _layers.Clear();
             _undo.Clear();
             _redo.Clear();
+            ReleaseDropped(old);
             _canvas = new Size(w, h);
             _canvasBg = background == 0 ? Color.White : background == 1 ? Color.Transparent : _bg;
             _hasDoc = true;
@@ -606,11 +625,85 @@ namespace MicroApp
         {
             if (!_hasDoc) return;
             _undo.Add(TakeSnapshot(name));
-            if (_undo.Count > UndoLimit) _undo.RemoveAt(0);
+            var dropped = new List<Snapshot>(_redo);
             _redo.Clear();
+            while (_undo.Count > UndoLimit) { dropped.Add(_undo[0]); _undo.RemoveAt(0); }
             _coalesceKey = null;
             _dirty = true;
+            ReleaseDropped(dropped);
+            TrimHistoryMemory();
             RefreshHistoryList();
+        }
+
+        // ------------------------------------------------------------ memory
+
+        /// <summary>Every bitmap still in use: the document's layers plus every snapshot's.</summary>
+        HashSet<Bitmap> LiveBitmaps()
+        {
+            var live = new HashSet<Bitmap>();
+            foreach (EditorLayer l in _layers) { var r = l as RasterLayer; if (r != null && r.Image != null) live.Add(r.Image); }
+            foreach (Snapshot s in _undo) foreach (EditorLayer l in s.Layers) { var r = l as RasterLayer; if (r != null && r.Image != null) live.Add(r.Image); }
+            foreach (Snapshot s in _redo) foreach (EditorLayer l in s.Layers) { var r = l as RasterLayer; if (r != null && r.Image != null) live.Add(r.Image); }
+            if (_paintOriginal != null) live.Add(_paintOriginal);
+            if (_clipBitmap != null) live.Add(_clipBitmap);
+            return live;
+        }
+
+        /// <summary>Frees the bitmaps that only the dropped snapshots referred to.</summary>
+        void ReleaseDropped(List<Snapshot> dropped)
+        {
+            if (dropped.Count == 0) return;
+            HashSet<Bitmap> live = LiveBitmaps();
+            var gone = new HashSet<Bitmap>();
+            foreach (Snapshot s in dropped)
+                foreach (EditorLayer l in s.Layers)
+                {
+                    var r = l as RasterLayer;
+                    if (r != null && r.Image != null && !live.Contains(r.Image)) gone.Add(r.Image);
+                }
+            foreach (Bitmap b in gone) { try { b.Dispose(); } catch { } }
+        }
+
+        static long BitmapBytes(HashSet<Bitmap> set)
+        {
+            long total = 0;
+            foreach (Bitmap b in set) { try { total += (long)b.Width * b.Height * 4; } catch { } }
+            return total;
+        }
+
+        /// <summary>Drops the oldest history steps while the bitmaps they keep alive exceed the budget.</summary>
+        void TrimHistoryMemory()
+        {
+            var dropped = new List<Snapshot>();
+            while (_undo.Count > 3 && BitmapBytes(LiveBitmaps()) > HistoryBudget)
+            {
+                dropped.Add(_undo[0]);
+                _undo.RemoveAt(0);
+                ReleaseDropped(new List<Snapshot> { dropped[dropped.Count - 1] });
+            }
+            if (dropped.Count > 0) GC.Collect();
+        }
+
+        /// <summary>Edit &gt; Purge History: forgets every undo step and frees their bitmaps.</summary>
+        void PurgeHistory()
+        {
+            if (_undo.Count == 0 && _redo.Count == 0) { Toast.Show("The history is already empty."); return; }
+            if (!ModernDialog.Confirm("Purge the history?", "Every undo step is forgotten and its memory freed. The image itself is not changed.", "Purge", "Keep")) return;
+            var dropped = new List<Snapshot>(_undo);
+            dropped.AddRange(_redo);
+            _undo.Clear();
+            _redo.Clear();
+            ReleaseDropped(dropped);
+            foreach (EditorLayer l in _layers) l.DropCache();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            RefreshHistoryList();
+            Toast.Show("History purged.");
+        }
+
+        long MemoryInUseBytes()
+        {
+            return BitmapBytes(LiveBitmaps());
         }
 
         /// <summary>
@@ -760,9 +853,10 @@ namespace MicroApp
         {
             if (_statusLeft == null) return;
             _statusLeft.Text = _hasDoc
-                ? string.Format("{0} × {1} px    {2} layer{3}{4}", _canvas.Width, _canvas.Height,
+                ? string.Format("{0} × {1} px    {2} layer{3}{4}    {5:0} MB", _canvas.Width, _canvas.Height,
                                 _layers.Count, _layers.Count == 1 ? "" : "s",
-                                HasSelection ? "    selection " + _selection.Bounds.Width + " × " + _selection.Bounds.Height : "")
+                                HasSelection ? "    selection " + _selection.Bounds.Width + " × " + _selection.Bounds.Height : "",
+                                MemoryInUseBytes() / 1048576.0)
                 : "No image yet";
             if (_zoomBox != null && !_zoomBox.ContainsFocus)
             {

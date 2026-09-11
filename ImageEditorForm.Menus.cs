@@ -58,6 +58,8 @@ namespace MicroApp
             edit.DropDownItems.Add(Item("Fill…", Keys.Shift | Keys.F5, delegate { FillCommand(); }));
             edit.DropDownItems.Add(Item("Stroke…", Keys.None, delegate { StrokeCommand(); }));
             edit.DropDownItems.Add(new ToolStripSeparator());
+            edit.DropDownItems.Add(Item("Purge History", Keys.None, delegate { PurgeHistory(); }));
+            edit.DropDownItems.Add(new ToolStripSeparator());
             edit.DropDownItems.Add(Item("Free Transform", Keys.Control | Keys.T, delegate { BeginTransform(SelectedLayer(), TransformMode.Free); }));
             var transform = new ToolStripMenuItem("Transform");
             transform.DropDownItems.Add(Item("Again", Keys.Control | Keys.Shift | Keys.T, delegate { TransformAgain(); }));
