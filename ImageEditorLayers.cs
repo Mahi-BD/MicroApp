@@ -67,6 +67,7 @@ namespace MicroApp
         public bool FlipH;
         public bool FlipV;
         public LayerEffects Fx;                   // null: no layer style
+        public bool Floating;                     // pixels lifted out of the layer below, mid-move / mid-transform
 
         // render cache for layers that need the per-pixel path (blend modes / effects)
         string _cacheKey;
@@ -193,6 +194,7 @@ namespace MicroApp
             other.ShearY = ShearY;
             other.FlipH = FlipH;
             other.FlipV = FlipV;
+            other.Floating = Floating;
             other.Fx = Fx == null ? null : Fx.Clone();
             // the render cache stays with this layer: a clone re-renders when it needs to
         }

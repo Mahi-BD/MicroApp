@@ -306,7 +306,7 @@ namespace MicroApp
             {
                 // the layers under the cursor, top first - click one to select it
                 var under = new List<int>();
-                for (int i = _layers.Count - 1; i >= 0; i--) if (_layers[i].Visible && _layers[i].HitTest(cp)) under.Add(i);
+                for (int i = _layers.Count - 1; i >= 0; i--) if (_layers[i].Visible && !_layers[i].Floating && _layers[i].HitTest(cp)) under.Add(i);
                 foreach (int idx in under)
                 {
                     int li = idx;

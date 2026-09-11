@@ -1114,6 +1114,16 @@ namespace MicroApp
         // ============================================================== layers panel
 
         bool _rebuildingLayerList;
+        // list row → layer index (top row first); floating pieces mid-move are not rows
+        readonly List<int> _listMap = new List<int>();
+
+        int DisplayOf(int layerIndex)
+        {
+            if (layerIndex < 0 || layerIndex >= _layers.Count) return -1;
+            // a floating piece shows as its host, the layer just below it
+            if (_layers[layerIndex].Floating) layerIndex--;
+            return _listMap.IndexOf(layerIndex);
+        }
 
         void RefreshLayerList()
         {
@@ -1123,8 +1133,14 @@ namespace MicroApp
             {
                 _layerList.BeginUpdate();
                 _layerList.Items.Clear();
-                for (int i = _layers.Count - 1; i >= 0; i--) _layerList.Items.Add(_layers[i].Name ?? "Layer");
-                int display = _sel >= 0 ? _layers.Count - 1 - _sel : -1;
+                _listMap.Clear();
+                for (int i = _layers.Count - 1; i >= 0; i--)
+                {
+                    if (_layers[i].Floating) continue;
+                    _listMap.Add(i);
+                    _layerList.Items.Add(_layers[i].Name ?? "Layer");
+                }
+                int display = DisplayOf(_sel);
                 if (display >= 0 && display < _layerList.Items.Count) _layerList.SelectedIndex = display;
                 _layerList.EndUpdate();
 
@@ -1144,7 +1160,7 @@ namespace MicroApp
 
         int DisplayToLayer(int displayIndex)
         {
-            return _layers.Count - 1 - displayIndex;
+            return displayIndex >= 0 && displayIndex < _listMap.Count ? _listMap[displayIndex] : -1;
         }
 
         void LayerList_SelectedIndexChanged(object sender, EventArgs e)
@@ -1320,8 +1336,9 @@ namespace MicroApp
             if (_dragLayerActive && _dragLayerFrom >= 0 && _dragLayerOver >= 0)
             {
                 int from = DisplayToLayer(_dragLayerFrom);
-                // display index "over" means: insert so the layer sits above display row `over`
-                int target = _layers.Count - _dragLayerOver;   // layer index the moved layer should take
+                // display index "over" means: insert so the layer sits just above row `over`
+                // (rows run top-down, layer indices bottom-up); past the last row = the bottom
+                int target = _dragLayerOver < _listMap.Count ? _listMap[_dragLayerOver] + 1 : 0;
                 if (from >= 0 && from < _layers.Count)
                 {
                     EditorLayer layer = _layers[from];
@@ -1378,7 +1395,8 @@ namespace MicroApp
             EditorLayer sel = SelectedLayer();
             if (sel == null) return;
             if (_rightTab != 0) { _rightTab = 0; ShowRightTab(); }
-            int display = _layers.Count - 1 - _sel;
+            int display = DisplayOf(_sel);
+            if (display < 0) return;
             Rectangle item = _layerList.GetItemRectangle(display);
             _renameBox.SetBounds(_layerList.Left + 66, _layerList.Top + item.Y + 4, _layerList.Width - 72, 24);
             _renameBox.Text = sel.Name;

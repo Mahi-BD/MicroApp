@@ -28,6 +28,8 @@ namespace MicroApp
             public Bitmap PreviewSource;      // possibly downscaled copy of the layer's pixels
             public bool Changed;
             public RasterLayer FloatHost;     // set when the box holds a selection lifted out of this layer
+            public bool Activated;            // the lift really happened (first move / scale / rotate)
+            public EditorSelection Selection0;// the selection the transform started from
 
             // the drag in flight
             public int Handle = -1;
@@ -64,19 +66,22 @@ namespace MicroApp
             CommitInlineEdit();
             PushUndo("Free Transform");
             RasterLayer floatHost = null;
+            EditorSelection selection0 = null;
             var hostRaster = layer as RasterLayer;
             if (hostRaster != null && HasSelection && !_selection.IsAll)
             {
-                // Photoshop transforms the selected pixels, not the whole layer: float them
+                // Photoshop transforms the selected pixels, not the whole layer. The piece is
+                // only lifted out (hole, extra pixels in the stack) once it actually changes.
                 floatHost = hostRaster;
-                layer = LiftSelection(hostRaster);
+                selection0 = _selection;
+                layer = CreateFloating(hostRaster, _selection);
                 _selection = null;
                 _antsScreenPath = null;
             }
-            _xf = new TransformState { Layer = layer, Mode = mode, FloatHost = floatHost };
+            _xf = new TransformState { Layer = layer, Mode = mode, FloatHost = floatHost, Selection0 = selection0 };
             _xf.Inside = screen => _xf != null && (_xf.Quad ? PointInQuad(_xf.QuadPts, ScreenToCanvas(screen)) : _xf.Layer.HitTest(ScreenToCanvas(screen)));
             if (mode == TransformMode.Distort || mode == TransformMode.Perspective) EnterQuadMode();
-            _sel = _layers.IndexOf(layer);
+            if (floatHost == null) _sel = _layers.IndexOf(layer);
             RefreshLayerList();
             RelayoutOptions();
             UpdateStatus();
@@ -92,10 +97,21 @@ namespace MicroApp
             _canvasPanel.Invalidate();
         }
 
+        /// <summary>The first real change to a transform on a selection: lift the pixels out now.</summary>
+        void EnsureLifted()
+        {
+            if (_xf == null || _xf.FloatHost == null || _xf.Activated) return;
+            ActivateFloating(_xf.FloatHost, (RasterLayer)_xf.Layer, _xf.Selection0);
+            _xf.Activated = true;
+            RefreshLayerList();
+            InvalidateDoc();
+        }
+
         /// <summary>Switches the transform to four free corners; text and shapes become pixels first.</summary>
         void EnterQuadMode()
         {
             if (_xf == null || _xf.Quad) return;
+            EnsureLifted();
             EditorLayer layer = _xf.Layer;
             var raster = layer as RasterLayer;
             if (raster == null)
@@ -154,6 +170,17 @@ namespace MicroApp
             TransformState xf = _xf;
             _xf = null;
             EditorLayer layer = xf.Layer;
+            if (xf.FloatHost != null && !xf.Activated)
+            {
+                // Ctrl+T on a selection, then Enter: the selection simply comes back
+                _selection = xf.Selection0;
+                _antsScreenPath = null;
+                PopUndo();
+                if (xf.Matrix0 != null) xf.Matrix0.Dispose();
+                RelayoutOptions();
+                AfterDocumentChange();
+                return;
+            }
             if (xf.Quad)
             {
                 var raster = (RasterLayer)layer;
@@ -253,7 +280,8 @@ namespace MicroApp
             EditorLayer sel = SelectedLayer();
             if (sel == null) { Toast.Show("Select a layer first."); return; }
             if (sel.Locked) { Toast.Show("The layer is locked."); return; }
-            bool live = _xf != null && _xf.Layer == sel;
+            bool live = _xf != null && (_xf.Layer == sel || (_xf.FloatHost != null && _xf.FloatHost == sel));
+            if (live) { EnsureLifted(); sel = _xf.Layer; }
             if (!live) PushUndo(what);
             if (live && _xf.Quad)
             {
@@ -354,6 +382,7 @@ namespace MicroApp
             {
                 if (h >= 0)
                 {
+                    EnsureLifted();
                     xf.Handle = h;
                     xf.DragQuad0 = (PointF[])xf.QuadPts.Clone();
                     _downCanvas = cp;
@@ -361,6 +390,7 @@ namespace MicroApp
                 }
                 if (TransformHitRotate(screen) || xf.Mode == TransformMode.Rotate && xf.HitInside(screen))
                 {
+                    EnsureLifted();
                     xf.Rotating = true;
                     xf.DragQuad0 = (PointF[])xf.QuadPts.Clone();
                     PointF c = QuadCenterScreen();
@@ -369,6 +399,7 @@ namespace MicroApp
                 }
                 if (xf.HitInside(screen))
                 {
+                    EnsureLifted();
                     xf.Moving = true;
                     xf.DragQuad0 = (PointF[])xf.QuadPts.Clone();
                     _downCanvas = cp;
@@ -390,6 +421,7 @@ namespace MicroApp
 
             if (h >= 0)
             {
+                EnsureLifted();
                 bool wantDistort = xf.Mode == TransformMode.Distort || (xf.Mode == TransformMode.Free && ctrl && !alt && !shift);
                 bool wantPerspective = xf.Mode == TransformMode.Perspective || (xf.Mode == TransformMode.Free && ctrl && alt && shift);
                 bool wantSkew = xf.Mode == TransformMode.Skew || (xf.Mode == TransformMode.Free && ctrl && !alt && edge) || (xf.Mode == TransformMode.Free && ctrl && shift && edge);
@@ -419,11 +451,13 @@ namespace MicroApp
             }
             if (TransformHitRotate(screen) || (xf.Mode == TransformMode.Rotate && xf.HitInside(screen)))
             {
+                EnsureLifted();
                 StartRotate(screen);
                 return true;
             }
             if (xf.HitInside(screen))
             {
+                EnsureLifted();
                 xf.Moving = true;
                 return true;
             }
@@ -767,6 +801,7 @@ namespace MicroApp
         void ApplyTransformOptions(bool? widthChanged = null)
         {
             if (_xf == null || _syncingOptions || _xf.Quad) return;
+            EnsureLifted();
             EditorLayer l = _xf.Layer;
             _xf.Changed = true;
             float w = (float)_xfW.Value, h = (float)_xfH.Value;

@@ -258,7 +258,7 @@ namespace MicroApp
             if (_autoSelect || ctrl || sel == null || !sel.HitTest(cp))
             {
                 for (int i = _layers.Count - 1; i >= 0; i--)
-                    if (_layers[i].Visible && _layers[i].HitTest(cp)) { hit = i; break; }
+                    if (_layers[i].Visible && !_layers[i].Floating && _layers[i].HitTest(cp)) { hit = i; break; }
             }
             else hit = _sel;
 
@@ -431,7 +431,7 @@ namespace MicroApp
                 }
                 bool over = false;
                 for (int i = _layers.Count - 1; i >= 0; i--)
-                    if (_layers[i].Visible && _layers[i].HitTest(cp)) { over = true; break; }
+                    if (_layers[i].Visible && !_layers[i].Floating && _layers[i].HitTest(cp)) { over = true; break; }
                 if (over && HasSelection && sel is RasterLayer && _selection.Contains((int)cp.X, (int)cp.Y))
                     _canvasPanel.Cursor = Cursors.SizeAll;
                 else
@@ -595,7 +595,7 @@ namespace MicroApp
                     if (_dragUndoPushed) RevertLastUndo();
                     break;
                 case Drag.FloatMove:
-                    RevertLastUndo();
+                    if (_floatLayer != null) RevertLastUndo();
                     _floatLayer = null; _floatHost = null;
                     break;
             }
@@ -728,19 +728,27 @@ namespace MicroApp
         // ============================================================ floating move
 
         /// <summary>
-        /// Cuts the selected pixels out of <paramref name="host"/> into a new floating layer
-        /// (inserted just above it, selected) - the start of a Move-drag or a Free Transform
-        /// on a selection. Call after PushUndo: the snapshot still holds the untouched host.
+        /// The selected pixels of <paramref name="host"/> as a floating piece (a layer object
+        /// that is NOT in the stack yet). Nothing changes on the canvas until
+        /// <see cref="ActivateFloating"/> lifts it for real - Photoshop shows the piece, the
+        /// hole and the history step only once the user actually moves it.
         /// </summary>
-        RasterLayer LiftSelection(RasterLayer host)
+        RasterLayer CreateFloating(RasterLayer host, EditorSelection sel)
         {
-            RasterLayer floating;
             using (Bitmap alone = host.RenderAlone(_canvas, false))
             {
-                Bitmap cut = CutOut(alone, _selection);
-                floating = new RasterLayer(cut) { Name = host.Name, Bounds = _selection.Bounds, Opacity = host.Opacity, Blend = host.Blend };
+                Bitmap cut = CutOut(alone, sel);
+                return new RasterLayer(cut) { Name = host.Name, Bounds = sel.Bounds, Opacity = host.Opacity, Blend = host.Blend, Floating = true };
             }
-            byte[] mask = _selection.MaskForLayer(host);
+        }
+
+        /// <summary>
+        /// Cuts the selection out of the host and puts the floating piece in the stack just
+        /// above it. Call after PushUndo: the snapshot still holds the untouched host.
+        /// </summary>
+        void ActivateFloating(RasterLayer host, RasterLayer floating, EditorSelection sel)
+        {
+            byte[] mask = sel.MaskForLayer(host);
             Pixels px = Pixels.From(host.Image);
             byte[] d = px.Data;
             for (int i = 0, k = 0; i < d.Length; i += 4, k++)
@@ -753,28 +761,43 @@ namespace MicroApp
             int hostIndex = _layers.IndexOf(host);
             _layers.Insert(hostIndex + 1, floating);
             _sel = hostIndex + 1;
+        }
+
+        RasterLayer LiftSelection(RasterLayer host)
+        {
+            RasterLayer floating = CreateFloating(host, _selection);
+            ActivateFloating(host, floating, _selection);
             return floating;
         }
 
+        /// <summary>A Move-tool press on a selected image layer: the lift waits for the first real movement.</summary>
         void BeginFloatMove(RasterLayer host, int hostIndex, PointF cp)
         {
-            PushUndo("Move");
-            _floatLayer = LiftSelection(host);
+            _floatLayer = null;
             _floatHost = host;
             _floatHostIndex = hostIndex;
             _floatSel0 = _selection;
-            _bounds0 = _floatLayer.Bounds;
+            _bounds0 = RectangleF.Empty;
             _drag = Drag.FloatMove;
-            _dragUndoPushed = true;
-            InvalidateDoc();
+            _dragUndoPushed = false;
         }
 
         void FloatMoveTo(PointF cp)
         {
-            if (_floatLayer == null) return;
+            if (_floatHost == null) return;
             float dx = cp.X - _downCanvas.X, dy = cp.Y - _downCanvas.Y;
             if ((ModifierKeys & Keys.Shift) == Keys.Shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
             int ix = (int)Math.Round(dx), iy = (int)Math.Round(dy);
+            if (_floatLayer == null)
+            {
+                if (ix == 0 && iy == 0) return;          // a click, or not far enough yet
+                PushUndo("Move");
+                _dragUndoPushed = true;
+                _selection = _floatSel0;
+                _floatLayer = LiftSelection(_floatHost);
+                _bounds0 = _floatLayer.Bounds;
+                RefreshLayerList();
+            }
             RectangleF b = _bounds0;
             b.Offset(ix, iy);
             _floatLayer.Bounds = b;
@@ -783,12 +806,13 @@ namespace MicroApp
             InvalidateDoc();
         }
 
-        /// <summary>Puts the floating pixels back into their layer at the new spot.</summary>
+        /// <summary>Puts the floating pixels back into their layer at the new spot (a plain click changes nothing).</summary>
         void LandFloat()
         {
             RasterLayer host = _floatHost, floating = _floatLayer;
             _floatHost = null; _floatLayer = null;
-            if (host == null || floating == null) return;
+            if (host == null) return;
+            if (floating == null) { _canvasPanel.Invalidate(); return; }
             MergeFloating(host, floating);
             _sel = _layers.IndexOf(host);
             AfterDocumentChange();

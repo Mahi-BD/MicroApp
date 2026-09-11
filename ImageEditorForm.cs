@@ -761,11 +761,34 @@ namespace MicroApp
         void AfterDocumentChange()
         {
             foreach (EditorLayer l in _layers) if (l.Bounds.Width < 0) l.Bounds = new RectangleF(l.Bounds.X, l.Bounds.Y, 1, l.Bounds.Height);
+            LandOrphans();
             RefreshLayerList();
             SyncOptionsFromSelection();
             RelayoutOptions();
             UpdateStatus();
             InvalidateDoc();
+        }
+
+        /// <summary>
+        /// A floating piece is an intermediate state of a move or transform; if one is ever
+        /// left over (nothing is dragging or transforming), it lands back in its layer.
+        /// </summary>
+        void LandOrphans()
+        {
+            if (_xf != null || _drag == Drag.FloatMove) return;
+            for (int i = _layers.Count - 1; i >= 0; i--)
+            {
+                if (!_layers[i].Floating) continue;
+                var piece = _layers[i] as RasterLayer;
+                var host = i > 0 ? _layers[i - 1] as RasterLayer : null;
+                if (piece != null && host != null)
+                {
+                    bool wasSelected = _sel == i;
+                    MergeFloating(host, piece);
+                    if (wasSelected || _sel > i) _sel = Math.Max(0, Math.Min(_layers.Count - 1, wasSelected ? i - 1 : _sel - 1));
+                }
+                else _layers[i].Floating = false;
+            }
         }
 
         /// <summary>The pixels changed: rebuild the composite on the next paint.</summary>
@@ -852,9 +875,11 @@ namespace MicroApp
         void UpdateStatus()
         {
             if (_statusLeft == null) return;
+            int layerCount = 0;
+            foreach (EditorLayer l in _layers) if (!l.Floating) layerCount++;
             _statusLeft.Text = _hasDoc
                 ? string.Format("{0} × {1} px    {2} layer{3}{4}    {5:0} MB", _canvas.Width, _canvas.Height,
-                                _layers.Count, _layers.Count == 1 ? "" : "s",
+                                layerCount, layerCount == 1 ? "" : "s",
                                 HasSelection ? "    selection " + _selection.Bounds.Width + " × " + _selection.Bounds.Height : "",
                                 MemoryInUseBytes() / 1048576.0)
                 : "No image yet";
