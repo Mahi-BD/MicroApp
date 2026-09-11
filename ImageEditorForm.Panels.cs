@@ -472,7 +472,7 @@ namespace MicroApp
 
         ModernNumber OptNumeric(int min, int max, int value, EventHandler changed)
         {
-            var n = new ModernNumber { Minimum = min, Maximum = max, Width = 66 };
+            var n = new ModernNumber { Minimum = min, Maximum = max, Width = 74 };
             n.Value = Math.Max(min, Math.Min(max, value));
             n.ValueChanged += delegate(object s, EventArgs e) { if (!_syncingOptions) changed(s, e); };
             _optionsBar.Controls.Add(n);
@@ -784,7 +784,7 @@ namespace MicroApp
             _rightSide = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 292,
+                Width = 320,
                 BackColor = Theme.Surface,
                 Padding = new Padding(8)
             };
@@ -976,10 +976,13 @@ namespace MicroApp
             _historyPage.SetBounds(10, 36, w, topH - 36);
 
             // layers page
+            // header row laid out from the right so nothing can run under the lock button:
+            // [blend mode ......] Opacity [100 %] [lock]
+            _lockBtn.Location = new Point(w - _lockBtn.Width, 3);
+            _opacityNum.Location = new Point(_lockBtn.Left - 6 - _opacityNum.Width, 4);
+            _opacityLbl.Location = new Point(_opacityNum.Left - 4 - _opacityLbl.Width, 9);
             _blendCombo.Location = new Point(0, 4);
-            _opacityLbl.Location = new Point(_blendCombo.Right + 8, 9);
-            _opacityNum.Location = new Point(_opacityLbl.Right + 2, 4);
-            _lockBtn.Location = new Point(w - 26, 3);
+            _blendCombo.Width = Math.Max(90, _opacityLbl.Left - 10);
             int listTop = 34;
             int footer = 30;
             _layerList.SetBounds(0, listTop, w, Math.Max(40, _layersPage.Height - listTop - footer - 6));

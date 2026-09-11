@@ -38,7 +38,7 @@ namespace MicroApp
         ModernCheckBox _preview;
         int _y = 16;
         bool _syncing;
-        const int W = 400;
+        const int W = 460;
 
         public AdjustDialog(string title)
         {
@@ -97,7 +97,7 @@ namespace MicroApp
         public ModernSlider AddSlider(string key, string label, int min, int max, int value, string suffix = "")
         {
             Caption(label, 24, _y + 3);
-            int numW = suffix.Length > 0 ? 92 : 78;
+            int numW = 78 + (suffix.Length > 0 ? TextRenderer.MeasureText(suffix, Theme.Small).Width + 6 : 0);
             var num = new ModernNumber { Minimum = min, Maximum = max, Suffix = suffix, Location = new Point(W - 24 - numW, _y - 1), Size = new Size(numW, 26) };
             num.Value = Math.Max(min, Math.Min(max, value));
             var bar = new ModernSlider
@@ -183,7 +183,8 @@ namespace MicroApp
             Controls.Add(reset);
             if (withPreview)
             {
-                _preview = new ModernCheckBox { Text = "Preview", Checked = true, Location = new Point(118, footerY + 4), Size = new Size(90, 22) };
+                int pw = TextRenderer.MeasureText("Preview", Theme.Base).Width + 30;
+                _preview = new ModernCheckBox { Text = "Preview", Checked = true, Location = new Point(reset.Right + 12, footerY + 4), Size = new Size(pw, 22) };
                 _preview.CheckedChanged += delegate { Bump(); };
                 Controls.Add(_preview);
             }
