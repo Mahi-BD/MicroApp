@@ -97,7 +97,7 @@ namespace MicroApp
             _canvasPanel.Invalidate();
         }
 
-        /// <summary>The first real change to a transform on a selection: lift the pixels out now.</summary>
+        /// <summary>The first real change to a transform on a selection: the piece joins the stack as a preview.</summary>
         void EnsureLifted()
         {
             if (_xf == null || _xf.FloatHost == null || _xf.Activated) return;
@@ -226,10 +226,12 @@ namespace MicroApp
             if (xf.Matrix0 != null) xf.Matrix0.Dispose();
             if (xf.FloatHost != null)
             {
-                // the selection follows the transformed pixels, then they land back in their layer
+                // apply: only now do the pixels leave their old place in the layer; the
+                // selection follows the transformed piece, which lands back in the layer
                 var floating = _layers[_sel] as RasterLayer;
                 if (floating != null && _layers.Contains(xf.FloatHost))
                 {
+                    CutSelectionFromHost(xf.FloatHost, xf.Selection0);
                     using (Bitmap alone = floating.RenderAlone(_canvas, false))
                     {
                         Pixels p = Pixels.From(alone);

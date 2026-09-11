@@ -743,11 +743,22 @@ namespace MicroApp
         }
 
         /// <summary>
-        /// Cuts the selection out of the host and puts the floating piece in the stack just
-        /// above it. Call after PushUndo: the snapshot still holds the untouched host.
+        /// Puts the floating piece in the stack just above its host so it can be dragged
+        /// about as a preview. The host's own pixels are NOT touched here: the layer only
+        /// changes when the move or transform is applied (<see cref="CutSelectionFromHost"/>
+        /// then <see cref="MergeFloating"/>), so cancelling never has to put anything back.
         /// </summary>
         void ActivateFloating(RasterLayer host, RasterLayer floating, EditorSelection sel)
         {
+            int hostIndex = _layers.IndexOf(host);
+            _layers.Insert(hostIndex + 1, floating);
+            _sel = hostIndex + 1;
+        }
+
+        /// <summary>The apply step: the pixels the piece came from are cleared out of the host.</summary>
+        void CutSelectionFromHost(RasterLayer host, EditorSelection sel)
+        {
+            if (host == null || sel == null || host.Image == null) return;
             byte[] mask = sel.MaskForLayer(host);
             Pixels px = Pixels.From(host.Image);
             byte[] d = px.Data;
@@ -758,9 +769,6 @@ namespace MicroApp
             }
             host.Image = px.ToBitmap();
             host.ContentVersion++;
-            int hostIndex = _layers.IndexOf(host);
-            _layers.Insert(hostIndex + 1, floating);
-            _sel = hostIndex + 1;
         }
 
         RasterLayer LiftSelection(RasterLayer host)
@@ -806,13 +814,18 @@ namespace MicroApp
             InvalidateDoc();
         }
 
-        /// <summary>Puts the floating pixels back into their layer at the new spot (a plain click changes nothing).</summary>
+        /// <summary>
+        /// The release of a Move drag is its apply: the pixels leave their old place in the
+        /// layer and land at the new one. A plain click changes nothing.
+        /// </summary>
         void LandFloat()
         {
             RasterLayer host = _floatHost, floating = _floatLayer;
+            EditorSelection from = _floatSel0;
             _floatHost = null; _floatLayer = null;
             if (host == null) return;
             if (floating == null) { _canvasPanel.Invalidate(); return; }
+            CutSelectionFromHost(host, from);
             MergeFloating(host, floating);
             _sel = _layers.IndexOf(host);
             AfterDocumentChange();
