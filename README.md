@@ -1,6 +1,6 @@
 # MicroApp
 
-**[microapp website](https://mahi-bd.github.io/MicroApp/)** · **[download 5.1.0](https://github.com/Mahi-BD/MicroApp/releases/latest)** · [changelog](CHANGELOG.md) · [manual](HELP.md)
+**[microapp website](https://mahi-bd.github.io/MicroApp/)** · **[download](https://github.com/Mahi-BD/MicroApp/releases/latest)** · [changelog](CHANGELOG.md) · [manual](HELP.md)
 
 A small Windows tray tool that does a handful of things well:
 
