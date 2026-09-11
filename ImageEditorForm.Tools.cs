@@ -350,7 +350,8 @@ namespace MicroApp
                     float dx = cp.X - _downCanvas.X, dy = cp.Y - _downCanvas.Y;
                     if ((ModifierKeys & Keys.Shift) == Keys.Shift)
                     {
-                        if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0;   // Shift: straight moves
+                        PointF c = Constrain45(dx, dy);   // Shift: straight along the nearest 45°
+                        dx = c.X; dy = c.Y;
                     }
                     b.Offset(dx, dy);
                     sel.Bounds = b;
@@ -365,7 +366,7 @@ namespace MicroApp
                 case Drag.SelectionMove:
                 {
                     float dx = cp.X - _downCanvas.X, dy = cp.Y - _downCanvas.Y;
-                    if ((ModifierKeys & Keys.Shift) == Keys.Shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
+                    if ((ModifierKeys & Keys.Shift) == Keys.Shift) { PointF c = Constrain45(dx, dy); dx = c.X; dy = c.Y; }
                     int ix = (int)Math.Round(dx), iy = (int)Math.Round(dy);
                     if (ix == 0 && iy == 0 && !_dragUndoPushed) return;
                     if (!_dragUndoPushed) { PushUndo("Move Selection"); _dragUndoPushed = true; }
@@ -873,7 +874,7 @@ namespace MicroApp
         {
             if (_floatHost == null) return;
             float dx = cp.X - _downCanvas.X, dy = cp.Y - _downCanvas.Y;
-            if ((ModifierKeys & Keys.Shift) == Keys.Shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
+            if ((ModifierKeys & Keys.Shift) == Keys.Shift) { PointF c = Constrain45(dx, dy); dx = c.X; dy = c.Y; }
             int ix = (int)Math.Round(dx), iy = (int)Math.Round(dy);
             if (_floatLayer == null)
             {

@@ -1770,6 +1770,32 @@ namespace MicroApp
             return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
+        /// <summary>
+        /// Shift while dragging something about: the movement follows the nearest 45°
+        /// direction - the four axes and the four diagonals - and travels as far along it as
+        /// the mouse has, which is how Photoshop constrains a move.
+        /// </summary>
+        static PointF Constrain45(float dx, float dy)
+        {
+            if (dx == 0 && dy == 0) return PointF.Empty;
+            const float Diag = 0.70710678f;
+            int k = (int)Math.Round(Math.Atan2(dy, dx) / (Math.PI / 4)) & 7;
+            float ux, uy;
+            switch (k)
+            {
+                case 0: ux = 1; uy = 0; break;
+                case 1: ux = Diag; uy = Diag; break;
+                case 2: ux = 0; uy = 1; break;
+                case 3: ux = -Diag; uy = Diag; break;
+                case 4: ux = -1; uy = 0; break;
+                case 5: ux = -Diag; uy = -Diag; break;
+                case 6: ux = 0; uy = -1; break;
+                default: ux = Diag; uy = -Diag; break;
+            }
+            float t = dx * ux + dy * uy;   // how far the mouse went along that direction
+            return new PointF(ux * t, uy * t);
+        }
+
         static PointF TransformPoint(Matrix m, PointF p)
         {
             PointF[] pts = { p };

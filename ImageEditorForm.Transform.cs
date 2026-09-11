@@ -636,7 +636,7 @@ namespace MicroApp
                 PointF[] q = xf.QuadPts;
                 if (xf.Moving)
                 {
-                    if (shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
+                    if (shift) { PointF c = Constrain45(dx, dy); dx = c.X; dy = c.Y; }
                     for (int i = 0; i < 4; i++) q[i] = new PointF(q0[i].X + dx, q0[i].Y + dy);
                 }
                 else if (xf.Rotating)
@@ -679,7 +679,7 @@ namespace MicroApp
             EditorLayer layer = xf.Layer;
             if (xf.Moving)
             {
-                if (shift) { if (Math.Abs(dx) > Math.Abs(dy)) dy = 0; else dx = 0; }
+                if (shift) { PointF c = Constrain45(dx, dy); dx = c.X; dy = c.Y; }
                 RectangleF b = xf.DragBounds0;
                 b.Offset(dx, dy);
                 layer.Bounds = b;

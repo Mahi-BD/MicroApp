@@ -438,7 +438,8 @@ dragging inside the selection with the **Move** tool moves just those pixels.
 ### Move and Free Transform
 
 **Move (V)** selects a layer by clicking it (Auto-Select) and drags it; **Shift** keeps the
-move straight, **Alt**-drag moves a copy, arrows nudge a pixel and **Shift+arrows** ten. The
+move straight — it follows the nearest axis or 45° diagonal, as far as you have dragged along
+it — **Alt**-drag moves a copy, arrows nudge a pixel and **Shift+arrows** ten. The
 box around the selected layer is Photoshop's transform box: drag a corner to **scale** (proportional by
 default, **Shift** for free, **Alt** about the centre), an edge to stretch, and move the cursor just
 outside a corner to **rotate** (**Shift** snaps to 15°). **Ctrl+T** (**Edit → Free Transform**)
