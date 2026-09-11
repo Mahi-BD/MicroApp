@@ -1021,6 +1021,54 @@ namespace MicroApp.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("320")]
+        public int EditorRightPanelWidth {
+            get {
+                return ((int)(this["EditorRightPanelWidth"]));
+            }
+            set {
+                this["EditorRightPanelWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int EditorWindowWidth {
+            get {
+                return ((int)(this["EditorWindowWidth"]));
+            }
+            set {
+                this["EditorWindowWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int EditorWindowHeight {
+            get {
+                return ((int)(this["EditorWindowHeight"]));
+            }
+            set {
+                this["EditorWindowHeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EditorWindowMaximized {
+            get {
+                return ((bool)(this["EditorWindowMaximized"]));
+            }
+            set {
+                this["EditorWindowMaximized"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string ImageEditorHotKeyTakeOver {
             get {

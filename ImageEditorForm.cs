@@ -202,6 +202,15 @@ namespace MicroApp
             StartPosition = FormStartPosition.CenterScreen;
             Size = new Size(1360, 840);
             MinimumSize = new Size(980, 620);
+            try
+            {
+                // the window comes back the size it was last closed at
+                int w = Properties.Settings.Default.EditorWindowWidth, h = Properties.Settings.Default.EditorWindowHeight;
+                Rectangle work = Screen.PrimaryScreen.WorkingArea;
+                if (w >= 980 && h >= 620) Size = new Size(Math.Min(w, work.Width), Math.Min(h, work.Height));
+                if (Properties.Settings.Default.EditorWindowMaximized) WindowState = FormWindowState.Maximized;
+            }
+            catch { }
             BackColor = Theme.Bg;
             KeyPreview = true;
             AllowDrop = true;
@@ -214,12 +223,15 @@ namespace MicroApp
             BuildOptionsBar();
             BuildToolRail();
             BuildRightSide();
+            BuildSplitter();
             BuildCanvas();
             BuildStatus();
 
             // docking order decides the layout: menu on top, options under it, status at
-            // the bottom, tool rail left, panels right, canvas fills the rest
+            // the bottom, tool rail left, panels right (with the drag handle between them
+            // and the canvas), canvas fills the rest
             Controls.Add(_canvasPanel);
+            Controls.Add(_splitter);
             Controls.Add(_toolRail);
             Controls.Add(_rightSide);
             Controls.Add(_status);
@@ -572,7 +584,20 @@ namespace MicroApp
                 !ModernDialog.Confirm("Close the editor?", "The layers were not saved or copied out.", "Close anyway", "Keep editing"))
             {
                 e.Cancel = true;
+                return;
             }
+            try
+            {
+                Properties.Settings.Default.EditorWindowMaximized = WindowState == FormWindowState.Maximized;
+                if (WindowState == FormWindowState.Normal)
+                {
+                    Properties.Settings.Default.EditorWindowWidth = Width;
+                    Properties.Settings.Default.EditorWindowHeight = Height;
+                }
+                Properties.Settings.Default.EditorRightPanelWidth = _rightSide.Width;
+                Properties.Settings.Default.Save();
+            }
+            catch { }
         }
 
         void Form_DragEnter(object sender, DragEventArgs e)

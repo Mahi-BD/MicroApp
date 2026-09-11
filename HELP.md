@@ -374,7 +374,8 @@ clipboard; with nothing there, paste later (**Ctrl+V**), drop a file onto the wi
 blank with **File → New** (**Ctrl+N**). The layout follows Photoshop: a two-column tool rail on
 the left with the foreground/background colours under it, an options bar under the menu that
 changes with the tool, the canvas in the middle, and **Layers / History** plus the **Assets**
-library on the right. Every tool answers to Photoshop's key, every menu command to Photoshop's
+library on the right (drag the handle beside them to make the panels wider or narrower; the
+editor remembers it, along with its window size). Every tool answers to Photoshop's key, every menu command to Photoshop's
 shortcut, and right-clicking the canvas or a layer opens the menu you would expect there.
 **Help → Keyboard Shortcuts** lists them all.
 

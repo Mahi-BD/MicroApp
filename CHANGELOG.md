@@ -11,7 +11,8 @@
   library on the right, a status bar with a typed zoom box, rulers (**Ctrl+R**) and marching
   ants. Number fields, drop-downs and sliders are drawn in the app's own style (type a value,
   click or hold the chevrons, roll the wheel, or use the arrow keys) instead of the stock
-  Windows controls. **Help → Keyboard Shortcuts** lists every key.
+  Windows controls. The right-hand panels resize by dragging the handle beside them, and the
+  editor remembers that width and its window size. **Help → Keyboard Shortcuts** lists every key.
 
 ### Added
 

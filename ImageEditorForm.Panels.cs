@@ -779,12 +779,41 @@ namespace MicroApp
 
         // =============================================================== right side
 
+        PanelSplitter _splitter;
+
+        /// <summary>The drag handle between the canvas and the right-hand panels; its position is remembered.</summary>
+        void BuildSplitter()
+        {
+            _splitter = new PanelSplitter
+            {
+                Dock = DockStyle.Right,
+                Width = 7,
+                MinSize = 220,      // the panel never gets narrower than this
+                MinExtra = 360,     // ...and the canvas keeps at least this much
+                BackColor = Theme.Surface
+            };
+            _splitter.SplitterMoved += delegate
+            {
+                try
+                {
+                    Properties.Settings.Default.EditorRightPanelWidth = _rightSide.Width;
+                    Properties.Settings.Default.Save();
+                }
+                catch { }
+                LayoutRightSide();
+                if (_viewFitted) FitView();
+                _canvasPanel.Invalidate();
+            };
+        }
+
         void BuildRightSide()
         {
+            int savedWidth = 320;
+            try { savedWidth = Math.Max(220, Math.Min(800, Properties.Settings.Default.EditorRightPanelWidth)); } catch { }
             _rightSide = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 320,
+                Width = savedWidth,
                 BackColor = Theme.Surface,
                 Padding = new Padding(8)
             };
@@ -1900,6 +1929,34 @@ namespace MicroApp
                 AddBitmapLayer(AssetStore.LoadFull(file), Path.GetFileNameWithoutExtension(file));
             }
             catch (Exception ex) { ModernDialog.Info("Could not load it", ex.Message); }
+        }
+    }
+
+    /// <summary>A splitter drawn in the app's style: a hairline and a small grip, accent while dragging.</summary>
+    class PanelSplitter : Splitter
+    {
+        bool _hover;
+
+        public PanelSplitter()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+        }
+
+        protected override void OnMouseEnter(EventArgs e) { _hover = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { _hover = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            using (var bg = new SolidBrush(Theme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var line = new Pen(Theme.Border)) g.DrawLine(line, 0, 0, 0, Height);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            Color ink = _hover ? Theme.Accent : Theme.TextDim;
+            using (var dot = new SolidBrush(ink))
+            {
+                float cx = Width / 2f, cy = Height / 2f;
+                for (int i = -2; i <= 2; i++) g.FillEllipse(dot, cx - 1.5f, cy + i * 6 - 1.5f, 3, 3);
+            }
         }
     }
 
