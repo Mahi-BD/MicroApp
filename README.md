@@ -81,6 +81,8 @@ pointer; one click grabs the exact text of the control under it through UI Autom
 character-perfect, however many lines. The click never reaches the app underneath, and password
 fields are never read. Use OCR instead for images, videos and remote desktops.
 
+![Pick Text](docs/pick-text.png)
+
 ### 4. Screen capture
 
 Press **Ctrl+Alt+S** (or tray → *Screen Capture*) and drag. The screen freezes and dims so the selection
@@ -108,6 +110,10 @@ shows elapsed time, placed outside the recorded area so it stays out of the fram
 the hot key again, or by clicking the badge.
 
 ![Recording demo](docs/demo-recording.gif)
+
+The toolbar stays outside the recorded area, so it never lands in the frames:
+
+![Recording a region](docs/recording.png)
 
 Frames stream straight to disk while recording, so a long capture costs no more memory than a short one.
 GIF recording has its own hot key, frame rate, length limit, selection lock and output folder — separate
@@ -194,6 +200,8 @@ Press **Ctrl+Alt+E** (or tray → *Image Editor*) and paste any image — the wi
 is on the clipboard. It is laid out like Photoshop, and it answers to Photoshop's keys, menus and
 right-click menus (**Help → Keyboard Shortcuts** lists them all).
 
+![The image editor](docs/editor.png)
+
 - **Layers.** Every paste, mark, text box and asset is its own layer, with blend modes, opacity,
   a lock, drag-to-reorder, merge down / merge visible / flatten, and **Layer Styles** — drop
   shadow, outer glow, stroke, colour overlay. A **History** panel jumps back fifty steps.
@@ -236,7 +244,8 @@ Six focused windows, all reachable from the tray menu:
 | | |
 |---|---|
 | ![OCR Setting](docs/ocr-setting.png) | ![Capture Setting](docs/capture-setting.png) |
-| ![GIF Setting](docs/gif-setting.png) | ![About](docs/about.png) |
+| ![GIF Setting](docs/gif-setting.png) | ![Note Setting](docs/note-setting.png) |
+| ![About](docs/about.png) | |
 
 The full reference — every default, and the troubleshooting list — is in **[HELP.md](HELP.md)**;
 installing and first-run setup are in **[SETUP.md](SETUP.md)**.
@@ -259,6 +268,8 @@ installing and first-run setup are in **[SETUP.md](SETUP.md)**.
 | Type the long date | `Ctrl + Shift + M` |
 | Bangla / English in a note | `Ctrl + Shift + L` |
 | Cancel anything in progress | `Esc` |
+
+![Shortcuts](docs/shortcuts.png)
 
 Hot keys act the moment the combination is pressed — the crosshair appears while the keys are still held.
 
