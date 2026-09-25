@@ -837,6 +837,7 @@ namespace MicroApp
         {
             foreach (EditorLayer l in _layers) if (l.Bounds.Width < 0) l.Bounds = new RectangleF(l.Bounds.X, l.Bounds.Y, 1, l.Bounds.Height);
             LandOrphans();
+            PruneMulti();
             RefreshLayerList();
             SyncOptionsFromSelection();
             RelayoutOptions();
@@ -1531,6 +1532,7 @@ namespace MicroApp
                         SetSelection(_selection.Offset(dx * step, dy * step));
                         return true;
                     }
+                    if (NudgeGroup(dx * step, dy * step)) return true;
                     if (_sel >= 0 && !_layers[_sel].Locked)
                     {
                         PushUndoCoalesced("nudge", "Nudge");

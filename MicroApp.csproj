@@ -126,6 +126,9 @@
     <Compile Include="ImageEditorForm.Panels.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="ImageEditorForm.MultiSelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ImageEditorForm.Guides.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -826,6 +826,7 @@ namespace MicroApp
 
         void PaintTransformControls(Graphics g)
         {
+            if (PaintGroupControls(g)) return;
             EditorLayer sel = SelectedLayer();
             bool live = _xf != null;
             if (!live && !(_tool == Tool.Move && sel != null && _showTransformControls && _editing == null && _drag != Drag.FloatMove)) return;

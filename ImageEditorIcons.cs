@@ -312,6 +312,14 @@ namespace MicroApp
                     case "alignm":
                         g.DrawLine(p, 3, 10, 17, 10); g.FillRectangle(fill, 5, 4, 4, 12); g.FillRectangle(fill, 11, 6.5f, 4, 7);
                         break;
+                    case "disth":   // three bars with equal gaps between them, left to right
+                        g.FillRectangle(fill, 2, 5, 3, 10); g.FillRectangle(fill, 8.5f, 3, 3, 14); g.FillRectangle(fill, 15, 6, 3, 8);
+                        g.DrawLine(p, 5.5f, 18, 8, 18); g.DrawLine(p, 12, 18, 14.5f, 18);
+                        break;
+                    case "distv":   // the same, top to bottom
+                        g.FillRectangle(fill, 5, 2, 10, 3); g.FillRectangle(fill, 3, 8.5f, 14, 3); g.FillRectangle(fill, 6, 15, 8, 3);
+                        g.DrawLine(p, 18, 5.5f, 18, 8); g.DrawLine(p, 18, 12, 18, 14.5f);
+                        break;
                     case "alignb":
                         g.DrawLine(p, 3, 16, 17, 16); g.FillRectangle(fill, 5, 4, 4, 10); g.FillRectangle(fill, 11, 8, 4, 6);
                         break;

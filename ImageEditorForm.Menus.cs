@@ -129,6 +129,9 @@ namespace MicroApp
             layer.DropDownItems.Add(Item("Layer Via Cut", Keys.Control | Keys.Shift | Keys.J, delegate { LayerViaCopy(true); }));
             layer.DropDownItems.Add(Item("Duplicate Layer", Keys.None, delegate { EditorLayer s = SelectedLayer(); if (s == null) return; var keep = _selection; _selection = null; DuplicateLayer(true); _selection = keep; }));
             layer.DropDownItems.Add(Item("Delete Layer", Keys.None, delegate { DeleteLayer(); }));
+            layer.DropDownItems.Add(new ToolStripSeparator());
+            layer.DropDownItems.Add(Item("Distribute Horizontally", Keys.None, delegate { DistributeLayers(true); }));
+            layer.DropDownItems.Add(Item("Distribute Vertically", Keys.None, delegate { DistributeLayers(false); }));
             layer.DropDownItems.Add(Item("Rename Layer…", Keys.None, delegate { RenameLayer(); }));
             layer.DropDownItems.Add(new ToolStripSeparator());
             var style = new ToolStripMenuItem("Layer Style");
@@ -166,6 +169,7 @@ namespace MicroApp
 
             var select = new ToolStripMenuItem("Select");
             select.DropDownItems.Add(Item("All", Keys.Control | Keys.A, delegate { SelectAll(); }));
+            select.DropDownItems.Add(Item("All Layers", Keys.Control | Keys.Alt | Keys.A, delegate { SelectAllLayers(); }));
             select.DropDownItems.Add(Item("Deselect", Keys.Control | Keys.D, delegate { Deselect(); }));
             select.DropDownItems.Add(Item("Reselect", Keys.Control | Keys.Shift | Keys.D, delegate { Reselect(); }));
             select.DropDownItems.Add(Item("Inverse", Keys.Control | Keys.Shift | Keys.I, delegate { SelectInverse(); }));

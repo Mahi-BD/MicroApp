@@ -123,6 +123,7 @@ namespace MicroApp
             d.CloneSource = _cloneSource;
             d.Ppi = _ppi;
             d.Guides = _guides;
+            _multi.Clear();
             _layers.Clear();
             _undo.Clear();
             _redo.Clear();

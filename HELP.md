@@ -432,6 +432,23 @@ At 100 % a document prints at its real size - an A4 made at 300 ppi comes out as
 the resulting print resolution and warns under 150 PPI or when part of the picture falls outside
 the printable area. Nothing is sent until you press **Print**.
 
+### Selecting several layers
+
+As in Photoshop, several layers can be selected at once:
+- **Layers panel**: **Ctrl+click** adds or removes a layer, and **Shift+click** selects every layer between the current one and the one clicked.
+- **Canvas**: with the Move tool, **Shift+click** an object to add it (or take it out again).
+- **Select → All Layers** (**Alt+Ctrl+A**) selects every visible, unlocked layer.
+
+Then:
+- **Drag** any of them and they all move together. They snap to guides; hold Ctrl to place freely.
+- The **arrow keys** nudge all of them.
+- **Delete** removes all of them in one undo step.
+- The **align** buttons in the options bar line them up with each other, not with the canvas.
+- The **distribute** buttons (after the align buttons, or **Layer → Distribute Horizontally / Vertically**) space three
+  or more layers evenly. The outermost two stay put and the others move so every gap is the same.
+
+A plain click on another layer goes back to one layer.
+
 ### Rulers and guides
 
 The **ruler button** under the tools (next to Remove Background), **View → Rulers** or **Ctrl+R** shows the rulers.

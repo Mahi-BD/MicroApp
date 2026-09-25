@@ -266,7 +266,8 @@ namespace MicroApp
         void MoveToolDown(MouseEventArgs e, PointF cp, bool shift, bool alt, bool ctrl)
         {
             EditorLayer sel = SelectedLayer();
-            if (sel != null && _showTransformControls && !sel.Locked && sel.Visible)
+            _multiBounds0 = null;
+            if (sel != null && _showTransformControls && !sel.Locked && sel.Visible && !IsMulti && !shift)
             {
                 int h = HitHandle(sel, e.Location);
                 if (h >= 0 || HitRotateZone(sel, e.Location))
@@ -280,7 +281,7 @@ namespace MicroApp
             // with a selection on an image layer, the Move tool moves the selected pixels -
             // wherever on the canvas the drag starts, as in Photoshop
             var selRaster = sel as RasterLayer;
-            if (selRaster != null && HasSelection && !sel.Locked && sel.Visible && !alt)
+            if (selRaster != null && HasSelection && !sel.Locked && sel.Visible && !alt && !shift && !IsMulti)
             {
                 BeginFloatMove(selRaster, _sel, cp);
                 return;
@@ -294,6 +295,23 @@ namespace MicroApp
                     if (_layers[i].Visible && !_layers[i].Floating && _layers[i].HitTest(cp)) { hit = i; break; }
             }
             else hit = _sel;
+
+            // several layers: Shift-click adds or removes one (as in Photoshop); dragging any
+            // selected one moves them all; a plain click elsewhere goes back to one layer
+            if (shift && hit >= 0 && !alt)
+            {
+                LayerClicked(hit, true, false);
+                if (!IsLayerSelected(_layers[hit])) return;
+                if (IsMulti) BeginGroupMove();
+                else { _drag = Drag.Move; _bounds0 = _layers[hit].Bounds; }
+                return;
+            }
+            if (hit >= 0 && !alt && IsMulti && IsLayerSelected(_layers[hit]))
+            {
+                BeginGroupMove();
+                return;
+            }
+            if (_multi.Count > 0) ClearMulti();
 
             if (hit >= 0 && alt)
             {
@@ -359,6 +377,14 @@ namespace MicroApp
 
                 case Drag.Move:
                 {
+                    if (_multiBounds0 != null)
+                    {
+                        DragUndoOnce("Move");
+                        float gx = cp.X - _downCanvas.X, gy = cp.Y - _downCanvas.Y;
+                        if ((ModifierKeys & Keys.Shift) == Keys.Shift) { PointF c = Constrain45(gx, gy); gx = c.X; gy = c.Y; }
+                        GroupMoveTo(gx, gy, (ModifierKeys & Keys.Control) != Keys.Control);
+                        return;
+                    }
                     EditorLayer sel = SelectedLayer();
                     if (sel == null) return;
                     DragUndoOnce("Move");

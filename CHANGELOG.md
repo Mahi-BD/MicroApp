@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Several layers at once.** Ctrl-click or Shift-click in the Layers panel, Shift-click on the canvas with the
+  Move tool, or Select → All Layers (Alt+Ctrl+A). Dragging any of them moves all of them (with guide snapping), and
+  so do the arrow keys. Delete removes them all. The align buttons align them to each other, and the new
+  **Distribute Horizontally / Vertically** buttons (also in the Layer menu) give three or more layers equal gaps.
 - **Rulers and guides in the image editor, the Photoshop way.** A ruler on/off button sits under the tools.
   - Drag out of a ruler to add a guide, and drag a guide with the Move tool (or Ctrl) to move it. Drop it on
     a ruler to delete it.

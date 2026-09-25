@@ -44,7 +44,7 @@ namespace MicroApp
         ModernCheckBox _optGradReverse, _optGradTransparent;
         // move
         ModernCheckBox _optAutoSelect, _optShowControls;
-        Button _optAlignLeft, _optAlignCenterH, _optAlignRight, _optAlignTop, _optAlignMiddle, _optAlignBottom;
+        Button _optAlignLeft, _optAlignCenterH, _optAlignRight, _optAlignTop, _optAlignMiddle, _optAlignBottom, _optDistH, _optDistV;
         ModernButton _optMirrorH, _optMirrorV, _optRotate90;
         // hand / zoom
         ModernButton _optFit, _opt100, _optZoomIn, _optZoomOut;
@@ -340,6 +340,8 @@ namespace MicroApp
             _optAlignTop = OptGlyphButton("alignt", "Align top edges", delegate { AlignLayer(3); });
             _optAlignMiddle = OptGlyphButton("alignm", "Align vertical centres", delegate { AlignLayer(4); });
             _optAlignBottom = OptGlyphButton("alignb", "Align bottom edges", delegate { AlignLayer(5); });
+            _optDistH = OptGlyphButton("disth", "Distribute horizontally: equal gaps between 3 or more selected layers (Shift-click them)", delegate { DistributeLayers(true); });
+            _optDistV = OptGlyphButton("distv", "Distribute vertically: equal gaps between 3 or more selected layers (Shift-click them)", delegate { DistributeLayers(false); });
             _optMirrorH = OptButton("Flip ↔", false, delegate { QuickTransform("Flip Horizontal"); });
             _optMirrorV = OptButton("Flip ↕", false, delegate { QuickTransform("Flip Vertical"); });
             _optRotate90 = OptButton("Rotate 90°", false, delegate { QuickTransform("Rotate 90° CW"); });
@@ -606,7 +608,7 @@ namespace MicroApp
                         ShowOpts(_optAutoSelect, _optShowControls);
                         if (sel != null)
                         {
-                            ShowOpts(_optAlignLeft, _optAlignCenterH, _optAlignRight, _optAlignTop, _optAlignMiddle, _optAlignBottom, _optMirrorH, _optMirrorV, _optRotate90);
+                            ShowOpts(_optAlignLeft, _optAlignCenterH, _optAlignRight, _optAlignTop, _optAlignMiddle, _optAlignBottom, _optDistH, _optDistV, _optMirrorH, _optMirrorV, _optRotate90);
                         }
                         if (moveShape) ShowShapeOptions(selShape.Kind);
                         if (moveText) ShowTextOptions();
@@ -1230,6 +1232,9 @@ namespace MicroApp
         void LayerList_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (_rebuildingLayerList) return;
+            // Ctrl / Shift clicks are multi-selection, handled on MouseDown: put the list back on the primary
+            if ((ModifierKeys & (Keys.Control | Keys.Shift)) != 0) { RefreshLayerList(); return; }
+            _multi.Clear();
             CommitTransform();
             _sel = _layerList.SelectedIndex >= 0 ? DisplayToLayer(_layerList.SelectedIndex) : -1;
             SyncOptionsFromSelection();
@@ -1242,7 +1247,7 @@ namespace MicroApp
         {
             if (e.Index < 0 || DisplayToLayer(e.Index) < 0 || DisplayToLayer(e.Index) >= _layers.Count) return;
             EditorLayer layer = _layers[DisplayToLayer(e.Index)];
-            bool selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            bool selected = IsLayerSelected(layer);
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -1373,6 +1378,14 @@ namespace MicroApp
                     _layerList.Invalidate();
                     InvalidateDoc();
                 }
+                return;
+            }
+            bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control, shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
+            if (e.Button == MouseButtons.Left && (ctrl || shift))
+            {
+                CommitTransform();
+                LayerClicked(DisplayToLayer(index), ctrl, shift);
+                _dragLayerFrom = -1;
                 return;
             }
             _dragLayerFrom = index;
@@ -1615,6 +1628,7 @@ namespace MicroApp
 
         void DeleteLayer()
         {
+            if (DeleteGroup()) return;
             EditorLayer sel = SelectedLayer();
             if (sel == null) return;
             if (_xf != null && _xf.Layer == sel) CancelTransform();
@@ -1697,6 +1711,7 @@ namespace MicroApp
         /// <summary>Align the selected layer to the canvas: 0 left, 1 h-centre, 2 right, 3 top, 4 v-middle, 5 bottom.</summary>
         void AlignLayer(int how)
         {
+            if (AlignGroup(how)) return;
             EditorLayer sel = SelectedLayer();
             if (sel == null) return;
             if (sel.Locked) { Toast.Show("The layer is locked."); return; }
