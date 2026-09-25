@@ -103,6 +103,7 @@ namespace MicroApp
             image.DropDownItems.Add(Item("Auto Tone", Keys.Control | Keys.Shift | Keys.L, delegate { RunInstant("Auto Tone", (p, m) => PixelOps.AutoTone(p, m)); }));
             image.DropDownItems.Add(Item("Auto Contrast", Keys.Control | Keys.Alt | Keys.Shift | Keys.L, delegate { RunInstant("Auto Contrast", (p, m) => PixelOps.AutoContrast(p, m)); }));
             image.DropDownItems.Add(Item("Auto Color", Keys.Control | Keys.Shift | Keys.B, delegate { RunInstant("Auto Color", (p, m) => PixelOps.AutoColor(p, m)); }));
+            image.DropDownItems.Add(Item("Remove Background", Keys.Control | Keys.Alt | Keys.B, delegate { RemoveBackground(); }));
             image.DropDownItems.Add(new ToolStripSeparator());
             image.DropDownItems.Add(Item("Image Size…", Keys.Control | Keys.Alt | Keys.I, delegate { ResizeDocument(); }));
             image.DropDownItems.Add(Item("Canvas Size…", Keys.Control | Keys.Alt | Keys.C, delegate { CanvasSize(); }));
@@ -434,6 +435,7 @@ namespace MicroApp
             m.Items.Add(new ToolStripMenuItem("Deselect", null, delegate { Deselect(); }) { ShortcutKeyDisplayString = "Ctrl+D", Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Reselect", null, delegate { Reselect(); }) { ShortcutKeyDisplayString = "Shift+Ctrl+D", Enabled = _lastSelection != null });
             m.Items.Add(new ToolStripMenuItem("Select Inverse", null, delegate { SelectInverse(); }) { ShortcutKeyDisplayString = "Shift+Ctrl+I", Enabled = HasSelection });
+            m.Items.Add(new ToolStripMenuItem(HasSelection ? "Remove Background (in selection)" : "Remove Background", null, delegate { RemoveBackground(); }) { ShortcutKeyDisplayString = "Alt+Ctrl+B", Enabled = SelectedLayer() != null });
             m.Items.Add(new ToolStripMenuItem("Feather…", null, delegate { ModifySelection("Feather"); }) { ShortcutKeyDisplayString = "Shift+F6", Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Expand…", null, delegate { ModifySelection("Expand"); }) { Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Contract…", null, delegate { ModifySelection("Contract"); }) { Enabled = HasSelection });
@@ -761,6 +763,19 @@ namespace MicroApp
         }
 
         /// <summary>An adjustment with no dialog (Invert, Auto Tone, Desaturate...).</summary>
+        /// <summary>
+        /// Image &gt; Remove Background: the AI matte makes everything but the subject transparent
+        /// on the selected layer - inside the selection only when there is one.
+        /// </summary>
+        void RemoveBackground()
+        {
+            Cursor old = Cursor.Current;
+            Cursor.Current = Cursors.WaitCursor;
+            Toast.Show(HasSelection ? "Removing the background inside the selection…" : "Removing the background…");
+            try { RunInstant("Remove Background", (p, m) => BackgroundRemover.Apply(p, m)); }
+            finally { Cursor.Current = old; }
+        }
+
         void RunInstant(string name, Action<Pixels, byte[]> op, bool isFilter = false)
         {
             RasterLayer layer = AdjustTarget(name);

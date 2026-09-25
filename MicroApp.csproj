@@ -130,6 +130,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ImageEditorNewDocument.cs" />
+    <Compile Include="ImageEditorBackground.cs" />
     <Compile Include="ImageEditorLayers.cs" />
     <Compile Include="ImageEditorOps.cs" />
     <Compile Include="ImageEditorSelection.cs" />
@@ -172,6 +173,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Resources\u2netp.onnx">
+      <LogicalName>MicroApp.u2netp.onnx</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -200,6 +204,10 @@
     <!-- WinRT projections for Windows.Media.Ocr (the OCR engine built into Windows 10/11) -->
     <PackageReference Include="Microsoft.Windows.SDK.Contracts">
       <Version>10.0.19041.1</Version>
+    </PackageReference>
+    <!-- Remove Background: runs the embedded U2-Netp model offline (copies onnxruntime.dll next to the exe) -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime">
+      <Version>1.20.1</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -232,6 +232,16 @@ namespace MicroApp
                         g.DrawLine(p, 4, 6, 4, 9); g.DrawLine(p, 4, 9, 7, 9);
                         g.DrawLine(p, 14, 12, 14, 9); g.DrawLine(p, 14, 9, 11, 9);
                         break;
+                    case "removebg":   // a subject cut out of a checkerboard, with a spark for "automatic"
+                        using (var dim = new SolidBrush(Color.FromArgb(90, ink)))
+                        {
+                            g.FillRectangle(dim, 2, 9, 3, 3); g.FillRectangle(dim, 2, 15, 3, 3);
+                            g.FillRectangle(dim, 5, 12, 3, 3); g.FillRectangle(dim, 15, 12, 3, 3);
+                        }
+                        g.DrawEllipse(p, 7.5f, 4.5f, 5, 5);
+                        g.DrawArc(p, 5, 11, 10, 12, 180, 180);
+                        g.DrawLine(p, 16, 1.5f, 16, 5.5f); g.DrawLine(p, 14, 3.5f, 18, 3.5f);
+                        break;
                     case "reset":
                         g.FillRectangle(fill, 3, 3, 9, 9);
                         g.DrawRectangle(p, 8, 8, 9, 9);

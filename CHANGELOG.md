@@ -12,6 +12,9 @@
   Legal/Tabloid, Ratio 16:9/21:9/4:3/1:1…, Photo, Web, Mobile, Film & Video) and a Preset Details column
   with units (px/in/cm/mm/pt), resolution, orientation, constrain and background contents. A new document
   opens in a new tab and no longer replaces the one you were working on.
+- **Remove Background** (the new button under the tools, **Image → Remove Background**, **Alt+Ctrl+B**)
+  makes everything but the subject transparent using a small AI model (U²-Netp, via ONNX Runtime) that
+  runs offline. With a selection, only the area inside it is changed.
 - **File → Add Image** (**Shift+Ctrl+O**) adds pictures to the current document as layers, while
   **File → Open** now opens each picture in a new tab. (Add Image replaces "Place Image as Layer".)
   **File → Exit** (**Ctrl+Q**) closes the editor. **Ctrl+W** now closes the current tab.

@@ -108,7 +108,11 @@ namespace MicroApp
                 return new Rectangle(7 + col * (Slot + 4), y, Slot, Slot);
             }
 
-            int SwatchTop { get { return SlotRect(ToolGroups.Length - 1).Bottom + 18; } }
+            // Remove Background: a one-click action, not a tool - it sits under the tools, before the colours
+            Rectangle RemoveBgRect { get { Rectangle r = SlotRect(ToolGroups.Length + ToolGroups.Length % 2); r.Y += 9; return r; } }
+            bool _hoverRemoveBg;
+
+            int SwatchTop { get { return RemoveBgRect.Bottom + 18; } }
             Rectangle FgRect { get { return new Rectangle(12, SwatchTop, 30, 30); } }
             Rectangle BgRect { get { return new Rectangle(30, SwatchTop + 18, 30, 30); } }
 
@@ -145,6 +149,14 @@ namespace MicroApp
                             g.FillPolygon(b, new[] { new PointF(r.Right - 4, r.Bottom - 8), new PointF(r.Right - 4, r.Bottom - 4), new PointF(r.Right - 8, r.Bottom - 4) });
                     }
                 }
+                Rectangle rb = RemoveBgRect;
+                using (GraphicsPath rp = Theme.Round(rb, 8))
+                {
+                    if (_hoverRemoveBg)
+                        using (var b = new SolidBrush(Theme.FieldBg)) g.FillPath(b, rp);
+                    using (var pen = new Pen(Theme.Border)) g.DrawPath(pen, rp);
+                }
+                EditorIcons.DrawGlyph(g, "removebg", new Rectangle(rb.X + 6, rb.Y + 6, rb.Width - 12, rb.Height - 12), Theme.Text);
                 // the colour swatches: background behind, foreground in front
                 Rectangle bg = BgRect, fg = FgRect;
                 using (var b = new SolidBrush(_f._bg)) g.FillRectangle(b, bg);
@@ -160,7 +172,8 @@ namespace MicroApp
             {
                 base.OnMouseMove(e);
                 int s = SlotAt(e.Location);
-                if (s != _hover) { _hover = s; Invalidate(); }
+                bool overRb = RemoveBgRect.Contains(e.Location);
+                if (s != _hover || overRb != _hoverRemoveBg) { _hover = s; _hoverRemoveBg = overRb; Invalidate(); }
                 string tip = null;
                 if (s >= 0)
                 {
@@ -169,6 +182,7 @@ namespace MicroApp
                     if (!_f._groupChoice.TryGetValue(group[0], out shown)) shown = group[0];
                     tip = ToolName(shown) + "  (" + ToolKey(shown) + ")" + (group.Length > 1 ? "  ·  right-click for more" : "");
                 }
+                else if (overRb) tip = "Remove Background (Alt+Ctrl+B) - makes everything but the subject transparent; with a selection, only inside it";
                 else if (FgRect.Contains(e.Location)) tip = "Foreground colour (click to change)";
                 else if (BgRect.Contains(e.Location)) tip = "Background colour (click to change)";
                 else if (new Rectangle(8, BgRect.Bottom - 12, 14, 14).Contains(e.Location)) tip = "Default colours (D)";
@@ -180,12 +194,14 @@ namespace MicroApp
             {
                 base.OnMouseLeave(e);
                 _hover = -1;
+                _hoverRemoveBg = false;
                 Invalidate();
             }
 
             protected override void OnMouseDown(MouseEventArgs e)
             {
                 base.OnMouseDown(e);
+                if (e.Button == MouseButtons.Left && RemoveBgRect.Contains(e.Location)) { _f.RemoveBackground(); return; }
                 int s = SlotAt(e.Location);
                 if (s >= 0)
                 {

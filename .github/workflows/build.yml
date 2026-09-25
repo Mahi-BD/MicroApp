@@ -32,6 +32,17 @@ jobs:
     - name: Build Release
       run: msbuild MicroApp.csproj /p:Configuration=Release /p:SkipCodeSigning=true
 
+    # onnxruntime.dll (Remove Background) links the VC++ 2015-2022 runtime; ship it app-local
+    # so the feature works on PCs without the redistributable installed
+    - name: Bundle the VC++ runtime
+      shell: pwsh
+      run: |
+        foreach ($c in 'Debug', 'Release') {
+          foreach ($f in 'msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+            Copy-Item "$env:WINDIR\System32\$f" "bin\$c\" -Force
+          }
+        }
+
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v4
       with:
