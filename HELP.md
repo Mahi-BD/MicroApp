@@ -220,15 +220,22 @@ megabytes rather than the hundreds a GIF would — and it can include **sound**.
 2. Pick the region (same crosshair, same locks — video has its own lock settings). Adjust the frame
    the same way as a screen capture — move it, resize it from the handles — and press **Enter** or
    the tick to start.
-3. Recording starts, with a red **REC** badge outside the recorded area. The badge has a
-   **pause/resume** button — paused stretches are left out of the file entirely — and a **save**
-   button that stops the recording and keeps the MP4.
+3. Recording starts, with a red **REC** badge outside the recorded area. The badge has, left to right:
+   - **Follow the pointer** (the target): the recorded area glides after the mouse, smoothly and within
+     the screens, so a small video can follow what you are doing on a big screen. Click again and it glides back.
+   - **Zoom − / +** (or scroll the mouse wheel over the badge; click the percentage for 100 %): from 50 %
+     to 400 %. The video keeps its size - zooming in records a smaller area enlarged, zooming out a
+     bigger area reduced. Together with Follow this gives a close-up that tracks the pointer.
+   - **Microphone** (when your voice is being recorded): mute and unmute it live.
+   - **Pause/resume** — paused stretches are left out of the file entirely — and **save**, which stops
+     the recording and keeps the MP4.
 4. Recording has **no time limit**: it runs until you save it, press **Esc**, or press the hot
    key again.
 
 **Recording** (Video Setting) — frame rate 1–30 fps (20 by default), a **quality** choice (*Small file* / *Balanced* / *Sharp*) that trades file size
 against picture crispness, and a **sound** source: *No sound*, *System sound* (whatever the machine
-is playing) or *Microphone*.
+is playing), *Microphone*, or *System sound + microphone* (both mixed into one track - your voice over
+whatever is playing).
 
 Encoding uses the H.264 and AAC encoders built into Windows — nothing extra is installed, and the
 video streams to disk while it records. If no audio device is available the recording is silently
@@ -237,9 +244,9 @@ made without a sound track. On Windows *N* editions the Media Feature Pack must 
 **After recording** — the MP4 is always written (to `Videos\MicroApp` unless you pick another
 folder); you can additionally have the path copied or the file opened in your default player.
 
-While recording, a thin **red frame** marks the recorded region (grey while paused). It sits just
-outside the recording and is click-through, so it never appears in the video and never gets in
-the way.
+While recording, a thin **red frame** marks the recorded area (grey while paused) and moves with it
+when following or zooming. It is click-through, and both the frame and the badge are hidden from
+screen capture (Windows 10 2004 or later), so neither appears in the video.
 
 ---
 

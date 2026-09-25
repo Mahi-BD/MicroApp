@@ -234,6 +234,7 @@ namespace MicroApp
         VideoRecorder _videoRecorder;
         VideoRecordingIndicator _videoIndicator;
         RecordingRegionFrame _videoFrame;
+        System.Windows.Forms.Timer _videoFrameTimer;   // keeps the frame on the captured patch
         IKeyboardMouseEvents _videoHook;
 
         // notes: every hot key press opens a fresh little notepad, saved as you type
@@ -1356,7 +1357,10 @@ namespace MicroApp
                 return;
             }
 
-            _videoIndicator = new VideoRecordingIndicator(region);
+            _videoIndicator = new VideoRecordingIndicator(region, _videoRecorder.HasMicrophone);
+            _videoIndicator.FollowToggled += (s, on) => { var r = _videoRecorder; if (r != null) r.Follow = on; };
+            _videoIndicator.ZoomChanged += (s, zoom) => { var r = _videoRecorder; if (r != null) r.ZoomPercent = zoom; };
+            _videoIndicator.MicMuteToggled += (s, muted) => { var r = _videoRecorder; if (r != null) r.MicrophoneMuted = muted; };
             _videoIndicator.PauseToggled += (s, paused) =>
             {
                 var recorder = _videoRecorder;
@@ -1370,6 +1374,14 @@ namespace MicroApp
             // the region stays marked until the video is saved
             _videoFrame = new RecordingRegionFrame(region);
             _videoFrame.Show();
+            // the frame follows the captured patch when the camera follows the pointer or zooms
+            _videoFrameTimer = new System.Windows.Forms.Timer { Interval = 33 };
+            _videoFrameTimer.Tick += delegate
+            {
+                var r = _videoRecorder;
+                if (r != null && _videoFrame != null && !_videoFrame.IsDisposed) _videoFrame.MarkCaptured(r.CurrentSource);
+            };
+            _videoFrameTimer.Start();
 
             // Esc anywhere stops the recording
             _videoHook = Hook.GlobalEvents();
@@ -1381,6 +1393,8 @@ namespace MicroApp
             _videoRecorder.Start();
             string note = $"Recording {region.Width & ~1} x {region.Height & ~1} at {fps} fps. Save on the badge or Esc to stop.";
             if (_videoRecorder.AudioMissing) note += "\r\nNo audio device found: recording without sound.";
+            else if (_videoRecorder.MicMissing) note += "\r\nNo microphone found: recording without your voice.";
+            note += "\r\nThe badge can follow the pointer and zoom while recording.";
             Toast.Show(note);
         }
 
@@ -1406,6 +1420,12 @@ namespace MicroApp
                 _videoIndicator.Close();
                 _videoIndicator.Dispose();
                 _videoIndicator = null;
+            }
+            if (_videoFrameTimer != null)
+            {
+                _videoFrameTimer.Stop();
+                _videoFrameTimer.Dispose();
+                _videoFrameTimer = null;
             }
             if (_videoFrame != null)
             {

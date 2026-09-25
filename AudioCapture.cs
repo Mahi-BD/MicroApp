@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -13,7 +14,18 @@ namespace MicroApp
     /// capture thread. No audio device is not an error: TryCreate returns null and the
     /// recording simply has no sound track.
     /// </summary>
-    public class AudioCapture : IDisposable
+    /// <summary>A source of 16-bit PCM for the video recorder: one device, or the mix of two.</summary>
+    public interface IAudioSource : IDisposable
+    {
+        int SampleRate { get; }
+        int Channels { get; }
+        /// <summary>Muted: the source keeps its clock but delivers silence.</summary>
+        bool Muted { get; set; }
+        void Start(Action<byte[], int> onPcm16);
+        void Stop();
+    }
+
+    public class AudioCapture : IAudioSource
     {
         private readonly Wasapi.IAudioClient _client;
         private readonly Wasapi.IAudioCaptureClient _capture;
@@ -37,11 +49,16 @@ namespace MicroApp
         /// <summary>Channels handed to the callback: 1 or 2.</summary>
         public int Channels { get; private set; }
 
-        public static AudioCapture TryCreate(bool loopback)
+        /// <summary>Muted: the device keeps running (and the clock with it) but hands over silence.</summary>
+        public bool Muted { get; set; }
+
+        /// <param name="rate">0: the device's own rate when it is 44.1/48 kHz; otherwise resample to this.</param>
+        /// <param name="stereo">Always hand over two channels (a mono microphone is copied to both).</param>
+        public static AudioCapture TryCreate(bool loopback, int rate = 0, bool stereo = false)
         {
             try
             {
-                return new AudioCapture(loopback);
+                return new AudioCapture(loopback, rate, stereo);
             }
             catch (Exception)
             {
@@ -49,7 +66,7 @@ namespace MicroApp
             }
         }
 
-        private AudioCapture(bool loopback)
+        private AudioCapture(bool loopback, int rate, bool stereo)
         {
             var enumerator = (Wasapi.IMMDeviceEnumerator)new Wasapi.MMDeviceEnumeratorComObject();
             try
@@ -110,9 +127,17 @@ namespace MicroApp
                 Mf.Release(enumerator);
             }
 
-            Channels = Math.Min(2, _deviceChannels);
-            _resample = _deviceRate != 44100 && _deviceRate != 48000;
-            SampleRate = _resample ? 48000 : _deviceRate;
+            Channels = stereo ? 2 : Math.Min(2, _deviceChannels);
+            if (rate > 0)
+            {
+                SampleRate = rate;
+                _resample = _deviceRate != rate;
+            }
+            else
+            {
+                _resample = _deviceRate != 44100 && _deviceRate != 48000;
+                SampleRate = _resample ? 48000 : _deviceRate;
+            }
         }
 
         public void Start(Action<byte[], int> onPcm16)
@@ -170,7 +195,7 @@ namespace MicroApp
             if (frames <= 0) return;
 
             var pcm = new short[frames * Channels];
-            if (!silent)
+            if (!silent && !Muted)
             {
                 if (_deviceFloat)
                 {
@@ -180,7 +205,7 @@ namespace MicroApp
                     {
                         for (int c = 0; c < Channels; c++)
                         {
-                            float v = raw[f * _deviceChannels + c];
+                            float v = raw[f * _deviceChannels + Math.Min(c, _deviceChannels - 1)];
                             if (v > 1f) v = 1f;
                             else if (v < -1f) v = -1f;
                             pcm[f * Channels + c] = (short)(v * 32767f);
@@ -195,7 +220,7 @@ namespace MicroApp
                     {
                         for (int c = 0; c < Channels; c++)
                         {
-                            pcm[f * Channels + c] = raw[f * _deviceChannels + c];
+                            pcm[f * Channels + c] = raw[f * _deviceChannels + Math.Min(c, _deviceChannels - 1)];
                         }
                     }
                 }
@@ -207,7 +232,7 @@ namespace MicroApp
                     {
                         for (int c = 0; c < Channels; c++)
                         {
-                            pcm[f * Channels + c] = (short)(raw[f * _deviceChannels + c] >> 16);
+                            pcm[f * Channels + c] = (short)(raw[f * _deviceChannels + Math.Min(c, _deviceChannels - 1)] >> 16);
                         }
                     }
                 }
@@ -268,6 +293,120 @@ namespace MicroApp
             Stop();
             Mf.Release(_capture);
             Mf.Release(_client);
+        }
+    }
+
+    /// <summary>
+    /// System sound and the microphone in one track: both devices run at 48 kHz stereo, and
+    /// a mixer thread adds them every 20 ms. The microphone never stops delivering, so it
+    /// sets the pace; the loopback tap goes quiet while nothing plays, and whatever it has
+    /// is mixed in on top (silence otherwise). If the microphone stops delivering, the
+    /// system sound carries on alone. Muted silences the microphone only.
+    /// </summary>
+    public class AudioMixer : IAudioSource
+    {
+        const int Rate = 48000;
+        readonly AudioCapture _system, _mic;
+        readonly List<short> _sysBuf = new List<short>(), _micBuf = new List<short>();
+        readonly object _lock = new object();
+        Thread _thread;
+        volatile bool _stop;
+        Action<byte[], int> _onPcm;
+        long _micLastTicks;
+
+        public int SampleRate { get { return Rate; } }
+        public int Channels { get { return 2; } }
+        public bool Muted { get { return _mic.Muted; } set { _mic.Muted = value; } }
+
+        AudioMixer(AudioCapture system, AudioCapture mic)
+        {
+            _system = system;
+            _mic = mic;
+        }
+
+        /// <summary>
+        /// Both devices mixed; when only one of them is available, that one alone (at the same
+        /// 48 kHz stereo), with <paramref name="micMissing"/> / <paramref name="systemMissing"/> saying which.
+        /// </summary>
+        public static IAudioSource TryCreate(out bool micMissing, out bool systemMissing)
+        {
+            AudioCapture system = AudioCapture.TryCreate(true, Rate, true);
+            AudioCapture mic = AudioCapture.TryCreate(false, Rate, true);
+            micMissing = mic == null;
+            systemMissing = system == null;
+            if (system != null && mic != null) return new AudioMixer(system, mic);
+            return (IAudioSource)mic ?? system;
+        }
+
+        public void Start(Action<byte[], int> onPcm16)
+        {
+            _onPcm = onPcm16;
+            _micLastTicks = DateTime.UtcNow.Ticks;
+            _system.Start((b, n) => Append(_sysBuf, b, n));
+            _mic.Start((b, n) => { Append(_micBuf, b, n); _micLastTicks = DateTime.UtcNow.Ticks; });
+            _thread = new Thread(Loop) { IsBackground = true, Name = "MicroApp audio mixer" };
+            _thread.Start();
+        }
+
+        void Append(List<short> buf, byte[] bytes, int count)
+        {
+            var samples = new short[count / 2];
+            Buffer.BlockCopy(bytes, 0, samples, 0, samples.Length * 2);
+            lock (_lock) buf.AddRange(samples);
+        }
+
+        void Loop()
+        {
+            while (!_stop)
+            {
+                Thread.Sleep(20);
+                short[] mixed = null;
+                lock (_lock)
+                {
+                    bool micAlive = (DateTime.UtcNow.Ticks - _micLastTicks) < TimeSpan.TicksPerMillisecond * 500;
+                    int n = micAlive ? _micBuf.Count : _sysBuf.Count;   // samples (both are stereo)
+                    n -= n % 2;
+                    if (n > 0)
+                    {
+                        mixed = new short[n];
+                        int fromMic = Math.Min(n, _micBuf.Count), fromSys = Math.Min(n, _sysBuf.Count);
+                        for (int i = 0; i < fromMic; i++) mixed[i] = _micBuf[i];
+                        for (int i = 0; i < fromSys; i++)
+                        {
+                            int v = mixed[i] + _sysBuf[i];
+                            mixed[i] = (short)(v > short.MaxValue ? short.MaxValue : v < short.MinValue ? short.MinValue : v);
+                        }
+                        _micBuf.RemoveRange(0, fromMic);
+                        _sysBuf.RemoveRange(0, fromSys);
+                    }
+                    // the two devices' clocks drift apart slowly; never let system sound lag more than 0.5 s
+                    int maxBacklog = Rate;   // 0.5 s of stereo samples
+                    if (_sysBuf.Count > maxBacklog) _sysBuf.RemoveRange(0, _sysBuf.Count - maxBacklog);
+                    if (_micBuf.Count > maxBacklog * 2) _micBuf.RemoveRange(0, _micBuf.Count - maxBacklog * 2);
+                }
+                if (mixed != null)
+                {
+                    var bytes = new byte[mixed.Length * 2];
+                    Buffer.BlockCopy(mixed, 0, bytes, 0, bytes.Length);
+                    var handler = _onPcm;
+                    if (handler != null) handler(bytes, bytes.Length);
+                }
+            }
+        }
+
+        public void Stop()
+        {
+            _mic.Stop();
+            _system.Stop();
+            _stop = true;
+            if (_thread != null) _thread.Join(1000);
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            _mic.Dispose();
+            _system.Dispose();
         }
     }
 

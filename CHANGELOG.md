@@ -2,6 +2,17 @@
 
 ## 5.3.0 — 2026-09-25
 
+### Added
+
+- **Record Video: follow the pointer and zoom, live.** The recording badge has a **follow** button
+  (the recorded area glides after the mouse, eased and kept on the screens) and **zoom − / +** from
+  50 % to 400 % (also the mouse wheel over the badge). The video keeps its size. The red frame moves
+  with the recorded area, and the badge and frame are hidden from capture so they never appear in
+  the video.
+- **Record Video: your voice and the system sound together.** A new sound source, *System sound +
+  microphone*, mixes both into one track, and a **mute** button on the badge silences the microphone
+  live.
+
 ### Changed
 
 - **Remove Background is much smarter.** It now uses **IS-Net** (the DIS general-use model), which

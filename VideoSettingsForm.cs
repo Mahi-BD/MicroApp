@@ -18,7 +18,8 @@ namespace MicroApp
     {
         None = 0,
         System = 1,
-        Microphone = 2
+        Microphone = 2,
+        SystemAndMicrophone = 3
     }
 
     /// <summary>Trades file size against picture quality; drives the H.264 bitrate.</summary>
@@ -79,7 +80,8 @@ namespace MicroApp
             soundBox.Items.Add("No sound");
             soundBox.Items.Add("System sound");
             soundBox.Items.Add("Microphone");
-            soundBox.SelectedIndex = Math.Max(0, Math.Min(2, Properties.Settings.Default.VideoAudioSource));
+            soundBox.Items.Add("System sound + microphone");
+            soundBox.SelectedIndex = Math.Max(0, Math.Min(3, Properties.Settings.Default.VideoAudioSource));
 
             foreach (var preset in RatioPresets)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
@@ -17,7 +18,16 @@ namespace MicroApp
         private readonly Rectangle _region;
         private readonly int _fps;
         private readonly int _maxSeconds;
-        private readonly AudioCapture _audio;
+        private readonly IAudioSource _audio;
+
+        // live camera: follow the pointer and zoom, changed from the badge while recording.
+        // The video keeps the region's size; what changes is the patch of screen scaled into it.
+        private volatile bool _follow;
+        private volatile int _zoomPercent = 100;
+        private PointF _cam;                     // the centre of the captured patch, eased towards its target
+        private Rectangle _source;               // the patch captured for the latest frame
+        private readonly object _sourceLock = new object();
+        private Bitmap _grab;                    // the patch at screen size, before scaling
         private readonly ConcurrentQueue<byte[]> _audioQueue = new ConcurrentQueue<byte[]>();
         private readonly int _audioBlockAlign;
         private readonly string _path;
@@ -43,6 +53,29 @@ namespace MicroApp
         public bool Running { get { return _thread != null && _thread.IsAlive; } }
         /// <summary>True when sound was asked for but no capture device was available.</summary>
         public bool AudioMissing { get; private set; }
+        /// <summary>The microphone was asked for (alone or mixed) but none is available.</summary>
+        public bool MicMissing { get; private set; }
+        /// <summary>A microphone is being recorded, so the badge offers its mute button.</summary>
+        public bool HasMicrophone { get; private set; }
+
+        /// <summary>The captured patch follows the mouse pointer (eased), clamped to the screens.</summary>
+        public bool Follow { get { return _follow; } set { _follow = value; } }
+
+        /// <summary>100 = the region at 1:1; 200 = half the width and height, enlarged; 50 = twice as much, reduced.</summary>
+        public int ZoomPercent
+        {
+            get { return _zoomPercent; }
+            set { _zoomPercent = Math.Max(25, Math.Min(800, value)); }
+        }
+
+        /// <summary>The patch of screen the latest frame came from - the red frame follows it.</summary>
+        public Rectangle CurrentSource { get { lock (_sourceLock) return _source; } }
+
+        public bool MicrophoneMuted
+        {
+            get { return _audio != null && HasMicrophone && _audio.Muted; }
+            set { if (_audio != null && HasMicrophone) _audio.Muted = value; }
+        }
         /// <summary>Set when the encoder failed mid-recording or the file could not be finalised.</summary>
         public string Error { get; private set; }
 
@@ -55,11 +88,23 @@ namespace MicroApp
             _fps = Math.Max(1, Math.Min(30, fps));
             _maxSeconds = maxSeconds <= 0 ? 0 : Math.Max(1, Math.Min(3600, maxSeconds));
 
-            if (audioSource != VideoAudioSource.None)
+            if (audioSource == VideoAudioSource.SystemAndMicrophone)
+            {
+                bool micMissing, systemMissing;
+                _audio = AudioMixer.TryCreate(out micMissing, out systemMissing);
+                AudioMissing = _audio == null;
+                MicMissing = micMissing;
+                HasMicrophone = !micMissing;
+            }
+            else if (audioSource != VideoAudioSource.None)
             {
                 _audio = AudioCapture.TryCreate(audioSource == VideoAudioSource.System);
                 AudioMissing = _audio == null;
+                MicMissing = audioSource == VideoAudioSource.Microphone && _audio == null;
+                HasMicrophone = audioSource == VideoAudioSource.Microphone && _audio != null;
             }
+            _cam = new PointF(_region.X + _region.Width / 2f, _region.Y + _region.Height / 2f);
+            _source = _region;
 
             // aim for "screen content" rates: quality picks the bits per pixel per frame
             double bitsPerPixel = quality == VideoQuality.Small ? 0.045
@@ -163,8 +208,26 @@ namespace MicroApp
 
                     try
                     {
-                        g.CopyFromScreen(_region.Location, Point.Empty, _region.Size, CopyPixelOperation.SourceCopy);
-                        DrawCursor(g);
+                        Rectangle src = NextSource();
+                        if (src.Size == _region.Size)
+                        {
+                            g.CopyFromScreen(src.Location, Point.Empty, src.Size, CopyPixelOperation.SourceCopy);
+                        }
+                        else
+                        {
+                            // zoomed: grab the patch at screen size, then scale it into the frame
+                            if (_grab == null || _grab.Size != src.Size)
+                            {
+                                if (_grab != null) _grab.Dispose();
+                                _grab = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+                            }
+                            using (var gg = Graphics.FromImage(_grab))
+                                gg.CopyFromScreen(src.Location, Point.Empty, src.Size, CopyPixelOperation.SourceCopy);
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+                            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                            g.DrawImage(_grab, new Rectangle(0, 0, _region.Width, _region.Height));
+                        }
+                        DrawCursor(g, src);
 
                         // timestamps follow the wall clock minus paused time, not the frame
                         // index: when a grab runs late the video stays in step with the sound
@@ -263,16 +326,62 @@ namespace MicroApp
             return _audioSamples * 10_000_000L / _audio.SampleRate;
         }
 
-        /// <summary>The screen copy leaves the pointer out; draw it back in.</summary>
-        private void DrawCursor(Graphics g)
+        /// <summary>
+        /// The patch of screen for the next frame: the region's size divided by the zoom,
+        /// centred on the pointer while following (eased, so the picture glides instead of
+        /// jittering) or on the region's centre otherwise, and kept on the screens.
+        /// </summary>
+        private Rectangle NextSource()
+        {
+            float zoom = _zoomPercent / 100f;
+            bool follow = _follow;
+            Rectangle screens = SystemInformation.VirtualScreen;
+            if (!follow && _zoomPercent == 100)
+            {
+                // the plain case stays exactly the region, pixel for pixel
+                var centre = new PointF(_region.X + _region.Width / 2f, _region.Y + _region.Height / 2f);
+                if (Math.Abs(_cam.X - centre.X) < 1 && Math.Abs(_cam.Y - centre.Y) < 1)
+                {
+                    _cam = centre;
+                    lock (_sourceLock) _source = _region;
+                    return _region;
+                }
+            }
+
+            double w = _region.Width / zoom, h = _region.Height / zoom;
+            double fit = Math.Min(1.0, Math.Min(screens.Width / w, screens.Height / h));   // never more than the screens hold
+            int sw = Math.Max(16, (int)Math.Round(w * fit)) & ~1;
+            int sh = Math.Max(16, (int)Math.Round(h * fit)) & ~1;
+
+            PointF target;
+            if (follow)
+            {
+                Point p = Cursor.Position;
+                target = new PointF(p.X, p.Y);
+            }
+            else target = new PointF(_region.X + _region.Width / 2f, _region.Y + _region.Height / 2f);
+            // ease a quarter of the way per frame: smooth at any frame rate that matters here
+            _cam = new PointF(_cam.X + (target.X - _cam.X) * 0.25f, _cam.Y + (target.Y - _cam.Y) * 0.25f);
+
+            int x = (int)Math.Round(_cam.X - sw / 2f), y = (int)Math.Round(_cam.Y - sh / 2f);
+            x = Math.Max(screens.Left, Math.Min(screens.Right - sw, x));
+            y = Math.Max(screens.Top, Math.Min(screens.Bottom - sh, y));
+            var src = new Rectangle(x, y, sw, sh);
+            lock (_sourceLock) _source = src;
+            return src;
+        }
+
+        /// <summary>The screen copy leaves the pointer out; draw it back in, scaled like the picture.</summary>
+        private void DrawCursor(Graphics g, Rectangle src)
         {
             try
             {
                 var pos = Cursor.Position;
-                if (!_region.Contains(pos)) return;
+                if (!src.Contains(pos)) return;
+                float sx = (float)_region.Width / src.Width, sy = (float)_region.Height / src.Height;
                 var cursor = Cursors.Default;
-                cursor.Draw(g, new Rectangle(pos.X - _region.X, pos.Y - _region.Y,
-                                             cursor.Size.Width, cursor.Size.Height));
+                cursor.Draw(g, new Rectangle((int)((pos.X - src.X) * sx), (int)((pos.Y - src.Y) * sy),
+                                             (int)(cursor.Size.Width * sx), (int)(cursor.Size.Height * sy)));
             }
             catch (Exception)
             {
@@ -286,29 +395,40 @@ namespace MicroApp
             _go.Set();
             if (_thread != null && _thread.IsAlive) _thread.Join(6000);
             if (_audio != null) _audio.Dispose();
+            if (_grab != null) { _grab.Dispose(); _grab = null; }
         }
     }
 
     /// <summary>
-    /// The badge shown while a video records. Like the GIF one it sits outside the
-    /// recorded region and never takes focus, but a video has no time limit, so it
-    /// carries its own controls: a pause/resume button and a save button.
+    /// The badge shown while a video records. Like the GIF one it never takes focus, and
+    /// it is left out of screen captures, so it never appears in the video even when the
+    /// camera passes over it. A video has no time limit, so it carries its own controls:
+    /// follow the pointer, zoom out / in (or the mouse wheel over the badge; click the
+    /// percentage for 100 %), mute the microphone, pause/resume and save.
     /// </summary>
     public class VideoRecordingIndicator : Form
     {
+        static readonly int[] ZoomSteps = { 50, 75, 100, 125, 150, 200, 250, 300, 400 };
+        enum Btn { None, Follow, ZoomOut, ZoomValue, ZoomIn, Mic, Pause, Save }
+
         private readonly System.Windows.Forms.Timer _tick;
         private readonly System.Diagnostics.Stopwatch _elapsed = System.Diagnostics.Stopwatch.StartNew();
-        private bool _paused;
-        private Rectangle _pauseRect;
-        private Rectangle _saveRect;
-        private int _hover;   // 0 none, 1 pause, 2 save
+        private readonly Dictionary<Btn, Rectangle> _buttons = new Dictionary<Btn, Rectangle>();
+        private readonly ToolTip _tip = new ToolTip();
+        private readonly bool _hasMic;
+        private bool _paused, _follow, _micMuted;
+        private int _zoom = 100;
+        private Btn _hover;
 
         /// <summary>Raised with the new paused state after the pause button toggles it.</summary>
         public event EventHandler<bool> PauseToggled;
         /// <summary>The save button: stop recording and keep the file.</summary>
         public event EventHandler SaveRequested;
+        public event EventHandler<bool> FollowToggled;
+        public event EventHandler<int> ZoomChanged;
+        public event EventHandler<bool> MicMuteToggled;
 
-        public VideoRecordingIndicator(Rectangle region)
+        public VideoRecordingIndicator(Rectangle region, bool hasMic)
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.UserPaint, true);
@@ -316,9 +436,18 @@ namespace MicroApp
             ShowInTaskbar = false;
             TopMost = true;
             StartPosition = FormStartPosition.Manual;
-            Size = new Size(238, 38);
-            _pauseRect = new Rectangle(Width - 84, 5, 36, 28);
-            _saveRect = new Rectangle(Width - 44, 5, 36, 28);
+            _hasMic = hasMic;
+
+            // left to right after the REC read-out: follow | - 100% + | mic | pause save
+            int x = 116;
+            _buttons[Btn.Follow] = new Rectangle(x, 5, 32, 28); x += 40;
+            _buttons[Btn.ZoomOut] = new Rectangle(x, 5, 26, 28); x += 28;
+            _buttons[Btn.ZoomValue] = new Rectangle(x, 5, 46, 28); x += 48;
+            _buttons[Btn.ZoomIn] = new Rectangle(x, 5, 26, 28); x += 34;
+            if (hasMic) { _buttons[Btn.Mic] = new Rectangle(x, 5, 32, 28); x += 40; }
+            _buttons[Btn.Pause] = new Rectangle(x, 5, 36, 28); x += 40;
+            _buttons[Btn.Save] = new Rectangle(x, 5, 36, 28); x += 44;
+            Size = new Size(x, 38);
             Location = PlaceOutside(region, Size);
 
             _tick = new System.Windows.Forms.Timer { Interval = 200 };
@@ -327,33 +456,91 @@ namespace MicroApp
 
             MouseMove += (s, e) =>
             {
-                int hover = _pauseRect.Contains(e.Location) ? 1 : _saveRect.Contains(e.Location) ? 2 : 0;
-                if (hover != _hover) { _hover = hover; Invalidate(); }
-                Cursor = hover != 0 ? Cursors.Hand : Cursors.Default;
-            };
-            MouseUp += (s, e) =>
-            {
-                if (_pauseRect.Contains(e.Location))
+                Btn hover = HitButton(e.Location);
+                if (hover != _hover)
                 {
+                    _hover = hover;
+                    Invalidate();
+                    _tip.SetToolTip(this, TipFor(hover));
+                }
+                Cursor = hover != Btn.None ? Cursors.Hand : Cursors.Default;
+            };
+            MouseLeave += (s, e) => { _hover = Btn.None; Invalidate(); };
+            MouseUp += (s, e) => OnButton(HitButton(e.Location));
+            MouseWheel += (s, e) => StepZoom(e.Delta > 0 ? 1 : -1);
+        }
+
+        Btn HitButton(Point p)
+        {
+            foreach (var kv in _buttons) if (kv.Value.Contains(p)) return kv.Key;
+            return Btn.None;
+        }
+
+        string TipFor(Btn b)
+        {
+            switch (b)
+            {
+                case Btn.Follow: return _follow ? "Following the pointer - click to stop" : "Follow the mouse pointer";
+                case Btn.ZoomOut: return "Zoom out (or scroll the wheel over this badge)";
+                case Btn.ZoomIn: return "Zoom in (or scroll the wheel over this badge)";
+                case Btn.ZoomValue: return "Back to 100 %";
+                case Btn.Mic: return _micMuted ? "Microphone muted - click to unmute" : "Mute the microphone";
+                case Btn.Pause: return _paused ? "Resume" : "Pause";
+                case Btn.Save: return "Stop and save";
+            }
+            return "";
+        }
+
+        void OnButton(Btn b)
+        {
+            switch (b)
+            {
+                case Btn.Pause:
                     _paused = !_paused;
                     if (_paused) _elapsed.Stop(); else _elapsed.Start();
-                    Invalidate();
-                    var handler = PauseToggled;
-                    if (handler != null) handler(this, _paused);
-                }
-                else if (_saveRect.Contains(e.Location))
-                {
+                    Raise(PauseToggled, _paused);
+                    break;
+                case Btn.Save:
                     var handler = SaveRequested;
                     if (handler != null) handler(this, EventArgs.Empty);
-                }
-            };
+                    return;
+                case Btn.Follow:
+                    _follow = !_follow;
+                    Raise(FollowToggled, _follow);
+                    break;
+                case Btn.ZoomOut: StepZoom(-1); return;
+                case Btn.ZoomIn: StepZoom(1); return;
+                case Btn.ZoomValue:
+                    if (_zoom != 100) { _zoom = 100; Raise(ZoomChanged, _zoom); }
+                    break;
+                case Btn.Mic:
+                    _micMuted = !_micMuted;
+                    Raise(MicMuteToggled, _micMuted);
+                    break;
+                default: return;
+            }
+            _tip.SetToolTip(this, TipFor(b));
+            Invalidate();
         }
+
+        void StepZoom(int dir)
+        {
+            int i = Array.IndexOf(ZoomSteps, _zoom);
+            if (i < 0) i = Array.IndexOf(ZoomSteps, 100);
+            int next = ZoomSteps[Math.Max(0, Math.Min(ZoomSteps.Length - 1, i + dir))];
+            if (next == _zoom) return;
+            _zoom = next;
+            Raise(ZoomChanged, _zoom);
+            Invalidate();
+        }
+
+        void Raise<T>(EventHandler<T> h, T value) { if (h != null) h(this, value); }
 
         /// <summary>Prefer just above the region, then below, then its top-left corner.</summary>
         private static Point PlaceOutside(Rectangle region, Size size)
         {
             var screen = Screen.FromRectangle(region).WorkingArea;
-            int x = Math.Min(region.Left, screen.Right - size.Width);
+            int x = Math.Max(screen.Left, Math.Min(region.Left, screen.Right - size.Width));
             if (region.Top - size.Height - 8 >= screen.Top) return new Point(x, region.Top - size.Height - 8);
             if (region.Bottom + 8 + size.Height <= screen.Bottom) return new Point(x, region.Bottom + 8);
             return new Point(x + 12, region.Top + 12);
@@ -371,6 +558,12 @@ namespace MicroApp
                 p.ExStyle |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
                 return p;
             }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            CaptureExclusion.Apply(Handle);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -392,55 +585,83 @@ namespace MicroApp
             }
 
             var t = _elapsed.Elapsed;
-            string text = (_paused ? "PAUSED  " : "REC  ") +
+            string text = (_paused ? "PAUSED " : "REC ") +
                           (t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}"
                                              : $"{t.Minutes}:{t.Seconds:00}");
-            TextRenderer.DrawText(g, text, Theme.Strong, new Rectangle(30, 0, _pauseRect.Left - 32, Height),
+            TextRenderer.DrawText(g, text, Theme.Strong, new Rectangle(28, 0, _buttons[Btn.Follow].Left - 30, Height),
                                   Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
 
-            DrawButton(g, _pauseRect, _hover == 1);
-            DrawButton(g, _saveRect, _hover == 2);
-
-            // pause: two bars while recording, a play triangle while paused
-            int cx = _pauseRect.X + _pauseRect.Width / 2, cy = _pauseRect.Y + _pauseRect.Height / 2;
-            if (_paused)
+            Color accent = Color.FromArgb(99, 102, 241);
+            foreach (var kv in _buttons)
             {
-                using (var brush = new SolidBrush(Color.White))
-                {
-                    g.FillPolygon(brush, new[]
-                    {
-                        new Point(cx - 4, cy - 6), new Point(cx - 4, cy + 6), new Point(cx + 6, cy)
-                    });
-                }
+                bool on = (kv.Key == Btn.Follow && _follow) || (kv.Key == Btn.Mic && _micMuted);
+                if (kv.Key == Btn.ZoomValue && _zoom == 100 && _hover != Btn.ZoomValue) continue;   // just the number
+                DrawButton(g, kv.Value, _hover == kv.Key, on ? (kv.Key == Btn.Mic ? Color.FromArgb(200, 70, 70) : accent) : Color.Empty);
             }
-            else
+
+            using (var pen = new Pen(Color.White, 1.6f) { StartCap = System.Drawing.Drawing2D.LineCap.Round, EndCap = System.Drawing.Drawing2D.LineCap.Round })
+            using (var brush = new SolidBrush(Color.White))
             {
-                using (var brush = new SolidBrush(Color.White))
+                // follow: a target with the pointer at its centre
+                Rectangle f = _buttons[Btn.Follow];
+                int fx = f.X + f.Width / 2, fy = f.Y + f.Height / 2;
+                g.DrawEllipse(pen, fx - 8, fy - 8, 16, 16);
+                g.DrawLine(pen, fx, fy - 11, fx, fy - 6); g.DrawLine(pen, fx, fy + 6, fx, fy + 11);
+                g.DrawLine(pen, fx - 11, fy, fx - 6, fy); g.DrawLine(pen, fx + 6, fy, fx + 11, fy);
+                g.FillEllipse(brush, fx - 2, fy - 2, 4, 4);
+
+                // zoom - and +
+                Rectangle zo = _buttons[Btn.ZoomOut], zi = _buttons[Btn.ZoomIn];
+                int zy = zo.Y + zo.Height / 2;
+                g.DrawLine(pen, zo.X + 8, zy, zo.Right - 8, zy);
+                g.DrawLine(pen, zi.X + 8, zy, zi.Right - 8, zy);
+                g.DrawLine(pen, zi.X + zi.Width / 2, zy - 5, zi.X + zi.Width / 2, zy + 5);
+                TextRenderer.DrawText(g, _zoom + "%", Theme.Base, _buttons[Btn.ZoomValue],
+                    _zoom == 100 ? Color.FromArgb(200, 200, 208) : Color.White,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+
+                // microphone, struck through while muted
+                if (_hasMic)
+                {
+                    Rectangle m = _buttons[Btn.Mic];
+                    int mx = m.X + m.Width / 2, my = m.Y + m.Height / 2;
+                    using (var cap = Theme.Round(new Rectangle(mx - 4, my - 9, 8, 12), 4)) g.DrawPath(pen, cap);
+                    g.DrawArc(pen, mx - 7, my - 5, 14, 11, 0, 180);
+                    g.DrawLine(pen, mx, my + 6, mx, my + 9);
+                    if (_micMuted) g.DrawLine(pen, mx - 8, my - 9, mx + 8, my + 9);
+                }
+
+                // pause: two bars while recording, a play triangle while paused
+                Rectangle pr = _buttons[Btn.Pause];
+                int cx = pr.X + pr.Width / 2, cy = pr.Y + pr.Height / 2;
+                if (_paused)
+                    g.FillPolygon(brush, new[] { new Point(cx - 4, cy - 6), new Point(cx - 4, cy + 6), new Point(cx + 6, cy) });
+                else
                 {
                     g.FillRectangle(brush, cx - 6, cy - 6, 4, 12);
                     g.FillRectangle(brush, cx + 2, cy - 6, 4, 12);
                 }
-            }
 
-            // save: a little floppy disk
-            int sx = _saveRect.X + _saveRect.Width / 2 - 8, sy = _saveRect.Y + _saveRect.Height / 2 - 8;
-            using (var pen = new Pen(Color.White, 1.6f))
-            using (var brush = new SolidBrush(Color.White))
-            {
-                g.DrawLines(pen, new[]
+                // save: a little floppy disk
+                Rectangle sr = _buttons[Btn.Save];
+                int sx = sr.X + sr.Width / 2 - 8, sy = sr.Y + sr.Height / 2 - 8;
+                using (var thin = new Pen(Color.White, 1.6f))
                 {
-                    new Point(sx, sy), new Point(sx + 12, sy), new Point(sx + 16, sy + 4),
-                    new Point(sx + 16, sy + 16), new Point(sx, sy + 16), new Point(sx, sy)
-                });
-                g.FillRectangle(brush, sx + 3, sy, 8, 5);          // shutter
-                g.DrawRectangle(pen, sx + 3, sy + 9, 10, 7);       // label
+                    g.DrawLines(thin, new[]
+                    {
+                        new Point(sx, sy), new Point(sx + 12, sy), new Point(sx + 16, sy + 4),
+                        new Point(sx + 16, sy + 16), new Point(sx, sy + 16), new Point(sx, sy)
+                    });
+                    g.FillRectangle(brush, sx + 3, sy, 8, 5);          // shutter
+                    g.DrawRectangle(thin, sx + 3, sy + 9, 10, 7);      // label
+                }
             }
         }
 
-        private static void DrawButton(Graphics g, Rectangle r, bool hover)
+        private static void DrawButton(Graphics g, Rectangle r, bool hover, Color on)
         {
             using (var path = Theme.Round(r, 6))
-            using (var fill = new SolidBrush(Color.FromArgb(hover ? 80 : 45, 255, 255, 255)))
+            using (var fill = new SolidBrush(on != Color.Empty ? on : Color.FromArgb(hover ? 80 : 45, 255, 255, 255)))
             {
                 g.FillPath(fill, path);
             }
@@ -452,8 +673,25 @@ namespace MicroApp
             {
                 _tick.Stop();
                 _tick.Dispose();
+                _tip.Dispose();
             }
             base.Dispose(disposing);
+        }
+    }
+
+    /// <summary>
+    /// Keeps a window out of screen captures (SetWindowDisplayAffinity WDA_EXCLUDEFROMCAPTURE,
+    /// Windows 10 2004+), so the recording badge and frame never end up in the video even
+    /// when the camera follows the pointer over them. Older Windows: a no-op.
+    /// </summary>
+    static class CaptureExclusion
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
+
+        public static void Apply(IntPtr hwnd)
+        {
+            try { SetWindowDisplayAffinity(hwnd, 0x11 /* WDA_EXCLUDEFROMCAPTURE */); } catch { }
         }
     }
 
@@ -483,6 +721,27 @@ namespace MicroApp
             frame.Exclude(new Rectangle(Thickness, Thickness,
                 bounds.Width - 2 * Thickness, bounds.Height - 2 * Thickness));
             Region = frame;
+        }
+
+        /// <summary>Moves the frame to mark a new captured patch (follow cursor / zoom).</summary>
+        public void MarkCaptured(Rectangle captured)
+        {
+            var bounds = Rectangle.Inflate(captured, Thickness, Thickness);
+            if (bounds == Bounds) return;
+            bool resized = bounds.Size != Bounds.Size;
+            Bounds = bounds;
+            if (resized)
+            {
+                var frame = new Region(new Rectangle(0, 0, bounds.Width, bounds.Height));
+                frame.Exclude(new Rectangle(Thickness, Thickness, bounds.Width - 2 * Thickness, bounds.Height - 2 * Thickness));
+                Region = frame;
+            }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            CaptureExclusion.Apply(Handle);
         }
 
         /// <summary>Grey while paused, red while recording — same colours as the badge.</summary>

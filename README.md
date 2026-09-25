@@ -9,7 +9,7 @@ A small Windows tray tool that does a handful of things well:
 - **Picks the exact text of any control** — like a colour picker, but for text (UI Automation, no OCR).
 - **Captures a screen region as a PNG**, with an optional locked ratio or locked pixel size.
 - **Records a screen region as an animated GIF.**
-- **Records a screen region as an MP4 video with sound**, no time limit, with pause/resume.
+- **Records a screen region as an MP4 video with sound** (system, microphone, or both), no time limit, with pause/resume and live follow-the-pointer and zoom.
 - **An image editor** — paste a screenshot, crop it, draw arrows and boxes, add styled text, blur the private parts, stamp logos from a reusable asset library, **remove a photo's background with one click** (offline AI) — all as Photoshop-style layers in **document tabs**, exported as one PNG/JPG or **printed** with a Photoshop-style preview.
 - **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check, **Bangla phonetic typing**, an **archive** for the ones you are done with, and an AI that fixes grammar or rewrites the note on request.
 - **Optionally, the same notes on every PC** — mirrored through a free database **you** own, set up by a wizard. Off until you turn it on.
@@ -122,9 +122,10 @@ from screen capture.
 ### 6. Record Video
 
 Press **Ctrl+Alt+R** (or tray → *Record Video*), pick a region, and MicroApp records it as a small
-**MP4 (H.264 + AAC)** — with **sound** from the system or a microphone if you want it. A red frame marks
-the recorded region and a badge shows the time, with **pause/resume** (paused stretches are simply absent
-from the file) and a **save** button. There is no time limit: it records until you save, press **Esc**,
+**MP4 (H.264 + AAC)** — with **sound** from the system, a microphone, or both mixed. A red frame marks
+the recorded area and a badge shows the time, with live controls: **follow the mouse pointer**, **zoom**
+50–400 % (the wheel works over the badge too), **mute the microphone**, **pause/resume** (paused stretches are
+simply absent from the file) and **save**. There is no time limit: it records until you save, press **Esc**,
 or press the hot key again. Encoding uses the codecs built into Windows; the video streams to disk while
 it records.
 
