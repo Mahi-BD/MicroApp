@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Document tabs in the image editor.** Several images can be open at once, each in its own tab
+  with its own layers, history, selection and zoom. Tabs close with ×, a middle click or **Ctrl+W**,
+  and **Ctrl+Tab** cycles through them. There is a new **Window** menu, and a right-click on a tab offers
+  **Close Others** / **Close All**.
+- **A Photoshop-style New Document window.** It has preset categories (Recent, Print A0-A6/B4/B5/Letter/
+  Legal/Tabloid, Ratio 16:9/21:9/4:3/1:1…, Photo, Web, Mobile, Film & Video) and a Preset Details column
+  with units (px/in/cm/mm/pt), resolution, orientation, constrain and background contents. A new document
+  opens in a new tab and no longer replaces the one you were working on.
+- **File → Add Image** (**Shift+Ctrl+O**) adds pictures to the current document as layers, while
+  **File → Open** now opens each picture in a new tab. (Add Image replaces "Place Image as Layer".)
+  **File → Exit** (**Ctrl+Q**) closes the editor. **Ctrl+W** now closes the current tab.
+
 ## 5.1.2 — 2026-09-12
 
 ### Added

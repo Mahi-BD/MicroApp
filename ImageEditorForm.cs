@@ -225,12 +225,13 @@ namespace MicroApp
             BuildRightSide();
             BuildSplitter();
             BuildCanvas();
+            BuildDocTabs();
             BuildStatus();
 
             // docking order decides the layout: menu on top, options under it, status at
             // the bottom, tool rail left, panels right (with the drag handle between them
-            // and the canvas), canvas fills the rest
-            Controls.Add(_canvasPanel);
+            // and the canvas), the document tabs + canvas fill the rest
+            Controls.Add(_docArea);
             Controls.Add(_splitter);
             Controls.Add(_toolRail);
             Controls.Add(_rightSide);
@@ -249,7 +250,9 @@ namespace MicroApp
                 if (_open == this) _open = null;
                 try
                 {
-                    var all = new List<Snapshot>(_undo);
+                    var all = DetachParkedDocs();
+                    _docs.Clear();
+                    all.AddRange(_undo);
                     all.AddRange(_redo);
                     all.Add(TakeSnapshot("closing"));
                     _undo.Clear(); _redo.Clear(); _layers.Clear();
@@ -280,6 +283,7 @@ namespace MicroApp
             SelectTool(Tool.Move);
             UpdateStatus();
             RefreshHistoryList();
+            UpdateDocChrome();
         }
 
         // ============================================================== document ops
@@ -312,40 +316,36 @@ namespace MicroApp
             _canvasPanel.Invalidate();
         }
 
+        /// <summary>File &gt; New: the preset dialog, then the new document opens in its own tab.</summary>
         void NewDocument()
         {
             CommitInlineEdit();
             CommitTransform();
-            int w = _hasDoc ? _canvas.Width : 1200, h = _hasDoc ? _canvas.Height : 800;
-            int background = 0;
-            if (!CanvasSizeDialog.Ask(this, "New", ref w, ref h, true, ref background)) return;
-            if (_hasDoc && _dirty &&
-                !ModernDialog.Confirm("Start over?", "The current layers will be discarded.", "Start new", "Keep working")) return;
+            Size clip = Size.Empty;
+            try
+            {
+                if (Clipboard.ContainsImage())
+                    using (Image img = Clipboard.GetImage()) if (img != null) clip = img.Size;
+            }
+            catch (System.Runtime.InteropServices.ExternalException) { }
+            NewDocumentSpec spec = NewDocumentDialog.Ask(this, _hasDoc ? _canvas : Size.Empty, clip, _bg, "Untitled-" + (_untitledCounter + 1));
+            if (spec == null) return;
+            bool autoName = spec.Name == "Untitled-" + (_untitledCounter + 1);
+            if (!StartNewDocTab(autoName ? null : spec.Name)) return;
 
-            var old = new List<Snapshot>(_undo);
-            old.AddRange(_redo);
-            old.Add(TakeSnapshot("old"));   // the current layers count as dropped too
-            _layers.Clear();
-            _undo.Clear();
-            _redo.Clear();
-            ReleaseDropped(old);
+            int w = spec.Width, h = spec.Height;
             _canvas = new Size(w, h);
-            _canvasBg = background == 0 ? Color.White : background == 1 ? Color.Transparent : _bg;
+            _canvasBg = spec.Background;
             _hasDoc = true;
             _dirty = false;
-            _sel = -1;
             _cropRect = null;
-            _selection = null;
-            _lastSelection = null;
-            _lastStrokeEnd = null;
             // an empty layer to paint on, like a fresh Photoshop document's Background
             var first = new RasterLayer(NewTransparentBitmap(w, h)) { Name = "Layer 1", Bounds = new RectangleF(0, 0, w, h) };
             _layers.Add(first);
             _sel = 0;
             _nameCounter = 1;
             FitView();
-            AfterDocumentChange();
-            RefreshHistoryList();
+            ShowActiveDoc();
         }
 
         static Bitmap NewTransparentBitmap(int w, int h)
@@ -353,17 +353,41 @@ namespace MicroApp
             return new Bitmap(Math.Max(1, w), Math.Max(1, h), PixelFormat.Format32bppArgb);
         }
 
+        static readonly string OpenFilter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf|All files|*.*";
+
+        /// <summary>File &gt; Open: each picture in a tab of its own (an empty tab is used up first).</summary>
         void OpenFile()
         {
-            using (var ofd = new OpenFileDialog
+            string[] files = AskImageFiles("Open");
+            if (files == null) return;
+            foreach (string file in files)
             {
-                Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf|All files|*.*",
-                Title = "Open"
-            })
+                Bitmap bmp;
+                try { bmp = AssetStore.LoadFull(file); }
+                catch (Exception ex) { ModernDialog.Info("Could not open it", Path.GetFileName(file) + "\r\n" + ex.Message); continue; }
+                if (!StartNewDocTab(Path.GetFileName(file))) { bmp.Dispose(); return; }
+                AddBitmapLayer(bmp, Path.GetFileNameWithoutExtension(file));
+            }
+        }
+
+        /// <summary>File &gt; Add Image: the pictures become layers of the document in front.</summary>
+        void AddImageFile()
+        {
+            string[] files = AskImageFiles("Add Image");
+            if (files == null) return;
+            foreach (string file in files)
             {
-                if (ofd.ShowDialog(this) != DialogResult.OK) return;
-                try { AddBitmapLayer(AssetStore.LoadFull(ofd.FileName), Path.GetFileNameWithoutExtension(ofd.FileName)); }
-                catch (Exception ex) { ModernDialog.Info("Could not open it", ex.Message); }
+                try { AddBitmapLayer(AssetStore.LoadFull(file), Path.GetFileNameWithoutExtension(file)); }
+                catch (Exception ex) { ModernDialog.Info("Could not open it", Path.GetFileName(file) + "\r\n" + ex.Message); }
+            }
+        }
+
+        string[] AskImageFiles(string title)
+        {
+            using (var ofd = new OpenFileDialog { Filter = OpenFilter, Title = title, Multiselect = true })
+            {
+                if (ofd.ShowDialog(this) != DialogResult.OK || ofd.FileNames.Length == 0) return null;
+                return ofd.FileNames;
             }
         }
 
@@ -424,6 +448,7 @@ namespace MicroApp
                 FitView();
                 AfterDocumentChange();
                 RefreshHistoryList();
+                UpdateDocChrome();
                 return;
             }
 
@@ -456,7 +481,7 @@ namespace MicroApp
             {
                 Filter = "PNG (keeps transparency)|*.png|JPEG|*.jpg|Bitmap|*.bmp|TIFF|*.tif",
                 Title = "Save As",
-                FileName = "MicroApp " + DateTime.Now.ToString("yyyy-MM-dd HHmmss")
+                FileName = _doc.Title.StartsWith("Untitled-") ? "MicroApp " + DateTime.Now.ToString("yyyy-MM-dd HHmmss") : Path.GetFileNameWithoutExtension(_doc.Title)
             })
             {
                 if (sfd.ShowDialog(this) != DialogResult.OK) return;
@@ -472,6 +497,8 @@ namespace MicroApp
                         else flat.Save(sfd.FileName, ImageFormat.Png);
                     }
                     _dirty = false;
+                    _doc.Title = Path.GetFileName(sfd.FileName);
+                    UpdateDocChrome();
                     Toast.Show("Saved.\r\n" + sfd.FileName);
                 }
                 catch (Exception ex) { ModernDialog.Info("Could not save it", ex.Message); }
@@ -581,8 +608,12 @@ namespace MicroApp
 
         void Form_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_dirty && _layers.Count > 0 &&
-                !ModernDialog.Confirm("Close the editor?", "The layers were not saved or copied out.", "Close anyway", "Keep editing"))
+            int dirtyDocs = DirtyDocCount();
+            if (dirtyDocs > 0 &&
+                !ModernDialog.Confirm("Close the editor?",
+                    dirtyDocs == 1 ? (_docs.Count == 1 ? "The layers were not saved or copied out." : "One document was not saved or copied out.")
+                                   : dirtyDocs + " documents were not saved or copied out.",
+                    "Close anyway", "Keep editing"))
             {
                 e.Cancel = true;
                 return;
@@ -659,6 +690,7 @@ namespace MicroApp
             ReleaseDropped(dropped);
             TrimHistoryMemory();
             RefreshHistoryList();
+            if (_docTabs != null) _docTabs.Invalidate();
         }
 
         // ------------------------------------------------------------ memory
@@ -672,6 +704,7 @@ namespace MicroApp
             foreach (Snapshot s in _redo) foreach (EditorLayer l in s.Layers) { var r = l as RasterLayer; if (r != null && r.Image != null) live.Add(r.Image); }
             if (_paintOriginal != null) live.Add(_paintOriginal);
             if (_clipBitmap != null) live.Add(_clipBitmap);
+            AddParkedBitmaps(live);
             return live;
         }
 
@@ -917,6 +950,7 @@ namespace MicroApp
                 _syncingZoom = false;
             }
             _statusRight.Text = ToolHint(_tool);
+            if (_docTabs != null) _docTabs.Invalidate();
             if (_optToolLbl != null) _optToolLbl.Text = _xf != null ? (_xf.SelectionOnly ? "Transform Selection" : "Free Transform") : ToolName(_tool);
         }
 
@@ -1336,6 +1370,8 @@ namespace MicroApp
             }
 
             if (keyData == Keys.F2 && _assetTree.ContainsFocus) { RenameAssetFolder(); return true; }
+            if (keyData == (Keys.Control | Keys.Tab)) { CycleDoc(1); return true; }
+            if (keyData == (Keys.Control | Keys.Shift | Keys.Tab)) { CycleDoc(-1); return true; }
 
             switch (keyData)
             {

@@ -379,6 +379,27 @@ editor remembers it, along with its window size). Every tool answers to Photosho
 shortcut, and right-clicking the canvas or a layer opens the menu you would expect there.
 **Help → Keyboard Shortcuts** lists them all.
 
+### Documents and tabs
+
+Several images can be open at once, each in its own **tab** above the canvas, as in Photoshop.
+Every tab keeps its own layers, history, selection and zoom. Click a tab to switch
+(**Ctrl+Tab** / **Ctrl+Shift+Tab** cycle through them, and the **Window** menu lists them all).
+Click its **×** or middle-click it to close it (**Ctrl+W**). Right-click a tab for **Close Others** / **Close
+All**. A **\*** after the name means the document has changes that were not saved.
+
+**File → New** (**Ctrl+N**, or the **+** at the end of the tabs) opens the **New Document**
+window. Pick a preset from **Recent** (the clipboard's size, the current document's and the
+sizes you made last), **Print** (A0-A6, B4, B5, Letter, Legal, Tabloid…), **Ratio** (16:9, 21:9,
+4:3, 1:1, 3:2, 9:16…), **Photo**, **Web**, **Mobile** or **Film & Video**. You can also type a size in
+pixels, inches, centimetres, millimetres or points at any resolution. **Constrain** keeps
+the ratio while you type; the orientation buttons swap portrait and landscape. **Create**
+(or double-clicking a preset) opens the new document in a new tab. The open ones stay as
+they are.
+
+**File → Open** (**Ctrl+O**) opens each picture in a tab of its own. **File → Add Image**
+(**Shift+Ctrl+O**) puts pictures into the current document as new layers instead. **File → Exit**
+(**Ctrl+Q**) closes the editor.
+
 ### Layers
 
 Every pasted image, mark, text box and asset is its own layer; nothing is combined until you
