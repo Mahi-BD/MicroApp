@@ -34,6 +34,7 @@ namespace MicroApp
             public PointF? LastStrokeEnd;
             public Point? CloneSource;
             public float Ppi = 72;
+            public List<Guide> Guides = new List<Guide>();
         }
 
         readonly List<DocState> _docs = new List<DocState>();
@@ -121,6 +122,7 @@ namespace MicroApp
             d.LastStrokeEnd = _lastStrokeEnd;
             d.CloneSource = _cloneSource;
             d.Ppi = _ppi;
+            d.Guides = _guides;
             _layers.Clear();
             _undo.Clear();
             _redo.Clear();
@@ -151,6 +153,8 @@ namespace MicroApp
             _lastStrokeEnd = d.LastStrokeEnd;
             _cloneSource = d.CloneSource;
             _ppi = d.Ppi;
+            _guides = d.Guides ?? new List<Guide>();
+            _guideDrag = null;
             d.Selection = d.LastSelection = null;
             ShowActiveDoc();
         }
@@ -221,6 +225,8 @@ namespace MicroApp
             _lastStrokeEnd = null;
             _cloneSource = null;
             _ppi = 72;
+            _guides = new List<Guide>();
+            _guideDrag = null;
             return true;
         }
 

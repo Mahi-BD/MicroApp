@@ -111,6 +111,9 @@ namespace MicroApp
             // Remove Background: a one-click action, not a tool - it sits under the tools, before the colours
             Rectangle RemoveBgRect { get { Rectangle r = SlotRect(ToolGroups.Length + ToolGroups.Length % 2); r.Y += 9; return r; } }
             bool _hoverRemoveBg;
+            // the rulers on/off toggle, beside it (guides are dragged out of the rulers)
+            Rectangle RulerRect { get { Rectangle r = SlotRect(ToolGroups.Length + ToolGroups.Length % 2 + 1); r.Y += 9; return r; } }
+            bool _hoverRuler;
 
             int SwatchTop { get { return RemoveBgRect.Bottom + 18; } }
             Rectangle FgRect { get { return new Rectangle(12, SwatchTop, 30, 30); } }
@@ -157,6 +160,15 @@ namespace MicroApp
                     using (var pen = new Pen(Theme.Border)) g.DrawPath(pen, rp);
                 }
                 EditorIcons.DrawGlyph(g, "removebg", new Rectangle(rb.X + 6, rb.Y + 6, rb.Width - 12, rb.Height - 12), Theme.Text);
+                Rectangle rr = RulerRect;
+                bool rulersOn = _f._showRulers;
+                using (GraphicsPath rp = Theme.Round(rr, 8))
+                {
+                    if (rulersOn || _hoverRuler)
+                        using (var b = new SolidBrush(rulersOn ? Theme.Accent : Theme.FieldBg)) g.FillPath(b, rp);
+                    if (!rulersOn) using (var pen = new Pen(Theme.Border)) g.DrawPath(pen, rp);
+                }
+                EditorIcons.DrawGlyph(g, "ruler", new Rectangle(rr.X + 6, rr.Y + 6, rr.Width - 12, rr.Height - 12), rulersOn ? Theme.OnAccent : Theme.Text);
                 // the colour swatches: background behind, foreground in front
                 Rectangle bg = BgRect, fg = FgRect;
                 using (var b = new SolidBrush(_f._bg)) g.FillRectangle(b, bg);
@@ -173,7 +185,8 @@ namespace MicroApp
                 base.OnMouseMove(e);
                 int s = SlotAt(e.Location);
                 bool overRb = RemoveBgRect.Contains(e.Location);
-                if (s != _hover || overRb != _hoverRemoveBg) { _hover = s; _hoverRemoveBg = overRb; Invalidate(); }
+                bool overRuler = RulerRect.Contains(e.Location);
+                if (s != _hover || overRb != _hoverRemoveBg || overRuler != _hoverRuler) { _hover = s; _hoverRemoveBg = overRb; _hoverRuler = overRuler; Invalidate(); }
                 string tip = null;
                 if (s >= 0)
                 {
@@ -182,6 +195,7 @@ namespace MicroApp
                     if (!_f._groupChoice.TryGetValue(group[0], out shown)) shown = group[0];
                     tip = ToolName(shown) + "  (" + ToolKey(shown) + ")" + (group.Length > 1 ? "  ·  right-click for more" : "");
                 }
+                else if (overRuler) tip = _f._showRulers ? "Hide rulers (Ctrl+R)" : "Show rulers (Ctrl+R) - drag out of a ruler to add a guide";
                 else if (overRb) tip = "Remove Background (Alt+Ctrl+B) - makes everything but the subject transparent (AI, offline); with a selection, only inside it";
                 else if (FgRect.Contains(e.Location)) tip = "Foreground colour (click to change)";
                 else if (BgRect.Contains(e.Location)) tip = "Background colour (click to change)";
@@ -195,6 +209,7 @@ namespace MicroApp
                 base.OnMouseLeave(e);
                 _hover = -1;
                 _hoverRemoveBg = false;
+                _hoverRuler = false;
                 Invalidate();
             }
 
@@ -202,6 +217,7 @@ namespace MicroApp
             {
                 base.OnMouseDown(e);
                 if (e.Button == MouseButtons.Left && RemoveBgRect.Contains(e.Location)) { _f.RemoveBackground(true); return; }
+                if (e.Button == MouseButtons.Left && RulerRect.Contains(e.Location)) { _f.ToggleRulers(); return; }
                 int s = SlotAt(e.Location);
                 if (s >= 0)
                 {

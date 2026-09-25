@@ -432,6 +432,22 @@ At 100 % a document prints at its real size - an A4 made at 300 ppi comes out as
 the resulting print resolution and warns under 150 PPI or when part of the picture falls outside
 the printable area. Nothing is sent until you press **Print**.
 
+### Rulers and guides
+
+The **ruler button** under the tools (next to Remove Background), **View → Rulers** or **Ctrl+R** shows the rulers.
+As in Photoshop:
+- **Add a guide**: drag down out of the top ruler for a horizontal guide, or right out of the left ruler for a
+  vertical one. The position shows next to the pointer while you drag. **Shift** snaps it to the ruler's ticks.
+- **Move a guide**: drag it with the Move tool, or with any other tool while holding **Ctrl**.
+- **Delete a guide**: drag it back onto a ruler.
+- **Right-click a guide** to lock or unlock it (a locked guide is dashed and cannot be dragged), delete it,
+  change its colour, give every guide that colour, lock all guides, turn snapping on or off, or clear them all.
+- **Snapping**: while you move a layer or a selection, or draw a marquee, a shape or a crop, edges and centres
+  snap to a guide within a few pixels. Hold **Ctrl** while moving to place freely.
+- **View** menu: **Guides** (Ctrl+;) shows or hides them, **Lock Guides** (Alt+Ctrl+;), **Snap to Guides**
+  (Shift+Ctrl+;) and **Clear Guides**.
+Each document keeps its own guides. Guides are not part of the undo history, as in Photoshop.
+
 ### Remove Background
 
 The button under the tools, the one with the figure on a checkerboard (also **Image → Remove Background**, **Alt+Ctrl+B**,

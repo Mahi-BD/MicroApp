@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Rulers and guides in the image editor, the Photoshop way.** A ruler on/off button sits under the tools.
+  - Drag out of a ruler to add a guide, and drag a guide with the Move tool (or Ctrl) to move it. Drop it on
+    a ruler to delete it.
+  - Right-click a guide to lock or unlock it, delete it or change its colour.
+  - Layers, selections, marquees, shapes and crops snap to guides (hold Ctrl to place freely).
+  - View menu: Guides (Ctrl+;), Lock Guides, Snap to Guides and Clear Guides.
+
 ## 5.3.0 — 2026-09-25
 
 ### Added

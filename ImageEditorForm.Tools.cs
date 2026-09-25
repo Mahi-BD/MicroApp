@@ -116,10 +116,13 @@ namespace MicroApp
             }
             if (e.Button == MouseButtons.Right)
             {
+                if (ShowGuideMenu(e.Location)) return;
                 ShowCanvasContextMenu(e.Location, cp);
                 return;
             }
             if (e.Button != MouseButtons.Left) return;
+            // a ruler makes a new guide; the Move tool (or Ctrl) grabs an existing one
+            if (GuideMouseDown(e, cp)) return;
 
             // a transform in progress owns the mouse until it is committed
             if (_xf != null)
@@ -139,6 +142,7 @@ namespace MicroApp
                     if (StartSelectionMove(cp, shift, alt)) break;
                     _selMode = ModeFromModifiers(shift, alt);
                     _drag = Drag.Marquee;
+                    _downCanvas = cp = SnapPoint(cp);
                     _marqueeDraft = new RectangleF(cp, SizeF.Empty);
                     break;
 
@@ -201,6 +205,7 @@ namespace MicroApp
                 case Tool.ShapeLine:
                 case Tool.ShapeArrow:
                     _drag = Drag.Draw;
+                    _downCanvas = SnapPoint(cp);
                     _draft = null;
                     break;
 
@@ -341,6 +346,10 @@ namespace MicroApp
 
             switch (_drag)
             {
+                case Drag.Guide:
+                    GuideMouseMove(cp);
+                    return;
+
                 case Drag.Pan:
                     _origin = new PointF(_panOrigin0.X + (e.X - _downScreen.X), _panOrigin0.Y + (e.Y - _downScreen.Y));
                     _viewFitted = false;
@@ -361,6 +370,8 @@ namespace MicroApp
                         dx = c.X; dy = c.Y;
                     }
                     b.Offset(dx, dy);
+                    // edges and centre snap to guides (hold Ctrl to place freely, as in Photoshop)
+                    if ((ModifierKeys & Keys.Control) != Keys.Control) b = SnapRect(b);
                     sel.Bounds = b;
                     InvalidateDoc();
                     return;
@@ -374,6 +385,13 @@ namespace MicroApp
                 {
                     float dx = cp.X - _downCanvas.X, dy = cp.Y - _downCanvas.Y;
                     if ((ModifierKeys & Keys.Shift) == Keys.Shift) { PointF c = Constrain45(dx, dy); dx = c.X; dy = c.Y; }
+                    if ((ModifierKeys & Keys.Control) != Keys.Control)
+                    {
+                        RectangleF moved = _floatSel0.Bounds;
+                        moved.Offset(dx, dy);
+                        RectangleF snapped = SnapRect(moved);
+                        dx += snapped.X - moved.X; dy += snapped.Y - moved.Y;
+                    }
                     int ix = (int)Math.Round(dx), iy = (int)Math.Round(dy);
                     if (ix == 0 && iy == 0 && !_dragUndoPushed) return;
                     if (!_dragUndoPushed) { PushUndo("Move Selection"); _dragUndoPushed = true; }
@@ -398,13 +416,13 @@ namespace MicroApp
                     }
                     else
                     {
-                        _draft = ShapeDraft(_downCanvas, cp, (ModifierKeys & Keys.Shift) == Keys.Shift, (ModifierKeys & Keys.Alt) == Keys.Alt);
+                        _draft = ShapeDraft(_downCanvas, SnapPoint(cp), (ModifierKeys & Keys.Shift) == Keys.Shift, (ModifierKeys & Keys.Alt) == Keys.Alt);
                     }
                     _canvasPanel.Invalidate();
                     return;
 
                 case Drag.Marquee:
-                    _marqueeDraft = MarqueeRect(cp);
+                    _marqueeDraft = MarqueeRect(SnapPoint(cp));
                     _canvasPanel.Invalidate();
                     return;
 
@@ -415,7 +433,7 @@ namespace MicroApp
 
                 case Drag.Crop:
                 {
-                    PointF a = _downCanvas, b = cp;
+                    PointF a = _downCanvas, b = SnapPoint(cp);
                     var r = RectangleF.FromLTRB(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Max(a.X, b.X), Math.Max(a.Y, b.Y));
                     _cropRect = ApplyCropRatio(r, b.X < a.X, b.Y < a.Y);
                     RelayoutOptions();
@@ -450,6 +468,7 @@ namespace MicroApp
         void IdleCursor(Point screen, PointF cp)
         {
             if (_polyPts != null) { _canvasPanel.Invalidate(); return; }
+            if (GuideCursor(screen)) return;
             if (IsBrushTool(_tool))
             {
                 _canvasPanel.Invalidate();
@@ -532,6 +551,10 @@ namespace MicroApp
 
             switch (was)
             {
+                case Drag.Guide:
+                    GuideMouseUp(e.Location);
+                    break;
+
                 case Drag.Draw:
                 {
                     ShapeLayer done = _draft;
@@ -986,6 +1009,7 @@ namespace MicroApp
                 }
             }
             _drag = Drag.Crop;
+            _downCanvas = cp = SnapPoint(cp);
             _cropRect = new RectangleF(cp.X, cp.Y, 0, 0);
         }
 

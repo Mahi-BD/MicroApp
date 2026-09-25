@@ -131,7 +131,7 @@ namespace MicroApp
         // ---- interaction state -----------------------------------------------------
         enum Drag
         {
-            None, Pan, Move, Handle, Rotate, Draw, Crop, CropAdjust, Paint, Marquee, Lasso, Gradient, Zoom, FloatMove, SelectionMove
+            None, Pan, Move, Handle, Rotate, Draw, Crop, CropAdjust, Paint, Marquee, Lasso, Gradient, Zoom, FloatMove, SelectionMove, Guide
         }
         Drag _drag = Drag.None;
         bool _dragUndoPushed;
@@ -1107,6 +1107,7 @@ namespace MicroApp
 
             using (var border = new Pen(Theme.Border))
                 g.DrawRectangle(border, screen.X, screen.Y, screen.Width, screen.Height);
+            PaintGuides(g);
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
             PaintMarqueeDraft(g);
@@ -1424,6 +1425,7 @@ namespace MicroApp
                 if (_xf != null) { CancelTransform(); return true; }
                 if (_polyPts != null) { _polyPts = null; _canvasPanel.Invalidate(); return true; }
                 if (_cropRect.HasValue) { _cropRect = null; RelayoutOptions(); _canvasPanel.Invalidate(); return true; }
+                if (_drag == Drag.Guide) { CancelGuideDrag(); return true; }
                 if (_drag != Drag.None) { AbortDrag(); return true; }
                 if (HasSelection) { SetSelection(null); return true; }
                 if (_sel >= 0 && _tool == Tool.Move) { _sel = -1; RefreshLayerList(); RelayoutOptions(); _canvasPanel.Invalidate(); return true; }

@@ -226,6 +226,15 @@ namespace MicroApp
             view.DropDownItems.Add(new ToolStripSeparator());
             _rulersItem = Item("Rulers", Keys.Control | Keys.R, delegate { ToggleRulers(); });
             view.DropDownItems.Add(_rulersItem);
+            _showGuidesItem = Item("Guides", Keys.Control | Keys.OemSemicolon, delegate { ToggleShowGuides(); });
+            _showGuidesItem.Checked = _showGuides;
+            view.DropDownItems.Add(_showGuidesItem);
+            _lockGuidesItem = Item("Lock Guides", Keys.Control | Keys.Alt | Keys.OemSemicolon, delegate { ToggleLockGuides(); });
+            view.DropDownItems.Add(_lockGuidesItem);
+            _snapGuidesItem = Item("Snap to Guides", Keys.Control | Keys.Shift | Keys.OemSemicolon, delegate { ToggleSnapGuides(); });
+            _snapGuidesItem.Checked = _snapToGuides;
+            view.DropDownItems.Add(_snapGuidesItem);
+            view.DropDownItems.Add(Item("Clear Guides", Keys.None, delegate { ClearGuides(); }));
             _extrasItem = Item("Extras (selection edges, transform box)", Keys.Control | Keys.H, delegate { ToggleExtras(); });
             _extrasItem.Checked = true;
             view.DropDownItems.Add(_extrasItem);
@@ -266,6 +275,7 @@ namespace MicroApp
         {
             _showRulers = !_showRulers;
             _rulersItem.Checked = _showRulers;
+            if (_toolRail != null) _toolRail.Invalidate();
             if (_viewFitted) FitView();
             _canvasPanel.Invalidate();
         }
@@ -1209,7 +1219,8 @@ namespace MicroApp
             row("Invert / Desaturate", "Ctrl+I / Shift+Ctrl+U"); row("Auto Tone / Auto Contrast / Auto Color", "Shift+Ctrl+L / Alt+Shift+Ctrl+L / Shift+Ctrl+B");
             row("Image Size / Canvas Size", "Alt+Ctrl+I / Alt+Ctrl+C"); row("Last Filter", "Alt+Ctrl+F");
             group("View");
-            row("Zoom in / out", "Ctrl++ / Ctrl+-  (or the wheel)"); row("Fit on Screen / 100%", "Ctrl+0 / Ctrl+1"); row("Rulers", "Ctrl+R"); row("Hide extras", "Ctrl+H"); row("Pan", "Space+drag or the middle button");
+            row("Zoom in / out", "Ctrl++ / Ctrl+-  (or the wheel)"); row("Fit on Screen / 100%", "Ctrl+0 / Ctrl+1"); row("Rulers", "Ctrl+R");
+            row("Guides: show / lock / snap", "Ctrl+; / Alt+Ctrl+; / Shift+Ctrl+;"); row("New guide / move / delete", "drag from a ruler / drag with Move / drag onto a ruler"); row("Hide extras", "Ctrl+H"); row("Pan", "Space+drag or the middle button");
             group("Edit");
             row("Undo / Redo", "Ctrl+Z / Shift+Ctrl+Z (Ctrl+Y)"); row("Cut / Copy / Paste", "Ctrl+X / Ctrl+C / Ctrl+V"); row("Copy Merged / Paste in Place", "Shift+Ctrl+C / Shift+Ctrl+V");
             row("Save As / Print / Exit", "Ctrl+S / Ctrl+P / Ctrl+Q");

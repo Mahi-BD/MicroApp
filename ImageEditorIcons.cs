@@ -232,6 +232,10 @@ namespace MicroApp
                         g.DrawLine(p, 4, 6, 4, 9); g.DrawLine(p, 4, 9, 7, 9);
                         g.DrawLine(p, 14, 12, 14, 9); g.DrawLine(p, 14, 9, 11, 9);
                         break;
+                    case "ruler":   // a ruler, corner to corner, with its ticks
+                        g.DrawLine(p, 3, 14, 14, 3); g.DrawLine(p, 14, 3, 17, 6); g.DrawLine(p, 17, 6, 6, 17); g.DrawLine(p, 6, 17, 3, 14);
+                        g.DrawLine(p, 6.5f, 10.5f, 8.5f, 12.5f); g.DrawLine(p, 9, 8, 10.5f, 9.5f); g.DrawLine(p, 11.5f, 5.5f, 13.5f, 7.5f);
+                        break;
                     case "removebg":   // a subject cut out of a checkerboard, with a spark for "automatic"
                         using (var dim = new SolidBrush(Color.FromArgb(90, ink)))
                         {
