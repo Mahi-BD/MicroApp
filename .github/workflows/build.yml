@@ -62,12 +62,18 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: MicroApp-Debug-${{ github.sha }}
-        path: bin/Debug/
+        # the 179 MB model is left out: it never changes (release models-1), and it made
+        # every artifact download take minutes
+        path: |
+          bin/Debug/
+          !bin/Debug/Models/
         retention-days: 7
 
     - name: Upload Release artifacts
       uses: actions/upload-artifact@v4
       with:
         name: MicroApp-Release-${{ github.sha }}
-        path: bin/Release/
+        path: |
+          bin/Release/
+          !bin/Release/Models/
         retention-days: 30

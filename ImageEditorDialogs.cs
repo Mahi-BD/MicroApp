@@ -555,11 +555,15 @@ namespace MicroApp
             StartPosition = FormStartPosition.CenterParent;
             BackColor = Theme.Bg;
             Font = Theme.Base;
-            ClientSize = new Size(560, 380);
+            // the tallest page (Drop Shadow: four sliders and the colour row) ends at y 302;
+            // the page gets room for it plus a margin, and everything else sits below
+            const int PageHeight = 330;
+            int buttonsY = 16 + PageHeight + 20;
+            ClientSize = new Size(560, buttonsY + 30 + 18);
 
             _list = new ListBox
             {
-                Location = new Point(16, 16), Size = new Size(160, 290),
+                Location = new Point(16, 16), Size = new Size(160, PageHeight),
                 DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 30,
                 BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.FieldBg, ForeColor = Theme.Text, IntegralHeight = false
             };
@@ -569,16 +573,16 @@ namespace MicroApp
             _list.SelectedIndexChanged += delegate { BuildPage(); };
             Controls.Add(_list);
 
-            _page = new Panel { Location = new Point(192, 16), Size = new Size(352, 290), BackColor = Theme.Surface };
+            _page = new Panel { Location = new Point(192, 16), Size = new Size(352, PageHeight), BackColor = Theme.Surface };
             _page.Paint += delegate(object s, PaintEventArgs e)
             {
                 using (var p = new Pen(Theme.Border)) e.Graphics.DrawRectangle(p, 0, 0, _page.Width - 1, _page.Height - 1);
             };
             Controls.Add(_page);
 
-            var ok = new ModernButton { Text = "OK", Accent = true, Size = new Size(92, 30), DialogResult = DialogResult.OK, Location = new Point(560 - 16 - 92, 330) };
-            var cancel = new ModernButton { Text = "Cancel", Size = new Size(92, 30), DialogResult = DialogResult.Cancel, Location = new Point(560 - 16 - 92 - 100, 330) };
-            var clear = new ModernButton { Text = "Clear all", Size = new Size(92, 30), Location = new Point(16, 330) };
+            var ok = new ModernButton { Text = "OK", Accent = true, Size = new Size(92, 30), DialogResult = DialogResult.OK, Location = new Point(560 - 16 - 92, buttonsY) };
+            var cancel = new ModernButton { Text = "Cancel", Size = new Size(92, 30), DialogResult = DialogResult.Cancel, Location = new Point(560 - 16 - 92 - 100, buttonsY) };
+            var clear = new ModernButton { Text = "Clear all", Size = new Size(92, 30), Location = new Point(16, buttonsY) };
             clear.Click += delegate
             {
                 Fx.DropShadow = Fx.OuterGlow = Fx.Stroke = Fx.ColorOverlay = false;
