@@ -1,12 +1,11 @@
 # Changelog
 
-## Unreleased
+## 5.2.0 — 2026-09-25
+
+The image editor now works with several documents in tabs, and gains a Photoshop-style New Document
+window, AI background removal and printing.
 
 ### Added
-
-- **Photoshop's hand cursor for panning.** Holding **Space** (or picking the Hand tool) shows the open
-  hand, and dragging shows the closed fist. Before, it was the pointing-finger link cursor and then the four-way
-  arrows. The brush-size circle hides while Space is held.
 
 - **Document tabs in the image editor.** Several images can be open at once, each in its own tab
   with its own layers, history, selection and zoom. Tabs close with ×, a middle click or **Ctrl+W**,
@@ -16,16 +15,24 @@
   Legal/Tabloid, Ratio 16:9/21:9/4:3/1:1…, Photo, Web, Mobile, Film & Video) and a Preset Details column
   with units (px/in/cm/mm/pt), resolution, orientation, constrain and background contents. A new document
   opens in a new tab and no longer replaces the one you were working on.
+- **Remove Background** (the new button under the tools, **Image → Remove Background**, **Alt+Ctrl+B**)
+  makes everything but the subject transparent using a small AI model (U²-Netp, via ONNX Runtime) that
+  runs offline. With a selection, only the area inside it is changed.
 - **File → Print** (**Ctrl+P**) with a Photoshop-style preview: the page to scale with the picture on it
   (drag to move), printer, copies, paper, orientation, center / top / left, scale to fit, scale %, width /
   height in in / cm / mm, the effective print resolution and warnings. Documents now remember the
   resolution they were created (or opened) at, so they print at their real size.
-- **Remove Background** (the new button under the tools, **Image → Remove Background**, **Alt+Ctrl+B**)
-  makes everything but the subject transparent using a small AI model (U²-Netp, via ONNX Runtime) that
-  runs offline. With a selection, only the area inside it is changed.
 - **File → Add Image** (**Shift+Ctrl+O**) adds pictures to the current document as layers, while
   **File → Open** now opens each picture in a new tab. (Add Image replaces "Place Image as Layer".)
   **File → Exit** (**Ctrl+Q**) closes the editor. **Ctrl+W** now closes the current tab.
+- **Photoshop's hand cursor for panning.** Holding **Space** (or picking the Hand tool) shows the open
+  hand, and dragging shows the closed fist. Before, it was the pointing-finger link cursor and then the four-way
+  arrows. The brush-size circle hides while Space is held.
+
+### Changed
+
+- The download is about 13 MB bigger: Remove Background brings ONNX Runtime and the Visual C++ runtime
+  it needs (shipped next to the exe, so nothing extra has to be installed).
 
 ## 5.1.2 — 2026-09-12
 

@@ -10,7 +10,7 @@ A small Windows tray tool that does a handful of things well:
 - **Captures a screen region as a PNG**, with an optional locked ratio or locked pixel size.
 - **Records a screen region as an animated GIF.**
 - **Records a screen region as an MP4 video with sound**, no time limit, with pause/resume.
-- **An image editor** — paste a screenshot, crop it, draw arrows and boxes, add styled text, blur the private parts, stamp logos from a reusable asset library — all as Photoshop-style layers, exported as one PNG/JPG.
+- **An image editor** — paste a screenshot, crop it, draw arrows and boxes, add styled text, blur the private parts, stamp logos from a reusable asset library, **remove a photo's background with one click** (offline AI) — all as Photoshop-style layers in **document tabs**, exported as one PNG/JPG or **printed** with a Photoshop-style preview.
 - **Quick notes** — a hot key opens a fresh scratch-pad note that saves itself as you type, with spell check, **Bangla phonetic typing**, an **archive** for the ones you are done with, and an AI that fixes grammar or rewrites the note on request.
 - **Optionally, the same notes on every PC** — mirrored through a free database **you** own, set up by a wizard. Off until you turn it on.
 
@@ -22,12 +22,12 @@ Everything runs offline. No account, no service, no telemetry. Text recognition 
 
 ## Install
 
-**Installer** — download `MicroApp-4.5.0-setup.exe` from the
+**Installer** — download `MicroApp-5.2.0-setup.exe` from the
 [latest release](https://github.com/Mahi-BD/MicroApp/releases/latest) and run it. The last page asks
 whether MicroApp should **run when Windows starts**; tick it and it will. There is also a
 `-peruser-setup.exe` that installs into your profile and needs no administrator rights.
 
-**Portable** — or take `MicroApp-4.5.0-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
+**Portable** — or take `MicroApp-5.2.0-win-x64.zip`, unzip it anywhere and run `MicroApp.exe`. Nothing
 is written outside your settings file.
 
 Step-by-step instructions, silent-install switches, first-run setup for the AI and Bangla keys,
@@ -202,6 +202,15 @@ right-click menus (**Help → Keyboard Shortcuts** lists them all).
 
 ![The image editor](docs/editor.png)
 
+- **Documents in tabs.** Keep several images open, each in its own tab with its own layers,
+  history and zoom (**Ctrl+Tab** switches, **Ctrl+W** closes). **File → New** opens a Photoshop-style
+  preset window — **Print** (A0–A6, B4, B5, Letter, Legal, Tabloid), **Ratio** (16:9, 21:9, 4:3, 1:1,
+  9:16…), **Photo**, **Web**, **Mobile**, **Film & Video**, plus your recent sizes — with units
+  (px / in / cm / mm / pt), resolution, orientation and background. **File → Open** opens a picture
+  in a new tab; **File → Add Image** adds it to the current one as a layer.
+- **Remove Background.** One click (the button under the tools, or **Alt+Ctrl+B**) makes everything
+  but the subject transparent, like remove.bg — a small AI model (U²-Netp) running offline on your
+  PC in about half a second. With a selection, only the part inside it is changed.
 - **Layers.** Every paste, mark, text box and asset is its own layer, with blend modes, opacity,
   a lock, drag-to-reorder, merge down / merge visible / flatten, and **Layer Styles** — drop
   shadow, outer glow, stroke, colour overlay. A **History** panel jumps back fifty steps.
@@ -225,8 +234,11 @@ right-click menus (**Help → Keyboard Shortcuts** lists them all).
 - **Asset library.** Keep logos, stamps and PNG/vector art organised in categories and
   sub-categories (a folder tree under `%AppData%\MicroApp\Assets`). Double-click any asset to
   drop it in as a layer, and save any layer back into the library.
-- **Out again.** File → Save As (PNG keeps transparency, JPG for mail, BMP, TIFF) or
-  **Shift+Ctrl+C** to put the finished image — or just the selected part — on the clipboard.
+- **Out again.** File → Save As (PNG keeps transparency, JPG for mail, BMP, TIFF),
+  **Shift+Ctrl+C** to put the finished image — or just the selected part — on the clipboard, or
+  **File → Print** (**Ctrl+P**): a Photoshop-style print window that previews the page to scale
+  (drag the picture to place it), with printer, copies, paper, orientation, centring, scale to fit,
+  exact size in in / cm / mm and a warning when the print resolution is too low.
 
 ## Settings
 
