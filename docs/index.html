@@ -7,7 +7,7 @@
 <meta name="description" content="A small Windows tray tool that types the clipboard as real key presses into VM consoles and anything that blocks paste — plus OCR, screen capture, GIF and MP4 recording, notes, and a Photoshop-style image editor.">
 <link rel="icon" href="icon.png" type="image/png">
 <meta property="og:title" content="MicroApp — types your clipboard as real keystrokes">
-<meta property="og:description" content="Windows tray tool: paste as keystrokes, OCR, capture, GIF and MP4 recording, notes, and a Photoshop-style image editor with AI background removal. Free, 8.5 MB.">
+<meta property="og:description" content="Windows tray tool: paste as keystrokes, OCR, capture, GIF and MP4 recording, notes, and a Photoshop-style image editor with AI background removal. Free.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mahi-bd.github.io/MicroApp/">
 <meta property="og:image" content="https://mahi-bd.github.io/MicroApp/social-card.png">
@@ -245,12 +245,12 @@
 <header>
   <div class="wrap bar">
     <span class="mark"><img src="icon.png" alt="" width="24" height="24">MicroApp</span>
-    <span class="ver">5.2.0</span>
+    <span class="ver">5.3.0</span>
     <nav>
       <a href="#editor" class="hide-sm">Image editor</a>
       <a href="#features" class="hide-sm">Features</a>
       <a href="https://github.com/Mahi-BD/MicroApp" class="hide-sm">Source</a>
-      <a class="btn-sm" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.2.0/MicroApp-5.2.0-setup.exe">Download</a>
+      <a class="btn-sm" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.3.0/MicroApp-5.3.0-setup.exe">Download</a>
     </nav>
   </div>
 </header>
@@ -265,12 +265,12 @@
     consoles, remote desktops, KVM and IPMI windows, and any field that refuses Ctrl+V. Every script, Bangla included.
   </p>
   <div class="actions">
-    <a class="btn" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.2.0/MicroApp-5.2.0-setup.exe">Download for Windows</a>
-    <a class="btn-2" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.2.0/MicroApp-5.2.0-win-x64.zip">Portable zip, no install</a>
+    <a class="btn" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.3.0/MicroApp-5.3.0-setup.exe">Download for Windows</a>
+    <a class="btn-2" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.3.0/MicroApp-5.3.0-win-x64.zip">Portable zip, no install</a>
   </div>
   <dl class="spec">
-    <div><dt>Version</dt><dd>5.2.0</dd></div>
-    <div><dt>Download</dt><dd>8.5 MB</dd></div>
+    <div><dt>Version</dt><dd>5.3.0</dd></div>
+    <div><dt>Download</dt><dd>164 MB</dd></div>
     <div><dt>Runs on</dt><dd>Windows 10, 11</dd></div>
     <div><dt>Licence</dt><dd>BSD 3-Clause</dd></div>
   </dl>
@@ -292,12 +292,13 @@
 
 <section class="band" id="editor">
   <div class="wrap">
-    <h2>New in 5.2: tabs, one-click background removal and printing</h2>
+    <h2>New in 5.3: smarter background removal, and a recorder made for tutorials</h2>
     <p>
       <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">E</kbd></span>
       opens on whatever image is on the clipboard. The tools, the keys, the menus and the right-click menus follow
       Photoshop, so what you already know works here — and a screenshot goes from paste to annotated PNG without
-      leaving the tray. Version 5.2 keeps several documents open in tabs, starts new ones from Photoshop-style presets
+      leaving the tray. Version 5.3 cuts backgrounds out far more cleanly, and its screen recorder follows the pointer,
+      zooms, records your voice, highlights clicks and can log every action. The editor keeps several documents open in tabs, starts new ones from Photoshop-style presets
       (A4, A3, 16:9, 21:9 and dozens more), removes a photo's background with an AI model that runs on your PC, and
       prints with a preview.
     </p>
@@ -309,7 +310,7 @@
     <div class="editor-grid">
       <ul class="edit-list">
         <li><span class="combo"><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">B</kbd></span>
-          <b>Remove Background, offline.<span>One click makes everything but the subject transparent, like remove.bg, using a small AI model (U²-Netp) that runs on your PC in about half a second. Nothing is uploaded. With a selection, only the part inside it changes.</span></b></li>
+          <b>Remove Background, offline.<span>One click makes everything but the subject transparent, like remove.bg. It uses the IS-Net AI model, which ships with MicroApp and runs on your PC in a second or two. Nothing is uploaded. With a selection, only the part inside it changes.</span></b></li>
         <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">N</kbd></span>
           <b>New documents from presets, in tabs.<span>Print sizes A0–A6, Letter and Legal; ratios 16:9, 21:9, 4:3, 1:1 and 9:16; photo, web, mobile and video sizes; or any size in px, in, cm or mm at any resolution. Each document opens in its own tab, and Ctrl+Tab switches between them.</span></b></li>
         <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">P</kbd></span>
@@ -378,7 +379,9 @@
       <h3>Record a GIF or an MP4</h3>
       <p>The same frame records: an animated GIF for a bug report, or
         <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">R</kbd></span>
-        an H.264 video with system sound and microphone, no time limit, pause and resume.</p>
+        an H.264 video with system sound, your microphone or both mixed, no time limit. While it records, the camera can
+        follow the pointer and zoom from 50 % to 400 %; clicks glow, Ctrl+Alt+P pauses, and an optional action log lists
+        every click and key press by the second.</p>
     </div>
     <figure><img src="demo-recording.gif" alt="A recording of MicroApp capturing a region of the screen as a GIF." width="600" height="338" loading="lazy"></figure>
   </div>
@@ -397,22 +400,22 @@
 
 <section class="band" id="download">
   <div class="wrap">
-    <h2>Download 5.2.0</h2>
-    <p>Free, and small enough to keep on a USB stick. Installing over an older version keeps your settings and notes.</p>
+    <h2>Download 5.3.0</h2>
+    <p>Free. The download includes the offline AI model for background removal. Installing over an older version keeps your settings and notes.</p>
     <ul class="files">
       <li>
-        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.2.0/MicroApp-5.2.0-setup.exe">MicroApp-5.2.0-setup.exe</a>
-        <span class="size">8.50 MB</span>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.3.0/MicroApp-5.3.0-setup.exe">MicroApp-5.3.0-setup.exe</a>
+        <span class="size">163.8 MB</span>
         <span class="what">Installs for everyone, into Program Files. Needs an administrator.</span>
       </li>
       <li>
-        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.2.0/MicroApp-5.2.0-peruser-setup.exe">MicroApp-5.2.0-peruser-setup.exe</a>
-        <span class="size">8.49 MB</span>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.3.0/MicroApp-5.3.0-peruser-setup.exe">MicroApp-5.3.0-peruser-setup.exe</a>
+        <span class="size">163.8 MB</span>
         <span class="what">Installs for you only. No administrator needed.</span>
       </li>
       <li>
-        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.2.0/MicroApp-5.2.0-win-x64.zip">MicroApp-5.2.0-win-x64.zip</a>
-        <span class="size">9.60 MB</span>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.3.0/MicroApp-5.3.0-win-x64.zip">MicroApp-5.3.0-win-x64.zip</a>
+        <span class="size">166.0 MB</span>
         <span class="what">Portable. Unzip it anywhere and run MicroApp.exe.</span>
       </li>
     </ul>
