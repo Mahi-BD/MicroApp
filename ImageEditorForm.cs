@@ -169,6 +169,8 @@ namespace MicroApp
         TextBox _inlineEdit;
         readonly Cursor _rotateCursor;
         readonly Cursor _skewCursor;
+        readonly Cursor _grabCursor;       // Photoshop's open hand: Space held or the Hand tool
+        readonly Cursor _grabbingCursor;   // the closed hand while panning
 
         static ImageEditorForm _open;
 
@@ -218,6 +220,8 @@ namespace MicroApp
 
             _rotateCursor = MakeCursor("rotate");
             _skewCursor = MakeCursor("skew");
+            _grabCursor = MakeHandCursor(false);
+            _grabbingCursor = MakeHandCursor(true);
 
             BuildMenu();
             BuildOptionsBar();
@@ -1305,6 +1309,57 @@ namespace MicroApp
             catch { return Cursors.Cross; }
         }
 
+        /// <summary>
+        /// The open hand (grab) and the closed fist (grabbing) Photoshop shows for panning -
+        /// Windows' own Cursors.Hand is the pointing finger of a link, which reads as "click".
+        /// Every part is stroked black first and filled white on top, so the parts merge
+        /// into one silhouette with a single outline.
+        /// </summary>
+        static Cursor MakeHandCursor(bool closed)
+        {
+            try
+            {
+                using (var bmp = new Bitmap(32, 32, PixelFormat.Format32bppArgb))
+                {
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        g.SmoothingMode = SmoothingMode.AntiAlias;
+                        // fingers: x, top; they all end in the palm
+                        float[][] fingers = closed
+                            ? new[] { new[] { 10.5f, 12f }, new[] { 14.5f, 11f }, new[] { 18.5f, 11f }, new[] { 22.5f, 12.5f } }
+                            : new[] { new[] { 10.5f, 7f }, new[] { 14.5f, 4.5f }, new[] { 18.5f, 5f }, new[] { 22.5f, 8f } };
+                        PointF thumbA = closed ? new PointF(8.5f, 18f) : new PointF(5.5f, 14.5f);
+                        PointF thumbB = closed ? new PointF(11.5f, 21f) : new PointF(10.5f, 21f);
+                        using (GraphicsPath palm = Theme.Round(new Rectangle(8, 14, 18, closed ? 13 : 14), 6))
+                        {
+                            foreach (bool outline in new[] { true, false })
+                            {
+                                Color c = outline ? Color.Black : Color.White;
+                                float w = outline ? 5.6f : 3.4f;
+                                using (var p = new Pen(c, w) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+                                {
+                                    foreach (float[] f in fingers) g.DrawLine(p, f[0], f[1], f[0], 18f);
+                                    g.DrawLine(p, thumbA, thumbB);
+                                }
+                                if (outline) using (var p = new Pen(Color.Black, 2.2f)) g.DrawPath(p, palm);
+                                else using (var b = new SolidBrush(Color.White)) g.FillPath(b, palm);
+                            }
+                            // the creases between the fingers, as Photoshop draws them
+                            using (var crease = new Pen(Color.Black, 1f))
+                                for (int i = 0; i < fingers.Length - 1; i++)
+                                {
+                                    float x = (fingers[i][0] + fingers[i + 1][0]) / 2f;
+                                    g.DrawLine(crease, x, Math.Max(fingers[i][1], fingers[i + 1][1]) + 2f, x, closed ? 14.5f : 16f);
+                                }
+                        }
+                    }
+                    IntPtr h = bmp.GetHicon();   // an icon's hot spot is its centre - right for a hand
+                    return new Cursor(h);
+                }
+            }
+            catch { return Cursors.Hand; }
+        }
+
         // ================================================================== keyboard
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -1312,7 +1367,7 @@ namespace MicroApp
             if (e.KeyCode == Keys.Space && !IsTypingContext() && !_spaceDown)
             {
                 _spaceDown = true;
-                if (_drag == Drag.None) _canvasPanel.Cursor = Cursors.Hand;
+                if (_drag == Drag.None) { _canvasPanel.Cursor = _grabCursor; _canvasPanel.Invalidate(); }
             }
             base.OnKeyDown(e);
         }
@@ -1322,7 +1377,7 @@ namespace MicroApp
             if (e.KeyCode == Keys.Space)
             {
                 _spaceDown = false;
-                if (_drag == Drag.None) _canvasPanel.Cursor = ToolCursor(_tool);
+                if (_drag == Drag.None) { _canvasPanel.Cursor = ToolCursor(_tool); _canvasPanel.Invalidate(); }
             }
             // a marquee started with Shift/Alt (add/subtract): releasing and pressing the key
             // again during the drag turns it into constrain / from-centre, as in Photoshop
@@ -1589,7 +1644,7 @@ namespace MicroApp
             switch (tool)
             {
                 case Tool.Move: return Cursors.Default;
-                case Tool.Hand: return Cursors.Hand;
+                case Tool.Hand: return _grabCursor;
                 case Tool.Zoom: return Cursors.Cross;
                 case Tool.Text: return Cursors.IBeam;
                 case Tool.Brush:

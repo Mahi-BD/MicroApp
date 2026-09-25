@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Photoshop's hand cursor for panning.** Holding **Space** (or picking the Hand tool) shows the open
+  hand, and dragging shows the closed fist. Before, it was the pointing-finger link cursor and then the four-way
+  arrows. The brush-size circle hides while Space is held.
+
 - **Document tabs in the image editor.** Several images can be open at once, each in its own tab
   with its own layers, history, selection and zoom. Tabs close with ×, a middle click or **Ctrl+W**,
   and **Ctrl+Tab** cycles through them. There is a new **Window** menu, and a right-click on a tab offers

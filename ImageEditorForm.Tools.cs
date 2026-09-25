@@ -110,7 +110,8 @@ namespace MicroApp
             {
                 _drag = Drag.Pan;
                 _panOrigin0 = _origin;
-                _canvasPanel.Cursor = Cursors.SizeAll;
+                _canvasPanel.Cursor = _grabbingCursor;
+                _canvasPanel.Invalidate();   // the brush outline hides while panning
                 return;
             }
             if (e.Button == MouseButtons.Right)
@@ -493,7 +494,7 @@ namespace MicroApp
                 return;
             }
             if (_spaceDown && !SpaceHeld()) _spaceDown = false;
-            _canvasPanel.Cursor = _spaceDown ? Cursors.Hand : ToolCursor(_tool);
+            _canvasPanel.Cursor = _spaceDown ? _grabCursor : ToolCursor(_tool);
         }
 
         static Cursor HandleCursor(int h)
@@ -523,7 +524,10 @@ namespace MicroApp
             }
             Drag was = _drag;
             _drag = Drag.None;
-            _canvasPanel.Cursor = ToolCursor(_tool);
+            // still holding Space after a pan: back to the open hand, ready for the next one
+            if (_spaceDown && !SpaceHeld()) _spaceDown = false;
+            _canvasPanel.Cursor = _spaceDown ? _grabCursor : ToolCursor(_tool);
+            if (was == Drag.Pan) _canvasPanel.Invalidate();
             PointF cp = ScreenToCanvas(e.Location);
 
             switch (was)
@@ -1297,7 +1301,7 @@ namespace MicroApp
 
         void PaintBrushCursor(Graphics g)
         {
-            if (!IsBrushTool(_tool) || !_mouseInside) return;
+            if (!IsBrushTool(_tool) || !_mouseInside || _spaceDown || _drag == Drag.Pan) return;
             float d = _brushSize * _zoom;
             if (d < 6) return;
             using (var white = new Pen(Color.FromArgb(200, 255, 255, 255), 1f))
