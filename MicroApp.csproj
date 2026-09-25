@@ -131,6 +131,7 @@
     </Compile>
     <Compile Include="ImageEditorNewDocument.cs" />
     <Compile Include="ImageEditorBackground.cs" />
+    <Compile Include="ImageEditorPrint.cs" />
     <Compile Include="ImageEditorLayers.cs" />
     <Compile Include="ImageEditorOps.cs" />
     <Compile Include="ImageEditorSelection.cs" />

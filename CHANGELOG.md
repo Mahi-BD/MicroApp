@@ -12,6 +12,10 @@
   Legal/Tabloid, Ratio 16:9/21:9/4:3/1:1…, Photo, Web, Mobile, Film & Video) and a Preset Details column
   with units (px/in/cm/mm/pt), resolution, orientation, constrain and background contents. A new document
   opens in a new tab and no longer replaces the one you were working on.
+- **File → Print** (**Ctrl+P**) with a Photoshop-style preview: the page to scale with the picture on it
+  (drag to move), printer, copies, paper, orientation, center / top / left, scale to fit, scale %, width /
+  height in in / cm / mm, the effective print resolution and warnings. Documents now remember the
+  resolution they were created (or opened) at, so they print at their real size.
 - **Remove Background** (the new button under the tools, **Image → Remove Background**, **Alt+Ctrl+B**)
   makes everything but the subject transparent using a small AI model (U²-Netp, via ONNX Runtime) that
   runs offline. With a selection, only the area inside it is changed.

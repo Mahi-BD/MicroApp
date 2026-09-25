@@ -43,6 +43,8 @@ namespace MicroApp
             file.DropDownItems.Add(Item("Save", Keys.Control | Keys.S, delegate { SaveAs(); }));
             file.DropDownItems.Add(Item("Copy Merged to Clipboard", Keys.Control | Keys.Shift | Keys.C, delegate { CopyResult(); }));
             file.DropDownItems.Add(new ToolStripSeparator());
+            file.DropDownItems.Add(Item("Print…", Keys.Control | Keys.P, delegate { PrintImage(); }));
+            file.DropDownItems.Add(new ToolStripSeparator());
             file.DropDownItems.Add(Item("Close", Keys.Control | Keys.W, delegate { CloseCurrent(); }));
             file.DropDownItems.Add(Item("Close All", Keys.Control | Keys.Alt | Keys.W, delegate { CloseAllDocs(); }));
             file.DropDownItems.Add(Item("Exit", Keys.Control | Keys.Q, delegate { Close(); }));
@@ -1204,7 +1206,7 @@ namespace MicroApp
             row("Zoom in / out", "Ctrl++ / Ctrl+-  (or the wheel)"); row("Fit on Screen / 100%", "Ctrl+0 / Ctrl+1"); row("Rulers", "Ctrl+R"); row("Hide extras", "Ctrl+H"); row("Pan", "Space+drag or the middle button");
             group("Edit");
             row("Undo / Redo", "Ctrl+Z / Shift+Ctrl+Z (Ctrl+Y)"); row("Cut / Copy / Paste", "Ctrl+X / Ctrl+C / Ctrl+V"); row("Copy Merged / Paste in Place", "Shift+Ctrl+C / Shift+Ctrl+V");
-            row("Save As / Exit", "Ctrl+S / Ctrl+Q");
+            row("Save As / Print / Exit", "Ctrl+S / Ctrl+P / Ctrl+Q");
             group("Documents");
             row("New document (presets) / Open in a new tab", "Ctrl+N / Ctrl+O"); row("Add Image to this document", "Shift+Ctrl+O");
             row("Next / previous tab", "Ctrl+Tab / Shift+Ctrl+Tab"); row("Close tab / Close all", "Ctrl+W (or middle-click) / Alt+Ctrl+W");

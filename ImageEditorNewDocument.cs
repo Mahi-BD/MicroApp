@@ -14,6 +14,7 @@ namespace MicroApp
     {
         public string Name;
         public int Width, Height;
+        public int Ppi = 72;
         public Color Background;
     }
 
@@ -464,6 +465,7 @@ namespace MicroApp
                     Name = string.IsNullOrWhiteSpace(d._name.Text) ? defaultName : d._name.Text.Trim(),
                     Width = d._pxW,
                     Height = d._pxH,
+                    Ppi = d._ppiValue,
                     Background = bg == 1 ? Color.Black : bg == 2 ? bgColor : bg == 3 ? Color.Transparent : Color.White
                 };
                 string recentName = d._presetName == "Clipboard" || d._presetName == "Current Document" ? "Custom" : d._presetName;
@@ -684,7 +686,7 @@ namespace MicroApp
         }
 
         /// <summary>Portrait / landscape toggle: a small page icon, accent-framed when on.</summary>
-        sealed class OrientationButton : Control
+        internal sealed class OrientationButton : Control
         {
             readonly bool _portrait;
             bool _checked, _hover;

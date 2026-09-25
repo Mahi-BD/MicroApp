@@ -336,6 +336,7 @@ namespace MicroApp
             int w = spec.Width, h = spec.Height;
             _canvas = new Size(w, h);
             _canvasBg = spec.Background;
+            _ppi = spec.Ppi;
             _hasDoc = true;
             _dirty = false;
             _cropRect = null;
@@ -442,6 +443,7 @@ namespace MicroApp
                 _canvas = bmp.Size;
                 _canvasBg = Color.Transparent;
                 _hasDoc = true;
+                try { _ppi = bmp.HorizontalResolution >= 30 && bmp.HorizontalResolution <= 2400 ? bmp.HorizontalResolution : 72; } catch { _ppi = 72; }
                 var first = new RasterLayer(bmp) { Name = name, Bounds = new RectangleF(0, 0, bmp.Width, bmp.Height) };
                 _layers.Add(first);
                 _sel = 0;
@@ -515,6 +517,16 @@ namespace MicroApp
                 p.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);
                 bmp.Save(path, codec, p);
             }
+        }
+
+        /// <summary>File &gt; Print: the Photoshop-style print window, previewing the page before anything is sent.</summary>
+        void PrintImage()
+        {
+            CommitInlineEdit();
+            CommitTransform();
+            if (!EnsureDoc()) return;
+            using (Bitmap flat = Flattened(true))
+                EditorPrintDialog.Run(this, flat, _ppi, _doc.Title);
         }
 
         /// <summary>Copy Merged: the flattened picture to the clipboard (with a PNG for apps that keep alpha).</summary>

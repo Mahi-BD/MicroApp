@@ -33,6 +33,7 @@ namespace MicroApp
             public bool ViewFitted;
             public PointF? LastStrokeEnd;
             public Point? CloneSource;
+            public float Ppi = 72;
         }
 
         readonly List<DocState> _docs = new List<DocState>();
@@ -40,6 +41,7 @@ namespace MicroApp
         int _untitledCounter;
         DocTabStrip _docTabs;
         Panel _docArea;
+        float _ppi = 72;          // the front document's print resolution (File > New, or the opened file's)
 
         void BuildDocTabs()
         {
@@ -118,6 +120,7 @@ namespace MicroApp
             d.ViewFitted = _viewFitted;
             d.LastStrokeEnd = _lastStrokeEnd;
             d.CloneSource = _cloneSource;
+            d.Ppi = _ppi;
             _layers.Clear();
             _undo.Clear();
             _redo.Clear();
@@ -147,6 +150,7 @@ namespace MicroApp
             _viewFitted = d.ViewFitted;
             _lastStrokeEnd = d.LastStrokeEnd;
             _cloneSource = d.CloneSource;
+            _ppi = d.Ppi;
             d.Selection = d.LastSelection = null;
             ShowActiveDoc();
         }
@@ -216,6 +220,7 @@ namespace MicroApp
             _viewFitted = false;
             _lastStrokeEnd = null;
             _cloneSource = null;
+            _ppi = 72;
             return true;
         }
 

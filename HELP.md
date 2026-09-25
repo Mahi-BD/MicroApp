@@ -400,6 +400,18 @@ they are.
 (**Shift+Ctrl+O**) puts pictures into the current document as new layers instead. **File → Exit**
 (**Ctrl+Q**) closes the editor.
 
+### Printing
+
+**File → Print** (**Ctrl+P**) opens a print window like Photoshop's, so you see the page before anything
+is printed. The page is drawn to scale on the left with the picture on it (the dashed line is the
+area the printer can reach); drag the picture to move it. On the right pick the **printer**,
+**copies**, **paper** and **portrait / landscape** (**Printer Settings…** opens the printer's own
+options), then place the picture: **Center**, or type **Top / Left**, and size it with
+**Scale to Fit Media**, a **Scale** %, or a **Width / Height** in inches, centimetres or millimetres.
+At 100 % a document prints at its real size - an A4 made at 300 ppi comes out as A4. The window shows
+the resulting print resolution and warns under 150 PPI or when part of the picture falls outside
+the printable area. Nothing is sent until you press **Print**.
+
 ### Remove Background
 
 The button under the tools, the one with the figure on a checkerboard (also **Image → Remove Background**, **Alt+Ctrl+B**,
