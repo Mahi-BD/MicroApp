@@ -1220,4 +1220,68 @@ namespace MicroApp
             HandleCreated += delegate { Native.SetDarkModeForWindow(Handle, ThemeHelper.IsDarkMode); };
         }
     }
+
+    /// <summary>
+    /// A small modal "working" window: runs <c>work</c> on a thread-pool thread, keeps the
+    /// editor painting meanwhile (no "Not responding"), and closes itself when it is done.
+    /// An exception from the work is thrown again on the caller's thread.
+    /// </summary>
+    class BusyDialog : PixelPerfectForm
+    {
+        readonly Timer _spin = new Timer { Interval = 40 };
+        float _phase;
+        readonly string _text;
+
+        BusyDialog(string text)
+        {
+            Theme.Init(ThemeHelper.IsDarkMode);
+            _text = text;
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.CenterParent;
+            ClientSize = new Size(340, 84);
+            BackColor = Theme.Surface;
+            Font = Theme.Base;
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+            _spin.Tick += delegate { _phase = (_phase + 0.035f) % 1f; Invalidate(); };
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.Clear(Theme.Surface);
+            using (var border = new Pen(Theme.Border)) g.DrawRectangle(border, 0, 0, Width - 1, Height - 1);
+            TextRenderer.DrawText(g, _text, Theme.Base, new Rectangle(20, 18, Width - 40, 22), Theme.Text,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            // an indeterminate bar: a segment sliding along the track
+            var track = new Rectangle(20, 52, Width - 40, 6);
+            using (var tb = new SolidBrush(Theme.FieldBg)) g.FillRectangle(tb, track);
+            int seg = track.Width / 3;
+            int x = track.X - seg + (int)((track.Width + seg) * _phase);
+            var bar = Rectangle.Intersect(track, new Rectangle(x, track.Y, seg, track.Height));
+            using (var ab = new SolidBrush(Theme.Accent)) g.FillRectangle(ab, bar);
+        }
+
+        public static T Run<T>(IWin32Window owner, string text, Func<T> work)
+        {
+            T result = default(T);
+            Exception error = null;
+            using (var d = new BusyDialog(text))
+            {
+                d.Shown += delegate
+                {
+                    d._spin.Start();
+                    System.Threading.ThreadPool.QueueUserWorkItem(delegate
+                    {
+                        try { result = work(); }
+                        catch (Exception ex) { error = ex; }
+                        try { d.BeginInvoke(new Action(() => { d._spin.Stop(); d.Close(); })); } catch { }
+                    });
+                };
+                d.ShowDialog(owner);
+            }
+            if (error != null) throw error;
+            return result;
+        }
+    }
 }

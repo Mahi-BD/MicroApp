@@ -416,10 +416,12 @@ the printable area. Nothing is sent until you press **Print**.
 
 The button under the tools, the one with the figure on a checkerboard (also **Image → Remove Background**, **Alt+Ctrl+B**,
 or right-click the canvas), makes everything except the subject of the selected layer transparent,
-the way remove.bg does. It runs a small AI model (U²-Netp) on your PC, offline, in about half a second.
+the way remove.bg does. It runs an AI model (IS-Net) on your PC, offline, in a second or two; a small
+"working" window shows while it runs. **Image → Remove Background (Fast)** uses a smaller model that
+takes a fraction of a second but cuts less precisely.
 With a **selection**, only the area inside it is looked at and changed. Draw a marquee around one object
-to cut out just that object. It works best on a clear subject (a person, a product, an animal, a car). Edges are soft rather
-than hair-exact, so tidy them with the Eraser or a layer mask afterwards. **Ctrl+Z** undoes it.
+to cut out just that object. It works best on a clear subject (a person, a product, an animal, a car). Fine hair can
+still need a touch-up with the Eraser afterwards. **Ctrl+Z** undoes it.
 
 ### Layers
 

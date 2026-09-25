@@ -25,4 +25,5 @@ Added in MicroApp, © 2026 Samsur Rahman Mahi, under the same BSD 3-Clause terms
 | Microsoft.Windows.SDK.Contracts | Microsoft Software License Terms |
 | ONNX Runtime (Microsoft.ML.OnnxRuntime) | MIT |
 | U²-Netp model (`Resources/u2netp.onnx`, Qin et al., via rembg) | Apache 2.0 |
+| IS-Net general-use model (`Models/isnet-general-use.onnx`, DIS, Qin et al., via rembg) | Apache 2.0 |
 | Microsoft Visual C++ runtime (app-local `msvcp140*.dll`, `vcruntime140*.dll`) | Microsoft Visual C++ Redistributable license |

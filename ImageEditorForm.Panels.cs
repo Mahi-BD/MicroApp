@@ -182,7 +182,7 @@ namespace MicroApp
                     if (!_f._groupChoice.TryGetValue(group[0], out shown)) shown = group[0];
                     tip = ToolName(shown) + "  (" + ToolKey(shown) + ")" + (group.Length > 1 ? "  ·  right-click for more" : "");
                 }
-                else if (overRb) tip = "Remove Background (Alt+Ctrl+B) - makes everything but the subject transparent; with a selection, only inside it";
+                else if (overRb) tip = "Remove Background (Alt+Ctrl+B) - makes everything but the subject transparent (AI, offline); with a selection, only inside it";
                 else if (FgRect.Contains(e.Location)) tip = "Foreground colour (click to change)";
                 else if (BgRect.Contains(e.Location)) tip = "Background colour (click to change)";
                 else if (new Rectangle(8, BgRect.Bottom - 12, 14, 14).Contains(e.Location)) tip = "Default colours (D)";
@@ -201,7 +201,7 @@ namespace MicroApp
             protected override void OnMouseDown(MouseEventArgs e)
             {
                 base.OnMouseDown(e);
-                if (e.Button == MouseButtons.Left && RemoveBgRect.Contains(e.Location)) { _f.RemoveBackground(); return; }
+                if (e.Button == MouseButtons.Left && RemoveBgRect.Contains(e.Location)) { _f.RemoveBackground(true); return; }
                 int s = SlotAt(e.Location);
                 if (s >= 0)
                 {

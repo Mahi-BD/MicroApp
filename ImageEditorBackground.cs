@@ -9,35 +9,72 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 namespace MicroApp
 {
     /// <summary>
-    /// Remove Background: finds the subject with U²-Netp (a small salient-object network,
-    /// Apache-2.0, embedded in the exe) run offline through ONNX Runtime, and turns
-    /// everything else transparent. The network sees the picture at 320 × 320; its
-    /// matte is scaled back up to the full size, so the edges are soft rather than
-    /// hair-exact.
+    /// Remove Background: finds the subject with a salient-object network run offline
+    /// through ONNX Runtime and turns everything else transparent. Two networks ship:
+    /// IS-Net general use (DIS, Apache-2.0, 179 MB, Models\ next to the exe) sees the
+    /// picture at 1024 × 1024 and is the one Remove Background uses; U²-Netp (Apache-2.0,
+    /// 4.5 MB, embedded in the exe) sees it at 320 × 320 and is Remove Background (Fast),
+    /// and the fallback when the big model file is missing. Either matte is scaled back
+    /// up to the full size.
     /// </summary>
     static class BackgroundRemover
     {
-        const int Side = 320;
-        static readonly float[] Mean = { 0.485f, 0.456f, 0.406f };
-        static readonly float[] Std = { 0.229f, 0.224f, 0.225f };
-        static InferenceSession _session;
+        /// <summary>One network and the way it wants its input and gives its output.</summary>
+        sealed class Net
+        {
+            public string Name;
+            public int Side;
+            public float[] Mean, Std;
+            public float CleanLo, CleanHi;     // the matte is stretched so these become 0 and 1
+            public InferenceSession Session;
+        }
+
+        static readonly Net Fast = new Net
+        {
+            Name = "U2-Netp", Side = 320,
+            Mean = new[] { 0.485f, 0.456f, 0.406f }, Std = new[] { 0.229f, 0.224f, 0.225f },
+            CleanLo = 0.12f, CleanHi = 0.88f
+        };
+
+        static readonly Net Best = new Net
+        {
+            Name = "IS-Net", Side = 1024,
+            Mean = new[] { 0.5f, 0.5f, 0.5f }, Std = new[] { 1f, 1f, 1f },
+            CleanLo = 0.04f, CleanHi = 0.96f
+        };
+
         static readonly object _lock = new object();
 
-        static InferenceSession Session()
+        /// <summary>Where the installers put the IS-Net model: Models\ beside MicroApp.exe.</summary>
+        public static string BestModelPath
+        {
+            get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Models", "isnet-general-use.onnx"); }
+        }
+
+        public static bool BestAvailable { get { return File.Exists(BestModelPath); } }
+
+        static InferenceSession Session(Net net)
         {
             lock (_lock)
             {
-                if (_session != null) return _session;
-                byte[] model;
-                using (Stream s = typeof(BackgroundRemover).Assembly.GetManifestResourceStream("MicroApp.u2netp.onnx"))
-                {
-                    if (s == null) throw new InvalidOperationException("The background model is missing from this build.");
-                    using (var ms = new MemoryStream()) { s.CopyTo(ms); model = ms.ToArray(); }
-                }
+                if (net.Session != null) return net.Session;
                 try
                 {
-                    var opts = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
-                    _session = new InferenceSession(model, opts);
+                    // no arena: the 1024 × 1024 activations are handed back after each run
+                    // instead of staying reserved for the rest of the session
+                    var opts = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL, EnableCpuMemArena = false };
+                    if (net == Best)
+                        net.Session = new InferenceSession(BestModelPath, opts);
+                    else
+                    {
+                        byte[] model;
+                        using (Stream s = typeof(BackgroundRemover).Assembly.GetManifestResourceStream("MicroApp.u2netp.onnx"))
+                        {
+                            if (s == null) throw new InvalidOperationException("The background model is missing from this build.");
+                            using (var ms = new MemoryStream()) { s.CopyTo(ms); model = ms.ToArray(); }
+                        }
+                        net.Session = new InferenceSession(model, opts);
+                    }
                 }
                 catch (Exception ex) when (ex is DllNotFoundException || ex is TypeInitializationException || ex is BadImageFormatException)
                 {
@@ -45,21 +82,23 @@ namespace MicroApp
                         "The AI runtime (onnxruntime.dll) could not start. Reinstall MicroApp, or install the " +
                         "Microsoft Visual C++ 2015-2022 Redistributable (x64).\r\n\r\n" + ex.Message);
                 }
-                return _session;
+                return net.Session;
             }
         }
 
         /// <summary>
         /// Removes the background inside <paramref name="mask"/> (layer-sized, 0..255; null: the
         /// whole layer). Only the part of the layer the mask covers is shown to the network, so a
-        /// selection around one object gives that object's cut-out.
+        /// selection around one object gives that object's cut-out. <paramref name="best"/> picks
+        /// IS-Net when its file is there; returns the name of the network that ran.
         /// </summary>
-        public static void Apply(Pixels px, byte[] mask)
+        public static string Apply(Pixels px, byte[] mask, bool best)
         {
+            Net net = best && BestAvailable ? Best : Fast;
             Rectangle area = mask == null ? new Rectangle(0, 0, px.Width, px.Height) : MaskBounds(mask, px.Width, px.Height);
             if (area.Width < 2 || area.Height < 2) throw new InvalidOperationException("The selection does not cover any of this layer.");
 
-            float[] matte = Matte(px, area);
+            float[] matte = Matte(net, px, area);
             byte[] d = px.Data;
             for (int y = 0; y < area.Height; y++)
             {
@@ -76,6 +115,7 @@ namespace MicroApp
                     d[i + 3] = (byte)Math.Round(d[i + 3] * factor);
                 }
             }
+            return net.Name;
         }
 
         static Rectangle MaskBounds(byte[] mask, int w, int h)
@@ -97,24 +137,24 @@ namespace MicroApp
         }
 
         /// <summary>The foreground probability (0..1) of every pixel of <paramref name="area"/>.</summary>
-        static float[] Matte(Pixels px, Rectangle area)
+        static float[] Matte(Net net, Pixels px, Rectangle area)
         {
-            // 1. the area, flattened over white (transparent pixels carry no usable colour), at 320 × 320
-            var input = new DenseTensor<float>(new[] { 1, 3, Side, Side });
+            int Side = net.Side;
+            // 1. the area, flattened over white (transparent pixels carry no usable colour), at the network's size
             float[] rgb = ResampleRgb(px, area, Side, Side);
             float max = 1e-6f;
             for (int i = 0; i < rgb.Length; i++) if (rgb[i] > max) max = rgb[i];
-            for (int y = 0; y < Side; y++)
-                for (int x = 0; x < Side; x++)
-                {
-                    int i = (y * Side + x) * 3;
-                    for (int c = 0; c < 3; c++)
-                        input[0, c, y, x] = (rgb[i + c] / max - Mean[c]) / Std[c];
-                }
+            // planar NCHW: all of R, then all of G, then all of B
+            int plane = Side * Side;
+            var buf = new float[3 * plane];
+            for (int i = 0; i < plane; i++)
+                for (int c = 0; c < 3; c++)
+                    buf[c * plane + i] = (rgb[i * 3 + c] / max - net.Mean[c]) / net.Std[c];
+            var input = new DenseTensor<float>(buf, new[] { 1, 3, Side, Side });
 
             // 2. the network's finest side output (the first one)
             float[] pred;
-            InferenceSession s = Session();
+            InferenceSession s = Session(net);
             string inputName = s.InputMetadata.Keys.First();
             using (IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results =
                    s.Run(new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor(inputName, input) }))
@@ -129,7 +169,7 @@ namespace MicroApp
             for (int i = 0; i < pred.Length; i++)
             {
                 float v = (pred[i] - lo) / span;
-                v = (v - 0.12f) / (0.88f - 0.12f);
+                v = (v - net.CleanLo) / (net.CleanHi - net.CleanLo);
                 pred[i] = v < 0 ? 0 : v > 1 ? 1 : v;
             }
             return Upscale(pred, Side, Side, area.Width, area.Height);

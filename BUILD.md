@@ -30,6 +30,17 @@ msbuild MicroApp.sln /p:Configuration=Release /p:SkipCodeSigning=true
 Output lands in `bin\Debug\` or `bin\Release\`. `MicroApp.exe` plus the AutoItX and MouseKeyHook DLLs
 are all you need to run it — it is xcopy-portable.
 
+**Remove Background's model.** The IS-Net model (`isnet-general-use.onnx`, 179 MB) is too big for the
+repository, so it is a release asset. CI fetches it and checks its SHA-256. For a local build, download it once into
+`bin\<Configuration>\Models\`:
+
+```powershell
+New-Item -ItemType Directory -Force bin\Release\Models | Out-Null
+Invoke-WebRequest https://github.com/Mahi-BD/MicroApp/releases/download/models-1/isnet-general-use.onnx -OutFile bin\Release\Models\isnet-general-use.onnx
+```
+
+Without it the app still runs. Remove Background then falls back to the small built-in model.
+
 > Building `Release` **without** `/p:SkipCodeSigning=true` runs `sign.bat`, which expects a code signing
 > certificate. Skip signing unless you have one.
 

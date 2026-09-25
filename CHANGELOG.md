@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.3.0 — 2026-09-25
+
+### Changed
+
+- **Remove Background is much smarter.** It now uses **IS-Net** (the DIS general-use model), which
+  sees the picture at 1024 × 1024 instead of 320 × 320. It keeps whole people (raised arms, bags,
+  legs), animals and objects with clean edges where the old model cut parts off. It takes a second
+  or two and about 1 GB of memory, runs offline like before, and a small "working" window keeps the
+  editor responsive meanwhile. The old model is still there as **Image → Remove Background (Fast)**.
+- The model ships inside the installers, the portable zip and the Store package (in `Models\` next to
+  the exe), so nothing is downloaded. The setup grows to about 170 MB.
+
 ## 5.2.0 — 2026-09-25
 
 The image editor now works with several documents in tabs, and gains a Photoshop-style New Document

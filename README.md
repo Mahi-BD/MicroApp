@@ -209,8 +209,9 @@ right-click menus (**Help → Keyboard Shortcuts** lists them all).
   (px / in / cm / mm / pt), resolution, orientation and background. **File → Open** opens a picture
   in a new tab; **File → Add Image** adds it to the current one as a layer.
 - **Remove Background.** One click (the button under the tools, or **Alt+Ctrl+B**) makes everything
-  but the subject transparent, like remove.bg — a small AI model (U²-Netp) running offline on your
-  PC in about half a second. With a selection, only the part inside it is changed.
+  but the subject transparent, like remove.bg — an AI model (IS-Net) that ships with MicroApp and
+  runs offline on your PC in a second or two. With a selection, only the part inside it is changed.
+  **Remove Background (Fast)** uses a smaller model for a quicker, rougher cut.
 - **Layers.** Every paste, mark, text box and asset is its own layer, with blend modes, opacity,
   a lock, drag-to-reorder, merge down / merge visible / flatten, and **Layer Styles** — drop
   shadow, outer glow, stroke, colour overlay. A **History** panel jumps back fifty steps.

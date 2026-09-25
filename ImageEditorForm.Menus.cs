@@ -105,7 +105,8 @@ namespace MicroApp
             image.DropDownItems.Add(Item("Auto Tone", Keys.Control | Keys.Shift | Keys.L, delegate { RunInstant("Auto Tone", (p, m) => PixelOps.AutoTone(p, m)); }));
             image.DropDownItems.Add(Item("Auto Contrast", Keys.Control | Keys.Alt | Keys.Shift | Keys.L, delegate { RunInstant("Auto Contrast", (p, m) => PixelOps.AutoContrast(p, m)); }));
             image.DropDownItems.Add(Item("Auto Color", Keys.Control | Keys.Shift | Keys.B, delegate { RunInstant("Auto Color", (p, m) => PixelOps.AutoColor(p, m)); }));
-            image.DropDownItems.Add(Item("Remove Background", Keys.Control | Keys.Alt | Keys.B, delegate { RemoveBackground(); }));
+            image.DropDownItems.Add(Item("Remove Background", Keys.Control | Keys.Alt | Keys.B, delegate { RemoveBackground(true); }));
+            image.DropDownItems.Add(Item("Remove Background (Fast)", Keys.None, delegate { RemoveBackground(false); }));
             image.DropDownItems.Add(new ToolStripSeparator());
             image.DropDownItems.Add(Item("Image Size…", Keys.Control | Keys.Alt | Keys.I, delegate { ResizeDocument(); }));
             image.DropDownItems.Add(Item("Canvas Size…", Keys.Control | Keys.Alt | Keys.C, delegate { CanvasSize(); }));
@@ -437,7 +438,7 @@ namespace MicroApp
             m.Items.Add(new ToolStripMenuItem("Deselect", null, delegate { Deselect(); }) { ShortcutKeyDisplayString = "Ctrl+D", Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Reselect", null, delegate { Reselect(); }) { ShortcutKeyDisplayString = "Shift+Ctrl+D", Enabled = _lastSelection != null });
             m.Items.Add(new ToolStripMenuItem("Select Inverse", null, delegate { SelectInverse(); }) { ShortcutKeyDisplayString = "Shift+Ctrl+I", Enabled = HasSelection });
-            m.Items.Add(new ToolStripMenuItem(HasSelection ? "Remove Background (in selection)" : "Remove Background", null, delegate { RemoveBackground(); }) { ShortcutKeyDisplayString = "Alt+Ctrl+B", Enabled = SelectedLayer() != null });
+            m.Items.Add(new ToolStripMenuItem(HasSelection ? "Remove Background (in selection)" : "Remove Background", null, delegate { RemoveBackground(true); }) { ShortcutKeyDisplayString = "Alt+Ctrl+B", Enabled = SelectedLayer() != null });
             m.Items.Add(new ToolStripMenuItem("Feather…", null, delegate { ModifySelection("Feather"); }) { ShortcutKeyDisplayString = "Shift+F6", Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Expand…", null, delegate { ModifySelection("Expand"); }) { Enabled = HasSelection });
             m.Items.Add(new ToolStripMenuItem("Contract…", null, delegate { ModifySelection("Contract"); }) { Enabled = HasSelection });
@@ -767,15 +768,20 @@ namespace MicroApp
         /// <summary>An adjustment with no dialog (Invert, Auto Tone, Desaturate...).</summary>
         /// <summary>
         /// Image &gt; Remove Background: the AI matte makes everything but the subject transparent
-        /// on the selected layer - inside the selection only when there is one.
+        /// on the selected layer - inside the selection only when there is one. best: IS-Net
+        /// (about a second or two); otherwise the small built-in network (a fraction of that).
+        /// The network runs off the UI thread behind a small "working" window.
         /// </summary>
-        void RemoveBackground()
+        void RemoveBackground(bool best)
         {
-            Cursor old = Cursor.Current;
-            Cursor.Current = Cursors.WaitCursor;
-            Toast.Show(HasSelection ? "Removing the background inside the selection…" : "Removing the background…");
-            try { RunInstant("Remove Background", (p, m) => BackgroundRemover.Apply(p, m)); }
-            finally { Cursor.Current = old; }
+            string used = null;
+            string what = HasSelection ? "Removing the background inside the selection…" : "Removing the background…";
+            RunInstant(best ? "Remove Background" : "Remove Background (Fast)", (p, m) =>
+            {
+                used = BusyDialog.Run(this, what, () => BackgroundRemover.Apply(p, m, best));
+            });
+            if (used != null && best && !BackgroundRemover.BestAvailable)
+                Toast.Show("Used the fast model: the IS-Net model file is missing - reinstall MicroApp for the best edges.");
         }
 
         void RunInstant(string name, Action<Pixels, byte[]> op, bool isFilter = false)

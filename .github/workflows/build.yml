@@ -43,6 +43,21 @@ jobs:
           }
         }
 
+    # Remove Background's IS-Net model (179 MB) is too big for the repository: it is a
+    # release asset, fetched here, checked, and shipped in Models\ next to the exe
+    - name: Bundle the IS-Net model
+      shell: pwsh
+      run: |
+        $url = 'https://github.com/Mahi-BD/MicroApp/releases/download/models-1/isnet-general-use.onnx'
+        $sha = '60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a'
+        Invoke-WebRequest $url -OutFile isnet-general-use.onnx
+        $got = (Get-FileHash isnet-general-use.onnx -Algorithm SHA256).Hash.ToLower()
+        if ($got -ne $sha) { throw "isnet-general-use.onnx hash mismatch: $got" }
+        foreach ($c in 'Debug', 'Release') {
+          New-Item -ItemType Directory -Force "bin\$c\Models" | Out-Null
+          Copy-Item isnet-general-use.onnx "bin\$c\Models\" -Force
+        }
+
     - name: Upload Debug artifacts
       uses: actions/upload-artifact@v4
       with:
