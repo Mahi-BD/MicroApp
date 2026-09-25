@@ -46,6 +46,14 @@ namespace MicroApp
         public VideoSettingsForm()
         {
             InitializeComponent();
+            // taller than a 768-pixel laptop screen: scroll instead of running off it
+            Rectangle work = Screen.FromPoint(Cursor.Position).WorkingArea;
+            if (Height > work.Height)
+            {
+                AutoScroll = true;
+                Height = work.Height;
+                Width += SystemInformation.VerticalScrollBarWidth;
+            }
 
             bool dark = ThemeHelper.IsDarkMode;
             Theme.Init(dark);
@@ -82,6 +90,10 @@ namespace MicroApp
             soundBox.Items.Add("Microphone");
             soundBox.Items.Add("System sound + microphone");
             soundBox.SelectedIndex = Math.Max(0, Math.Min(3, Properties.Settings.Default.VideoAudioSource));
+
+            lockCursorSize.Checked = Properties.Settings.Default.VideoLockCursorSize;
+            clickGlow.Checked = Properties.Settings.Default.VideoClickGlow;
+            actionLog.Checked = Properties.Settings.Default.VideoActionLog;
 
             foreach (var preset in RatioPresets)
             {
@@ -224,6 +236,9 @@ namespace MicroApp
 
             Properties.Settings.Default.VideoQuality = qualityBox.SelectedIndex;
             Properties.Settings.Default.VideoAudioSource = soundBox.SelectedIndex;
+            Properties.Settings.Default.VideoLockCursorSize = lockCursorSize.Checked;
+            Properties.Settings.Default.VideoClickGlow = clickGlow.Checked;
+            Properties.Settings.Default.VideoActionLog = actionLog.Checked;
 
             Properties.Settings.Default.VideoLockRatio = lockRatio.Checked;
             Properties.Settings.Default.VideoRatioPreset = ratioBox.SelectedItem != null

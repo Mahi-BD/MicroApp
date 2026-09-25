@@ -9,6 +9,12 @@
   50 % to 400 % (also the mouse wheel over the badge). The video keeps its size. The red frame moves
   with the recorded area, and the badge and frame are hidden from capture so they never appear in
   the video.
+- **Record Video: tutorial helpers.** **Ctrl+Alt+P** pauses and resumes from anywhere, and the badge can be
+  dragged out of the way. Video Setting has a new **While recording** card:
+  - **Keep the mouse pointer its normal size when zoomed** (on by default).
+  - **Glow on mouse clicks**: yellow left, blue right, green middle.
+  - **Action log**: a `.txt` next to the video that lists every click and key press with its second in
+    the video.
 - **Record Video: your voice and the system sound together.** A new sound source, *System sound +
   microphone*, mixes both into one track, and a **mute** button on the badge silences the microphone
   live.

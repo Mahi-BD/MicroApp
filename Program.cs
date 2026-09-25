@@ -236,6 +236,7 @@ namespace MicroApp
         RecordingRegionFrame _videoFrame;
         System.Windows.Forms.Timer _videoFrameTimer;   // keeps the frame on the captured patch
         IKeyboardMouseEvents _videoHook;
+        ActionLog _videoLog;                            // the .txt of clicks and keys, when switched on
 
         // notes: every hot key press opens a fresh little notepad, saved as you type
         int? _noteHotKey;
@@ -1357,6 +1358,15 @@ namespace MicroApp
                 return;
             }
 
+            _videoRecorder.LockCursorSize = Properties.Settings.Default.VideoLockCursorSize;
+            _videoRecorder.ClickGlow = Properties.Settings.Default.VideoClickGlow;
+            _videoLog = null;
+            if (Properties.Settings.Default.VideoActionLog)
+            {
+                try { _videoLog = new ActionLog(_videoRecorder, path); }
+                catch (Exception ex) { Toast.Show("Could not create the action log: " + ex.Message); }
+            }
+
             _videoIndicator = new VideoRecordingIndicator(region, _videoRecorder.HasMicrophone);
             _videoIndicator.FollowToggled += (s, on) => { var r = _videoRecorder; if (r != null) r.Follow = on; };
             _videoIndicator.ZoomChanged += (s, zoom) => { var r = _videoRecorder; if (r != null) r.ZoomPercent = zoom; };
@@ -1366,6 +1376,7 @@ namespace MicroApp
                 var recorder = _videoRecorder;
                 if (recorder == null) return;
                 if (paused) recorder.Pause(); else recorder.Resume();
+                if (_videoLog != null) _videoLog.Paused(paused);
                 if (_videoFrame != null) _videoFrame.SetPaused(paused);
             };
             _videoIndicator.SaveRequested += (s, e) => BeginStopVideoRecording();
@@ -1386,6 +1397,8 @@ namespace MicroApp
             // Esc anywhere stops the recording
             _videoHook = Hook.GlobalEvents();
             _videoHook.KeyDown += _videoHook_KeyDown;
+            _videoHook.KeyPress += _videoHook_KeyPress;
+            _videoHook.MouseDownExt += _videoHook_MouseDown;
 
             var traySize = SystemInformation.SmallIconSize;
             _notify.Icon = new System.Drawing.Icon(Properties.Resources.Typing, traySize.Width, traySize.Height);
@@ -1400,7 +1413,31 @@ namespace MicroApp
 
         private void _videoHook_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Escape) BeginStopVideoRecording();
+            if (e.KeyCode == Keys.Escape) { BeginStopVideoRecording(); return; }
+            // Ctrl+Alt+P: pause / resume, swallowed so the recorded app never sees it
+            if (e.KeyCode == Keys.P && e.Control && e.Alt && !e.Shift)
+            {
+                if (_videoIndicator != null) _videoIndicator.TogglePause();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+            if (_videoLog != null) _videoLog.KeyDown(e.KeyCode, e.Modifiers);
+        }
+
+        private void _videoHook_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (_videoLog != null) _videoLog.KeyChar(e.KeyChar);
+        }
+
+        private void _videoHook_MouseDown(object sender, MouseEventExtArgs e)
+        {
+            var recorder = _videoRecorder;
+            if (recorder == null) return;
+            // clicks on the badge are the recording's own controls, not part of the demo
+            if (_videoIndicator != null && !_videoIndicator.IsDisposed && _videoIndicator.Bounds.Contains(e.Location)) return;
+            recorder.AddClick(e.Location, e.Button);
+            if (_videoLog != null) _videoLog.Mouse(e.Location, e.Button, recorder.FrameSize);
         }
 
         void FinishVideoRecording()
@@ -1412,6 +1449,8 @@ namespace MicroApp
             if (_videoHook != null)
             {
                 _videoHook.KeyDown -= _videoHook_KeyDown;
+                _videoHook.KeyPress -= _videoHook_KeyPress;
+                _videoHook.MouseDownExt -= _videoHook_MouseDown;
                 _videoHook.Dispose();
                 _videoHook = null;
             }
@@ -1435,6 +1474,13 @@ namespace MicroApp
             }
 
             recorder.Stop();
+            string logPath = null;
+            if (_videoLog != null)
+            {
+                logPath = _videoLog.Path;
+                _videoLog.Dispose();
+                _videoLog = null;
+            }
             int frames = recorder.FrameCount;
             string path = recorder.Path;
             recorder.Dispose();   // finalises the MP4 index; skipping it leaves the file unplayable
@@ -1471,6 +1517,7 @@ namespace MicroApp
             long size = 0;
             try { size = new System.IO.FileInfo(path).Length; } catch (Exception) { }
             string note = $"Video saved: {frames} frames, {size / 1024:N0} KB\r\n{System.IO.Path.GetFileName(path)}";
+            if (logPath != null) note += "\r\nAction log: " + System.IO.Path.GetFileName(logPath);
 
             switch ((VideoOutput)Properties.Settings.Default.VideoOutput)
             {

@@ -58,6 +58,10 @@ namespace MicroApp
             this.pxLabel = new Label();
             this.lockNote = new Label();
 
+            this.cardLive = new Card();
+            this.lockCursorSize = new ModernCheckBox();
+            this.clickGlow = new ModernCheckBox();
+            this.actionLog = new ModernCheckBox();
             this.cardOutput = new Card();
             this.outputSave = new ModernRadioButton();
             this.outputCopyPath = new ModernRadioButton();
@@ -73,6 +77,7 @@ namespace MicroApp
             this.headerBar.SuspendLayout();
             this.cardRecording.SuspendLayout();
             this.cardLock.SuspendLayout();
+            this.cardLive.SuspendLayout();
             this.cardOutput.SuspendLayout();
             this.SuspendLayout();
 
@@ -249,20 +254,20 @@ namespace MicroApp
             this.soundHost.Controls.Add(this.soundBox);
             this.soundHost.Location = new Point(300, 148);
             this.soundHost.Name = "soundHost";
-            this.soundHost.Size = new Size(150, 32);
+            this.soundHost.Size = new Size(200, 32);
             this.soundHost.TabIndex = 8;
             //
             // soundBox
             //
             this.soundBox.Location = new Point(10, 6);
             this.soundBox.Name = "soundBox";
-            this.soundBox.Size = new Size(130, 21);
+            this.soundBox.Size = new Size(180, 21);
             this.soundBox.TabIndex = 0;
             //
             // soundLabel
             //
             this.soundLabel.AutoSize = true;
-            this.soundLabel.Location = new Point(460, 157);
+            this.soundLabel.Location = new Point(510, 157);
             this.soundLabel.Name = "soundLabel";
             this.soundLabel.Text = "sound";
             //
@@ -367,6 +372,42 @@ namespace MicroApp
             this.lockNote.Size = new Size(560, 20);
             this.lockNote.Text = "Nothing is locked.";
             //
+            // cardLive
+            //
+            this.cardLive.Controls.Add(this.lockCursorSize);
+            this.cardLive.Controls.Add(this.clickGlow);
+            this.cardLive.Controls.Add(this.actionLog);
+            this.cardLive.Location = new Point(24, 452);
+            this.cardLive.Name = "cardLive";
+            this.cardLive.Size = new Size(592, 140);
+            this.cardLive.TabIndex = 3;
+            this.cardLive.Title = "While recording";
+            this.cardLive.Description = "Follow, zoom and pause live from the badge; Ctrl+Alt+P pauses too";
+            //
+            // lockCursorSize
+            //
+            this.lockCursorSize.Location = new Point(16, 50);
+            this.lockCursorSize.Name = "lockCursorSize";
+            this.lockCursorSize.Size = new Size(560, 24);
+            this.lockCursorSize.TabIndex = 0;
+            this.lockCursorSize.Text = "Keep the mouse pointer its normal size when zoomed";
+            //
+            // clickGlow
+            //
+            this.clickGlow.Location = new Point(16, 78);
+            this.clickGlow.Name = "clickGlow";
+            this.clickGlow.Size = new Size(560, 24);
+            this.clickGlow.TabIndex = 1;
+            this.clickGlow.Text = "Show a glow on mouse clicks (yellow left, blue right)";
+            //
+            // actionLog
+            //
+            this.actionLog.Location = new Point(16, 106);
+            this.actionLog.Name = "actionLog";
+            this.actionLog.Size = new Size(560, 24);
+            this.actionLog.TabIndex = 2;
+            this.actionLog.Text = "Write an action log (.txt next to the video): clicks and keys, by second";
+            //
             // cardOutput
             //
             this.cardOutput.Controls.Add(this.outputSave);
@@ -374,10 +415,10 @@ namespace MicroApp
             this.cardOutput.Controls.Add(this.outputOpen);
             this.cardOutput.Controls.Add(this.folderHost);
             this.cardOutput.Controls.Add(this.browseButton);
-            this.cardOutput.Location = new Point(24, 452);
+            this.cardOutput.Location = new Point(24, 600);
             this.cardOutput.Name = "cardOutput";
             this.cardOutput.Size = new Size(592, 108);
-            this.cardOutput.TabIndex = 3;
+            this.cardOutput.TabIndex = 4;
             this.cardOutput.Title = "After recording";
             this.cardOutput.Description = "The MP4 is always written to the folder below";
             //
@@ -438,7 +479,7 @@ namespace MicroApp
             // cancelButton
             //
             this.cancelButton.DialogResult = DialogResult.Cancel;
-            this.cancelButton.Location = new Point(436, 564);
+            this.cancelButton.Location = new Point(436, 712);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new Size(88, 36);
             this.cancelButton.TabIndex = 5;
@@ -448,7 +489,7 @@ namespace MicroApp
             //
             this.saveButton.Accent = true;
             this.saveButton.DialogResult = DialogResult.OK;
-            this.saveButton.Location = new Point(536, 564);
+            this.saveButton.Location = new Point(536, 712);
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new Size(80, 36);
             this.saveButton.TabIndex = 6;
@@ -461,9 +502,10 @@ namespace MicroApp
             this.CancelButton = this.cancelButton;
             this.AutoScaleDimensions = new SizeF(7F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(640, 612);
+            this.ClientSize = new Size(640, 760);
             this.Controls.Add(this.cardRecording);
             this.Controls.Add(this.cardLock);
+            this.Controls.Add(this.cardLive);
             this.Controls.Add(this.cardOutput);
             this.Controls.Add(this.cancelButton);
             this.Controls.Add(this.saveButton);
@@ -483,6 +525,8 @@ namespace MicroApp
             this.cardRecording.PerformLayout();
             this.cardLock.ResumeLayout(false);
             this.cardLock.PerformLayout();
+            this.cardLive.ResumeLayout(false);
+            this.cardLive.PerformLayout();
             this.cardOutput.ResumeLayout(false);
             this.cardOutput.PerformLayout();
             this.ResumeLayout(false);
@@ -513,6 +557,11 @@ namespace MicroApp
         private FieldHost soundHost;
         private ComboBox soundBox;
         private Label soundLabel;
+
+        private Card cardLive;
+        private ModernCheckBox lockCursorSize;
+        private ModernCheckBox clickGlow;
+        private ModernCheckBox actionLog;
 
         private Card cardLock;
         private ModernCheckBox lockRatio;

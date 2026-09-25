@@ -277,6 +277,42 @@ namespace MicroApp.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool VideoLockCursorSize {
+            get {
+                return ((bool)(this["VideoLockCursorSize"]));
+            }
+            set {
+                this["VideoLockCursorSize"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool VideoClickGlow {
+            get {
+                return ((bool)(this["VideoClickGlow"]));
+            }
+            set {
+                this["VideoClickGlow"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool VideoActionLog {
+            get {
+                return ((bool)(this["VideoActionLog"]));
+            }
+            set {
+                this["VideoActionLog"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool VideoLockRatio {
             get {

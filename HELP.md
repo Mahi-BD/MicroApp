@@ -227,8 +227,10 @@ megabytes rather than the hundreds a GIF would — and it can include **sound**.
      to 400 %. The video keeps its size - zooming in records a smaller area enlarged, zooming out a
      bigger area reduced. Together with Follow this gives a close-up that tracks the pointer.
    - **Microphone** (when your voice is being recorded): mute and unmute it live.
-   - **Pause/resume** — paused stretches are left out of the file entirely — and **save**, which stops
-     the recording and keeps the MP4.
+   - **Pause/resume** (or **Ctrl+Alt+P** from anywhere) — paused stretches are left out of the file
+     entirely — and **save**, which stops the recording and keeps the MP4.
+
+   Drag the badge by any empty spot to move it out of the way.
 4. Recording has **no time limit**: it runs until you save it, press **Esc**, or press the hot
    key again.
 
@@ -236,6 +238,17 @@ megabytes rather than the hundreds a GIF would — and it can include **sound**.
 against picture crispness, and a **sound** source: *No sound*, *System sound* (whatever the machine
 is playing), *Microphone*, or *System sound + microphone* (both mixed into one track - your voice over
 whatever is playing).
+
+**While recording** (Video Setting):
+- **Keep the mouse pointer its normal size when zoomed**: on by default. Turn it off and the pointer is
+  enlarged or reduced together with the picture.
+- **Show a glow on mouse clicks**: every click leaves a short expanding ring in the video (yellow for the
+  left button, blue for the right, green for the middle). This makes it easy to follow in a tutorial.
+- **Write an action log**: a `.txt` file with the same name as the video, in the same folder, lists each
+  mouse click and key press with the second of the video it happens at, for example
+  `00:12.4  Left click at 400, 225`, `00:15.0  Typed "hello"`, `00:16.2  Key Ctrl+S`. Paused stretches are
+  skipped, so the times match the video. Everything you type is written to it, **passwords included**,
+  so leave it off when you record a login.
 
 Encoding uses the H.264 and AAC encoders built into Windows — nothing extra is installed, and the
 video streams to disk while it records. If no audio device is available the recording is silently

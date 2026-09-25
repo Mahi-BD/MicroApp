@@ -28,6 +28,14 @@ namespace MicroApp
         private Rectangle _source;               // the patch captured for the latest frame
         private readonly object _sourceLock = new object();
         private Bitmap _grab;                    // the patch at screen size, before scaling
+
+        // click glows: where and when each recent click happened (screen coords, stopwatch ms)
+        private readonly List<Tuple<Point, MouseButtons, long>> _clicks = new List<Tuple<Point, MouseButtons, long>>();
+        private readonly System.Diagnostics.Stopwatch _clickClock = System.Diagnostics.Stopwatch.StartNew();
+        const int GlowMs = 500;
+
+        // the video's own clock: runs while recording, stops while paused (UI thread only)
+        private readonly System.Diagnostics.Stopwatch _videoClock = new System.Diagnostics.Stopwatch();
         private readonly ConcurrentQueue<byte[]> _audioQueue = new ConcurrentQueue<byte[]>();
         private readonly int _audioBlockAlign;
         private readonly string _path;
@@ -66,6 +74,58 @@ namespace MicroApp
         {
             get { return _zoomPercent; }
             set { _zoomPercent = Math.Max(25, Math.Min(800, value)); }
+        }
+
+        /// <summary>The video's width and height in pixels.</summary>
+        public Size FrameSize { get { return _region.Size; } }
+
+        /// <summary>The pointer is drawn at its normal size even when zoomed (false: it scales with the picture).</summary>
+        public bool LockCursorSize { get; set; }
+
+        /// <summary>Clicks leave a short glow in the video (yellow left, blue right, green middle).</summary>
+        public bool ClickGlow { get; set; }
+
+        /// <summary>How far into the video we are: paused stretches do not count, as they are not in the file.</summary>
+        public TimeSpan VideoTime { get { return _videoClock.Elapsed; } }
+
+        /// <summary>A mouse button went down at this screen position (from the global hook).</summary>
+        public void AddClick(Point screen, MouseButtons button)
+        {
+            if (!ClickGlow || _paused) return;
+            lock (_clicks) _clicks.Add(Tuple.Create(screen, button, _clickClock.ElapsedMilliseconds));
+        }
+
+        /// <summary>Expanding, fading rings where the recent clicks were, mapped like the picture.</summary>
+        private void DrawClicks(Graphics g, Rectangle src)
+        {
+            List<Tuple<Point, MouseButtons, long>> live;
+            long now = _clickClock.ElapsedMilliseconds;
+            lock (_clicks)
+            {
+                _clicks.RemoveAll(c => now - c.Item3 > GlowMs);
+                if (_clicks.Count == 0) return;
+                live = new List<Tuple<Point, MouseButtons, long>>(_clicks);
+            }
+            float sx = (float)_region.Width / src.Width, sy = (float)_region.Height / src.Height;
+            float scale = LockCursorSize ? 1f : sx;
+            var old = g.SmoothingMode;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            foreach (var c in live)
+            {
+                if (!src.Contains(c.Item1)) continue;
+                float t = (now - c.Item3) / (float)GlowMs;           // 0 .. 1
+                float cx = (c.Item1.X - src.X) * sx, cy = (c.Item1.Y - src.Y) * sy;
+                Color baseColor = c.Item2 == MouseButtons.Right ? Color.FromArgb(80, 160, 255)
+                                : c.Item2 == MouseButtons.Middle ? Color.FromArgb(70, 210, 120)
+                                : Color.FromArgb(255, 200, 40);
+                float r = (10 + 22 * t) * scale;
+                int alpha = (int)(200 * (1 - t));
+                using (var fill = new SolidBrush(Color.FromArgb(alpha / 3, baseColor)))
+                    g.FillEllipse(fill, cx - r, cy - r, 2 * r, 2 * r);
+                using (var ring = new Pen(Color.FromArgb(alpha, baseColor), 3f * scale))
+                    g.DrawEllipse(ring, cx - r, cy - r, 2 * r, 2 * r);
+            }
+            g.SmoothingMode = old;
         }
 
         /// <summary>The patch of screen the latest frame came from - the red frame follows it.</summary>
@@ -130,6 +190,7 @@ namespace MicroApp
 
         public void Start()
         {
+            _videoClock.Start();
             if (_audio != null)
             {
                 _audio.Start((buffer, bytes) => _audioQueue.Enqueue(buffer));
@@ -148,8 +209,8 @@ namespace MicroApp
         /// Freezes the recording: no frames, no sound, and no time passes in the file.
         /// The paused stretch is simply absent from the video.
         /// </summary>
-        public void Pause() { _paused = true; }
-        public void Resume() { _paused = false; }
+        public void Pause() { _paused = true; _videoClock.Stop(); }
+        public void Resume() { _paused = false; _videoClock.Start(); }
         public bool Paused { get { return _paused; } }
 
         private void Loop()
@@ -227,6 +288,7 @@ namespace MicroApp
                             g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
                             g.DrawImage(_grab, new Rectangle(0, 0, _region.Width, _region.Height));
                         }
+                        DrawClicks(g, src);
                         DrawCursor(g, src);
 
                         // timestamps follow the wall clock minus paused time, not the frame
@@ -380,8 +442,10 @@ namespace MicroApp
                 if (!src.Contains(pos)) return;
                 float sx = (float)_region.Width / src.Width, sy = (float)_region.Height / src.Height;
                 var cursor = Cursors.Default;
+                // the tip stays on the spot it points at; only its size depends on the setting
+                float cw = LockCursorSize ? 1f : sx, ch = LockCursorSize ? 1f : sy;
                 cursor.Draw(g, new Rectangle((int)((pos.X - src.X) * sx), (int)((pos.Y - src.Y) * sy),
-                                             (int)(cursor.Size.Width * sx), (int)(cursor.Size.Height * sy)));
+                                             (int)(cursor.Size.Width * cw), (int)(cursor.Size.Height * ch)));
             }
             catch (Exception)
             {
@@ -419,6 +483,11 @@ namespace MicroApp
         private bool _paused, _follow, _micMuted;
         private int _zoom = 100;
         private Btn _hover;
+        private bool _dragging;
+        private Point _dragFrom, _dragStart;
+
+        /// <summary>The pause shortcut (Ctrl+Alt+P): same as clicking the pause button.</summary>
+        public void TogglePause() { OnButton(Btn.Pause); }
 
         /// <summary>Raised with the new paused state after the pause button toggles it.</summary>
         public event EventHandler<bool> PauseToggled;
@@ -466,7 +535,27 @@ namespace MicroApp
                 Cursor = hover != Btn.None ? Cursors.Hand : Cursors.Default;
             };
             MouseLeave += (s, e) => { _hover = Btn.None; Invalidate(); };
-            MouseUp += (s, e) => OnButton(HitButton(e.Location));
+            // drag the badge by any spot that is not a button
+            MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left && HitButton(e.Location) == Btn.None)
+                {
+                    _dragFrom = Cursor.Position;
+                    _dragStart = Location;
+                    _dragging = true;
+                }
+            };
+            MouseMove += (s, e) =>
+            {
+                if (!_dragging) { if (HitButton(e.Location) == Btn.None) Cursor = Cursors.SizeAll; return; }
+                Point p = Cursor.Position;
+                Location = new Point(_dragStart.X + p.X - _dragFrom.X, _dragStart.Y + p.Y - _dragFrom.Y);
+            };
+            MouseUp += (s, e) =>
+            {
+                if (_dragging) { _dragging = false; return; }
+                OnButton(HitButton(e.Location));
+            };
             MouseWheel += (s, e) => StepZoom(e.Delta > 0 ? 1 : -1);
         }
 
@@ -485,7 +574,7 @@ namespace MicroApp
                 case Btn.ZoomIn: return "Zoom in (or scroll the wheel over this badge)";
                 case Btn.ZoomValue: return "Back to 100 %";
                 case Btn.Mic: return _micMuted ? "Microphone muted - click to unmute" : "Mute the microphone";
-                case Btn.Pause: return _paused ? "Resume" : "Pause";
+                case Btn.Pause: return _paused ? "Resume (Ctrl+Alt+P)" : "Pause (Ctrl+Alt+P)";
                 case Btn.Save: return "Stop and save";
             }
             return "";
@@ -760,6 +849,148 @@ namespace MicroApp
                 cp.ExStyle |= 0x08000000 | 0x80 | 0x20 | 0x8;   // no-activate, toolwindow, hit-transparent, topmost
                 return cp;
             }
+        }
+    }
+
+    /// <summary>
+    /// The action log written next to a video (same name, .txt): every mouse click and key
+    /// press, stamped with the second of the video it happens at. Paused stretches are not
+    /// in the video, so nothing is logged while paused and the clock skips them. Plain
+    /// typing is gathered into one "Typed" line per burst; shortcuts and special keys get
+    /// a line each. The file is appended as the recording goes, so it survives a crash.
+    /// </summary>
+    public class ActionLog : IDisposable
+    {
+        readonly System.IO.StreamWriter _w;
+        readonly VideoRecorder _rec;
+        readonly System.Text.StringBuilder _typed = new System.Text.StringBuilder();
+        TimeSpan _typedAt;
+        DateTime _typedLast;
+
+        public string Path { get; private set; }
+
+        public ActionLog(VideoRecorder recorder, string videoPath)
+        {
+            _rec = recorder;
+            Path = System.IO.Path.ChangeExtension(videoPath, ".txt");
+            _w = new System.IO.StreamWriter(Path, true, new System.Text.UTF8Encoding(false)) { AutoFlush = true };
+            _w.WriteLine("MicroApp action log for " + System.IO.Path.GetFileName(videoPath));
+            _w.WriteLine("Recorded " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + ". Times are positions in the video; positions are pixels in the video (0, 0 is its top-left).");
+            _w.WriteLine();
+        }
+
+        static string Stamp(TimeSpan t)
+        {
+            return t.TotalHours >= 1
+                ? string.Format("{0}:{1:00}:{2:00}.{3}", (int)t.TotalHours, t.Minutes, t.Seconds, t.Milliseconds / 100)
+                : string.Format("{0:00}:{1:00}.{2}", (int)t.TotalMinutes, t.Seconds, t.Milliseconds / 100);
+        }
+
+        void Line(TimeSpan t, string text)
+        {
+            try { _w.WriteLine(Stamp(t) + "  " + text); } catch { }
+        }
+
+        void FlushTyped()
+        {
+            if (_typed.Length == 0) return;
+            Line(_typedAt, "Typed \"" + _typed + "\"");
+            _typed.Clear();
+        }
+
+        /// <summary>Where a screen point lands in the video.</summary>
+        string Where(Point screen, Size videoSize)
+        {
+            Rectangle src = _rec.CurrentSource;
+            if (!src.Contains(screen)) return "outside the recording";
+            int x = (int)((screen.X - src.X) * (double)videoSize.Width / src.Width);
+            int y = (int)((screen.Y - src.Y) * (double)videoSize.Height / src.Height);
+            return "at " + x + ", " + y;
+        }
+
+        public void Mouse(Point screen, MouseButtons button, Size videoSize)
+        {
+            if (_rec.Paused) return;
+            FlushTyped();
+            string which = button == MouseButtons.Right ? "Right click" : button == MouseButtons.Middle ? "Middle click"
+                         : button == MouseButtons.Left ? "Left click" : button + " click";
+            Line(_rec.VideoTime, which + " " + Where(screen, videoSize));
+        }
+
+        /// <summary>A key went down: shortcuts and special keys are logged here, plain characters by KeyChar.</summary>
+        public void KeyDown(Keys key, Keys modifiers)
+        {
+            if (_rec.Paused) return;
+            Keys k = key & Keys.KeyCode;
+            if (k == Keys.ShiftKey || k == Keys.ControlKey || k == Keys.Menu || k == Keys.LWin || k == Keys.RWin ||
+                k == Keys.LShiftKey || k == Keys.RShiftKey || k == Keys.LControlKey || k == Keys.RControlKey ||
+                k == Keys.LMenu || k == Keys.RMenu) return;
+            bool chord = (modifiers & (Keys.Control | Keys.Alt)) != 0 || IsWinDown();
+            if (!chord && IsCharacterKey(k)) return;
+            FlushTyped();
+            var name = new System.Text.StringBuilder();
+            if ((modifiers & Keys.Control) != 0) name.Append("Ctrl+");
+            if ((modifiers & Keys.Alt) != 0) name.Append("Alt+");
+            if ((modifiers & Keys.Shift) != 0) name.Append("Shift+");
+            if (IsWinDown()) name.Append("Win+");
+            name.Append(KeyName(k));
+            Line(_rec.VideoTime, "Key " + name);
+        }
+
+        /// <summary>A character was typed (layout-aware, from the hook's KeyPress).</summary>
+        public void KeyChar(char c)
+        {
+            if (_rec.Paused || c < 32) return;
+            if ((Control.ModifierKeys & (Keys.Control | Keys.Alt)) != 0) return;
+            DateTime now = DateTime.UtcNow;
+            if (_typed.Length > 0 && (now - _typedLast).TotalSeconds > 1.5) FlushTyped();
+            if (_typed.Length == 0) _typedAt = _rec.VideoTime;
+            _typed.Append(c);
+            _typedLast = now;
+        }
+
+        static bool IsCharacterKey(Keys k)
+        {
+            return (k >= Keys.A && k <= Keys.Z) || (k >= Keys.D0 && k <= Keys.D9) || (k >= Keys.NumPad0 && k <= Keys.NumPad9) ||
+                   k == Keys.Space || k == Keys.Multiply || k == Keys.Add || k == Keys.Subtract || k == Keys.Decimal || k == Keys.Divide ||
+                   (k >= Keys.Oem1 && k <= Keys.Oem102) || k == Keys.OemMinus || k == Keys.Oemplus || k == Keys.Oemcomma || k == Keys.OemPeriod;
+        }
+
+        static string KeyName(Keys k)
+        {
+            switch (k)
+            {
+                case Keys.Return: return "Enter";
+                case Keys.Back: return "Backspace";
+                case Keys.Escape: return "Esc";
+                case Keys.Next: return "PageDown";
+                case Keys.Prior: return "PageUp";
+                case Keys.Capital: return "CapsLock";
+                case Keys.Snapshot: return "PrintScreen";
+            }
+            if (k >= Keys.D0 && k <= Keys.D9) return ((char)('0' + (k - Keys.D0))).ToString();
+            return k.ToString();
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int vKey);
+
+        static bool IsWinDown()
+        {
+            try { return (GetAsyncKeyState(0x5B) & 0x8000) != 0 || (GetAsyncKeyState(0x5C) & 0x8000) != 0; }
+            catch { return false; }
+        }
+
+        public void Paused(bool paused)
+        {
+            FlushTyped();
+            Line(_rec.VideoTime, paused ? "(recording paused)" : "(recording resumed)");
+        }
+
+        public void Dispose()
+        {
+            FlushTyped();
+            try { Line(_rec.VideoTime, "(recording stopped)"); _w.Dispose(); } catch { }
         }
     }
 }
