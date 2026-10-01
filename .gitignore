@@ -3,3 +3,4 @@
 /bin/Release/*.pdb
 /.vs
 /Setup/nsis/*.exe
+/Setup/nsis/*.zip

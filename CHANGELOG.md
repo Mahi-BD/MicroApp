@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.3.3 — 2026-10-02
+
+### Fixed
+
+- **Always on Top now stays on top of a full-screen Remote Desktop.** Apps such as Remote Desktop, some video
+  players and Task Manager push themselves above every other "on top" window when they are activated, and a pinned
+  window stayed hidden behind them. While anything is pinned, MicroApp now puts it straight back on top. Menus,
+  tooltips and small pop-ups of other apps are left alone, and MicroApp's own capture frame still comes out above.
+
 ## 5.3.2 — 2026-10-02
 
 ### Added
