@@ -108,6 +108,7 @@ namespace MicroApp
                 }
             }
             _pins[h] = pin;
+            Watch();
             ApplyLook(h, pin);
             return true;
         }
@@ -119,6 +120,7 @@ namespace MicroApp
             Pin pin;
             if (!_pins.TryGetValue(h, out pin)) return;
             _pins.Remove(h);
+            if (_pins.Count == 0) StopWatch();
             if (!IsWindow(h)) return;
             RestoreOpacity(h, pin);
             RestoreTitle(h, pin);
@@ -192,6 +194,106 @@ namespace MicroApp
             pin.MarkedTitle = null;
         }
 
+        // ---------------------------------------------------------------- keeping them on top
+
+        // Being topmost is not enough on its own: another app's topmost window -- a full-screen
+        // Remote Desktop, a video player, Task Manager -- rises above every other topmost window
+        // each time it is activated. So while anything is pinned, MicroApp watches: whenever the
+        // foreground changes, and a few times a second besides, a pinned window that another
+        // app's topmost window has covered is lifted back to the top. MicroApp's own windows
+        // (the capture frame, notes, toasts) are left alone so they still come out on top.
+
+        static System.Windows.Forms.Timer _watch;
+        static WinEventProc _foregroundProc;   // kept in a field so the GC never collects the callback
+        static IntPtr _foregroundHook;
+        static readonly uint OwnPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+
+        static void Watch()
+        {
+            if (_watch == null)
+            {
+                _watch = new System.Windows.Forms.Timer { Interval = 250 };
+                _watch.Tick += delegate { KeepOnTop(); };
+                _watch.Start();
+            }
+            if (_foregroundHook == IntPtr.Zero)
+            {
+                _foregroundProc = delegate
+                {
+                    KeepOnTop();
+                    // a Remote Desktop window raises itself a moment after it is activated
+                    var again = new System.Windows.Forms.Timer { Interval = 120 };
+                    again.Tick += delegate { again.Stop(); again.Dispose(); KeepOnTop(); };
+                    again.Start();
+                };
+                _foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero,
+                                                  _foregroundProc, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+            }
+        }
+
+        static void StopWatch()
+        {
+            if (_watch != null) { _watch.Stop(); _watch.Dispose(); _watch = null; }
+            if (_foregroundHook != IntPtr.Zero) { UnhookWinEvent(_foregroundHook); _foregroundHook = IntPtr.Zero; }
+            _foregroundProc = null;
+        }
+
+        /// <summary>Lifts every pinned window that another app's topmost window has got on top of.</summary>
+        static void KeepOnTop()
+        {
+            Prune();
+            if (_pins.Count == 0) { StopWatch(); return; }
+            foreach (IntPtr h in new List<IntPtr>(_pins.Keys))
+            {
+                if (!IsWindowVisible(h) || IsIconic(h)) continue;
+                if (CoveredByOtherTopmost(h))
+                    SetWindowPos(h, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+            }
+        }
+
+        /// <summary>
+        /// True when a visible topmost window of another app sits above <paramref name="h"/> and
+        /// overlaps it. Menus, tooltips and other small pop-ups do not count -- lifting the pinned
+        /// window over them would hide the menu the user just opened.
+        /// </summary>
+        static bool CoveredByOtherTopmost(IntPtr h)
+        {
+            Rectangle mine = Bounds(h);
+            if (mine.IsEmpty) return false;
+            int guard = 0;
+            for (IntPtr w = GetWindow(h, GW_HWNDPREV); w != IntPtr.Zero && guard < 2000; w = GetWindow(w, GW_HWNDPREV), guard++)
+            {
+                if (!IsWindowVisible(w) || _pins.ContainsKey(w)) continue;
+                int ex = GetWindowLong(w, GWL_EXSTYLE);
+                if ((ex & WS_EX_TOPMOST) == 0) continue;
+                if ((ex & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT)) != 0) continue;
+                uint pid;
+                GetWindowThreadProcessId(w, out pid);
+                if (pid == OwnPid) continue;                       // our own capture frame, notes, toasts
+                if (IsPopupClass(w) || IsCloaked(w)) continue;
+                Rectangle r = Bounds(w);
+                if (r.Width < 200 || r.Height < 120) continue;   // small pop-ups and badges
+                if (r.IntersectsWith(mine)) return true;
+            }
+            return false;
+        }
+
+        static bool IsPopupClass(IntPtr w)
+        {
+            var sb = new StringBuilder(64);
+            GetClassName(w, sb, sb.Capacity);
+            string c = sb.ToString();
+            return c == "#32768" || c == "tooltips_class32" || c == "Xaml_WindowedPopupClass" || c == "SysShadow" ||
+                   c == "Shell_TrayWnd" || c == "Shell_SecondaryTrayWnd" || c == "NotifyIconOverflowWindow" ||
+                   c == "Windows.UI.Core.CoreWindow" || c == "TopLevelWindowForOverflowXamlIsland";
+        }
+
+        static bool IsCloaked(IntPtr w)
+        {
+            int cloaked;
+            return DwmGetWindowAttribute(w, 14 /* DWMWA_CLOAKED */, out cloaked, 4) == 0 && cloaked != 0;
+        }
+
         static void Prune()
         {
             foreach (IntPtr h in new List<IntPtr>(_pins.Keys))
@@ -232,6 +334,11 @@ namespace MicroApp
         const int GWL_EXSTYLE = -20;
         const int WS_EX_TOPMOST = 0x8;
         const int WS_EX_LAYERED = 0x80000;
+        const int WS_EX_TOOLWINDOW = 0x80, WS_EX_NOACTIVATE = 0x08000000, WS_EX_TRANSPARENT = 0x20;
+        const uint GW_HWNDPREV = 3;
+        const uint SWP_NOOWNERZORDER = 0x200;
+        const uint EVENT_SYSTEM_FOREGROUND = 3;
+        const uint WINEVENT_OUTOFCONTEXT = 0, WINEVENT_SKIPOWNPROCESS = 2;
         const uint LWA_ALPHA = 0x2;
         const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOACTIVATE = 0x10;
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -240,6 +347,14 @@ namespace MicroApp
         [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
         [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }
 
+        delegate void WinEventProc(IntPtr hook, uint ev, IntPtr hwnd, int obj, int child, uint thread, uint time);
+        [DllImport("user32.dll")] static extern IntPtr SetWinEventHook(uint min, uint max, IntPtr module, WinEventProc proc, uint pid, uint tid, uint flags);
+        [DllImport("user32.dll")] static extern bool UnhookWinEvent(IntPtr hook);
+        [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
+        [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+        [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+        [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+        [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out int value, int size);
         [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
         [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr h, uint flags);
         [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
