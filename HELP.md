@@ -1,12 +1,13 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 4.7.5.
+Version 5.3.2.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
 - [Grab text (OCR)](#grab-text-ocr)
 - [Pick Text](#pick-text)
+- [Always on Top](#always-on-top)
 - [Screen capture](#screen-capture)
 - [Record GIF](#record-gif)
 - [Record Video](#record-video)
@@ -30,6 +31,7 @@ MicroApp runs in the notification area. There is no main window and nothing to l
 ```
 Grab text (OCR)
 Pick Text
+Always on Top
 Screen Capture
 Record GIF
 Record Video
@@ -43,6 +45,7 @@ Capture Setting
 GIF Setting
 Video Setting
 Note Setting
+AOT Setting
 ────────────────
 About
 Exit
@@ -148,6 +151,34 @@ images, videos and remote desktops, where there is no real text behind the pixel
 
 ---
 
+## Always on Top
+
+Keeps any window above all the others — a video, a calculator, a chat, a note.
+
+**How to use it**
+
+1. Press **Ctrl+Alt+W**, or tray → *Always on Top*.
+2. The pointer becomes a **+** crosshair and the window under it is outlined.
+3. **Click** a window to pin it on top. Click a pinned window the same way to let it go. **Esc**, a
+   right-click or the hot key again cancels. The click only picks the window — the app never receives it.
+
+**AOT Setting** (tray):
+
+| Setting | Default |
+|---|---|
+| Always on Top hot key | `Ctrl + Alt + W` |
+| Opacity of a pinned window | 100 % (20–100 %) |
+| Clicking a pinned window again takes it off the top | on |
+| Put a 📌 in the title of a pinned window | on |
+| Show a notification on pin / unpin | on |
+| Play a sound on pin / unpin | off |
+
+*Right now* shows how many windows are pinned, with **Unpin all**. MicroApp gives every window back —
+on top or not, opacity and title — when it exits. Windows of an app running as administrator can only
+be pinned when MicroApp runs as administrator too; MicroApp says so when that happens.
+
+---
+
 ## Screen capture
 
 **How to use it**
@@ -162,6 +193,14 @@ images, videos and remote desktops, where there is no real text behind the pixel
    - drag anywhere outside to start over.
 4. **Enter**, a double-click inside the frame, or the tick button takes the shot.
 5. **Esc**, a right-click, the cross button, or a click without dragging cancels.
+
+Two more buttons sit to the left of the tick:
+
+- **Timer** (or **T**) — each click adds a second: 1 click = 1 s, 2 clicks = 2 s … up to 10, then back to
+  1. The number shows on the button. The tick (or Enter) then starts the countdown; with no timer set the
+  tick takes the shot at once. The timer wins over the Capture Setting delay for that one shot.
+- **Save As** (or **Ctrl+S**) — saves the framed area straight to a PNG, JPEG or BMP of your choosing.
+  Cancel the dialog and the frame stays where it was.
 
 **Delay** (Capture Setting) — *seconds before it grabs*, 0 by default, which takes the shot the moment
 you confirm the frame. Set it to a few seconds and the picker gets out of the way instead: the frame
@@ -465,6 +504,15 @@ As in Photoshop:
   (Shift+Ctrl+;) and **Clear Guides**.
 Each document keeps its own guides. Guides are not part of the undo history, as in Photoshop.
 
+**Units** — right-click a ruler (or **View → Ruler Units**) for Pixels, Inches, Centimeters, Millimeters,
+Points, Picas, Feet, Meters or Percent. The rulers and the guide read-out count in that unit; the physical
+units go through the image's resolution (shown in the menu). **Snap to Unit** makes guides land on the
+ruler's small marks, like a grid (Shift does the same for one drag). Both choices are remembered.
+
+**Origin** — drag from the box where the rulers meet to put 0,0 anywhere on the image (it snaps to the
+image's edges, centre and guides). Double-click the box, or choose **Reset Ruler Origin (0, 0)** from the
+ruler's right-click menu, to put it back on the top-left corner. Each document keeps its own origin.
+
 ### Remove Background
 
 The button under the tools, the one with the figure on a checkerboard (also **Image → Remove Background**, **Alt+Ctrl+B**,
@@ -635,7 +683,7 @@ also fill it straight from Explorer.
 
 ## Shortcuts
 
-Tray → **Shortcuts** shows every hot key in one window — typing, OCR, Pick Text, capture, GIF,
+Tray → **Shortcuts** shows every hot key in one window — typing, OCR, Pick Text, Always on Top, capture, GIF,
 video, notes, the image editor and the two typed dates. The rows edit the very same settings the
 individual feature windows do, so the two always agree: change a hot key here and the feature's
 own settings window shows the new value; change it there and this window shows it. Saving warns

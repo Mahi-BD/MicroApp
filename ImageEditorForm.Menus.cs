@@ -230,6 +230,7 @@ namespace MicroApp
             view.DropDownItems.Add(new ToolStripSeparator());
             _rulersItem = Item("Rulers", Keys.Control | Keys.R, delegate { ToggleRulers(); });
             view.DropDownItems.Add(_rulersItem);
+            view.DropDownItems.Add(BuildRulerUnitsMenu());
             _showGuidesItem = Item("Guides", Keys.Control | Keys.OemSemicolon, delegate { ToggleShowGuides(); });
             _showGuidesItem.Checked = _showGuides;
             view.DropDownItems.Add(_showGuidesItem);

@@ -1105,6 +1105,30 @@ namespace MicroApp.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Pixels")]
+        public string EditorRulerUnit {
+            get {
+                return ((string)(this["EditorRulerUnit"]));
+            }
+            set {
+                this["EditorRulerUnit"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool EditorSnapToUnit {
+            get {
+                return ((bool)(this["EditorSnapToUnit"]));
+            }
+            set {
+                this["EditorSnapToUnit"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string ImageEditorHotKeyTakeOver {
             get {
@@ -1185,5 +1209,102 @@ namespace MicroApp.Properties {
                 this["LongDateHotKeyTakeOver"] = value;
             }
         }
-    }
+    
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("W")]
+        public string AotHotKey {
+            get {
+                return ((string)(this["AotHotKey"]));
+            }
+            set {
+                this["AotHotKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int AotHotKeyModifier {
+            get {
+                return ((int)(this["AotHotKeyModifier"]));
+            }
+            set {
+                this["AotHotKeyModifier"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AotHotKeyTakeOver {
+            get {
+                return ((string)(this["AotHotKeyTakeOver"]));
+            }
+            set {
+                this["AotHotKeyTakeOver"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int AotOpacity {
+            get {
+                return ((int)(this["AotOpacity"]));
+            }
+            set {
+                this["AotOpacity"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AotClickUnpins {
+            get {
+                return ((bool)(this["AotClickUnpins"]));
+            }
+            set {
+                this["AotClickUnpins"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AotTitleMark {
+            get {
+                return ((bool)(this["AotTitleMark"]));
+            }
+            set {
+                this["AotTitleMark"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AotNotify {
+            get {
+                return ((bool)(this["AotNotify"]));
+            }
+            set {
+                this["AotNotify"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AotSound {
+            get {
+                return ((bool)(this["AotSound"]));
+            }
+            set {
+                this["AotSound"] = value;
+            }
+        }
+}
 }

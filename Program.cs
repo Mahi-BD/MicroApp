@@ -262,6 +262,13 @@ namespace MicroApp
         bool _pickPeekBusy;
         IntPtr _pickTarget;
 
+        // always on top: "+" crosshair, click a window to pin it above the others (or let it go)
+        int? _aotHotKey;
+        EventHandler<HotKeyEventArgs> _aotHotKeyHandler = null;
+        IKeyboardMouseEvents _aotHook;
+        ElementOutline _aotOutline;
+        System.Windows.Forms.Timer _aotTimer;
+
         // hot keys are raised on HotKeyManager's own message loop; this marshals the
         // UI work (overlay, dialogs, clipboard) back onto the tray thread
         Control _sync;
@@ -278,6 +285,7 @@ namespace MicroApp
             StartGifHotKey();
             StartVideoHotKey();
             StartTextPickHotKey();
+            StartAotHotKey();
             StartNoteHotKey();
             StartImageEditorHotKey();
             StartDateHotKey();
@@ -323,6 +331,7 @@ namespace MicroApp
 
             var grab = new ToolStripMenuItem("Grab text (OCR)", null, GrabText) { Padding = new Padding(4, 3, 4, 3) };
             var pick = new ToolStripMenuItem("Pick Text", null, PickText) { Padding = new Padding(4, 3, 4, 3) };
+            var aot = new ToolStripMenuItem("Always on Top", null, AlwaysOnTopPick) { Padding = new Padding(4, 3, 4, 3) };
             var capture = new ToolStripMenuItem("Screen Capture", null, ScreenCapture) { Padding = new Padding(4, 3, 4, 3) };
             var gif = new ToolStripMenuItem("Record GIF", null, RecordGif) { Padding = new Padding(4, 3, 4, 3) };
             var video = new ToolStripMenuItem("Record Video", null, RecordVideo) { Padding = new Padding(4, 3, 4, 3) };
@@ -332,6 +341,7 @@ namespace MicroApp
             // each feature shows its current hot key, so the menu doubles as a cheat sheet
             grab.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.OcrHotKey, Properties.Settings.Default.OcrHotKeyModifier);
             pick.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.TextPickHotKey, Properties.Settings.Default.TextPickHotKeyModifier);
+            aot.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.AotHotKey, Properties.Settings.Default.AotHotKeyModifier);
             capture.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.CaptureHotKey, Properties.Settings.Default.CaptureHotKeyModifier);
             gif.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.GifHotKey, Properties.Settings.Default.GifHotKeyModifier);
             video.ShortcutKeyDisplayString = HotKeyDisplay(Properties.Settings.Default.VideoHotKey, Properties.Settings.Default.VideoHotKeyModifier);
@@ -344,10 +354,12 @@ namespace MicroApp
             var gifSettings = new ToolStripMenuItem("GIF Setting", null, GifSettings) { Padding = new Padding(4, 3, 4, 3) };
             var videoSettings = new ToolStripMenuItem("Video Setting", null, VideoSettings) { Padding = new Padding(4, 3, 4, 3) };
             var noteSettings = new ToolStripMenuItem("Note Setting", null, NoteSettings) { Padding = new Padding(4, 3, 4, 3) };
+            var aotSettings = new ToolStripMenuItem("AOT Setting", null, AotSettings) { Padding = new Padding(4, 3, 4, 3) };
             var about = new ToolStripMenuItem("About", null, About) { Padding = new Padding(4, 3, 4, 3) };
             var exit = new ToolStripMenuItem("Exit", null, Exit) { Padding = new Padding(4, 3, 4, 3) };
             menu.Items.Add(grab);
             menu.Items.Add(pick);
+            menu.Items.Add(aot);
             menu.Items.Add(capture);
             menu.Items.Add(gif);
             menu.Items.Add(video);
@@ -361,6 +373,7 @@ namespace MicroApp
             menu.Items.Add(gifSettings);
             menu.Items.Add(videoSettings);
             menu.Items.Add(noteSettings);
+            menu.Items.Add(aotSettings);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(about);
             menu.Items.Add(exit);
@@ -955,11 +968,21 @@ namespace MicroApp
                         ? $"Drag a {constraint.RatioName} box, then adjust it.   Esc cancels."
                         : "Drag the area you want, then adjust it.   Esc cancels.";
 
-                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint, true))
+                using (Bitmap shot = RegionCaptureOverlay.SelectRegion(constraint, hint, true, true))
                 {
                     if (shot == null) return;   // cancelled
 
-                    int delay = Math.Max(0, Properties.Settings.Default.CaptureDelay);
+                    if (RegionCaptureOverlay.LastSavedPath != null)
+                    {
+                        // Save As already wrote it where the user asked; that is the whole job
+                        Toast.Show($"{shot.Width} x {shot.Height} saved to\r\n{RegionCaptureOverlay.LastSavedPath}");
+                        return;
+                    }
+
+                    // the timer button on the frame wins over the delay in Capture Setting
+                    int delay = RegionCaptureOverlay.LastDelay > 0
+                        ? RegionCaptureOverlay.LastDelay
+                        : Math.Max(0, Properties.Settings.Default.CaptureDelay);
                     if (delay <= 0)
                     {
                         DeliverCapture(shot);
@@ -1940,6 +1963,151 @@ namespace MicroApp
             });
         }
 
+        // ============================================================ always on top
+
+        void StartAotHotKey()
+        {
+            StopAotHotKey();
+            var letter = Properties.Settings.Default.AotHotKey;
+            if (string.IsNullOrEmpty(letter)) return;
+            try
+            {
+                Keys key = (Keys)Enum.Parse(typeof(Keys), letter);
+                _aotHotKey = RegisterOrTakeOver("Always on top", key, (KeyModifiers)Properties.Settings.Default.AotHotKeyModifier, "AotHotKeyTakeOver");
+                if (!_aotHotKey.HasValue) return;
+                _aotHotKeyHandler = new EventHandler<HotKeyEventArgs>(HotKeyManager_AotHotKeyPressed);
+                HotKeyManager.HotKeyPressed += _aotHotKeyHandler;
+            }
+            catch (Exception e)
+            {
+                ModernDialog.Info("Always on top hot key unavailable", "Another app is probably using it.\r\n\r\n" + e.Message);
+            }
+        }
+
+        void StopAotHotKey()
+        {
+            if (_aotHotKey.HasValue)
+            {
+                HotKeyManager.HotKeyPressed -= _aotHotKeyHandler;
+                HotKeyManager.UnregisterHotKey(_aotHotKey.Value);
+            }
+            _aotHotKey = null;
+            _aotHotKeyHandler = null;
+        }
+
+        private void HotKeyManager_AotHotKeyPressed(object sender, HotKeyEventArgs e)
+        {
+            if (!Matches(e, Properties.Settings.Default.AotHotKey, Properties.Settings.Default.AotHotKeyModifier)) return;
+            // pressing it again while picking cancels
+            if (_aotHook != null) { _sync.BeginInvoke(new Action(EndAotPick)); return; }
+            _sync.BeginInvoke(new Action(StartAotPick));
+        }
+
+        void AlwaysOnTopPick(object sender, EventArgs e)
+        {
+            StartAotPick();
+        }
+
+        /// <summary>
+        /// "+" crosshair everywhere and an outline round the window under it; one click pins
+        /// that window on top (or lets a pinned one go). Esc or a right-click cancels.
+        /// </summary>
+        void StartAotPick()
+        {
+            if (_settingsOpen || _aotHook != null || _pickHook != null || _ocrBusy) return;
+
+            uint[] cursors = { Native.NORMAL, Native.IBEAM, Native.HAND };
+            for (int i = 0; i < cursors.Length; i++)
+                Native.SetSystemCursor(Native.CopyIcon(Native.LoadCursor(IntPtr.Zero, (int)Native.CROSS)), cursors[i]);
+
+            _aotOutline = new ElementOutline();
+            Toast.Show("Click a window to keep it on top.  Esc cancels.");
+
+            _aotHook = Hook.GlobalEvents();
+            _aotHook.MouseDownExt += _aotHook_MouseDownExt;
+            _aotHook.KeyDown += _aotHook_KeyDown;
+
+            _aotTimer = new System.Windows.Forms.Timer { Interval = 80 };
+            _aotTimer.Tick += delegate
+            {
+                if (_aotOutline == null) return;
+                IntPtr h = AlwaysOnTop.WindowAt(Cursor.Position);
+                _aotOutline.Outline(h == IntPtr.Zero ? Rectangle.Empty : AlwaysOnTop.Bounds(h));
+            };
+            _aotTimer.Start();
+        }
+
+        private void _aotHook_MouseDownExt(object sender, MouseEventExtArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                e.Handled = true;   // the click picks the window; the app underneath never sees it
+                var p = new Point(e.X, e.Y);
+                _sync.BeginInvoke(new Action(() => FinishAotPick(p)));
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                e.Handled = true;
+                _sync.BeginInvoke(new Action(EndAotPick));
+            }
+        }
+
+        private void _aotHook_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                e.Handled = true;
+                _sync.BeginInvoke(new Action(EndAotPick));
+            }
+        }
+
+        void FinishAotPick(Point p)
+        {
+            if (_aotHook == null) return;   // already cancelled
+            // the outline sits over the edge of the window; take it away before looking
+            if (_aotOutline != null) _aotOutline.Visible = false;
+            IntPtr h = AlwaysOnTop.WindowAt(p);
+            EndAotPick();
+            AlwaysOnTop.Toggle(h);
+        }
+
+        void EndAotPick()
+        {
+            if (_aotTimer != null)
+            {
+                _aotTimer.Stop();
+                _aotTimer.Dispose();
+                _aotTimer = null;
+            }
+            bool wasPicking = _aotHook != null;
+            if (_aotHook != null)
+            {
+                _aotHook.MouseDownExt -= _aotHook_MouseDownExt;
+                _aotHook.KeyDown -= _aotHook_KeyDown;
+                _aotHook.Dispose();
+                _aotHook = null;
+            }
+            if (_aotOutline != null)
+            {
+                _aotOutline.Close();
+                _aotOutline.Dispose();
+                _aotOutline = null;
+            }
+            if (wasPicking) Native.SystemParametersInfo(0x0057, 0, null, 0);   // restore the real cursors
+        }
+
+        void AotSettings(object sender, EventArgs e)
+        {
+            if (_settingsOpen) return;
+            _settingsOpen = true;
+            StopAllHotKeys();
+            var settings = new AotSettingsForm();
+            settings.ShowDialog();
+            _settingsOpen = false;
+            StartAllHotKeys();
+            RefreshTrayMenu();
+        }
+
         void StopHotKey()
         {
             if(_usingHotKey.HasValue)
@@ -2051,6 +2219,7 @@ namespace MicroApp
             StopGifHotKey();
             StopVideoHotKey();
             StopTextPickHotKey();
+            StopAotHotKey();
             StopNoteHotKey();
             StopImageEditorHotKey();
             StopDateHotKey();
@@ -2065,6 +2234,7 @@ namespace MicroApp
             StartGifHotKey();
             StartVideoHotKey();
             StartTextPickHotKey();
+            StartAotHotKey();
             StartNoteHotKey();
             StartImageEditorHotKey();
             StartDateHotKey();
@@ -2076,6 +2246,8 @@ namespace MicroApp
             if (_recorder != null) FinishGifRecording();
             if (_videoRecorder != null) FinishVideoRecording();
             EndTextPick();
+            EndAotPick();
+            AlwaysOnTop.UnpinAll();   // give every window back as it was
             EndTrack();
             // Hide tray icon, otherwise it will remain shown until user mouses over it
             _notify.Visible = false;

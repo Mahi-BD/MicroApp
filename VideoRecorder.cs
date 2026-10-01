@@ -792,10 +792,21 @@ namespace MicroApp
     /// </summary>
     public class RecordingRegionFrame : Form
     {
-        const int Thickness = 2;
+        readonly int Thickness = 2;
 
-        public RecordingRegionFrame(Rectangle region)
+        /// <summary>
+        /// Keep the frame out of screen captures (the recording, and screenshots or remote
+        /// views of the desktop). The capture countdown turns this off: its frame sits outside
+        /// the region and is hidden before the shot, and it has to show up in a remote session.
+        /// </summary>
+        public bool ExcludeFromCapture { get; set; } = true;
+
+        public RecordingRegionFrame(Rectangle region) : this(region, 2) { }
+
+        /// <summary>As above with a heavier line, for the capture countdown.</summary>
+        public RecordingRegionFrame(Rectangle region, int thickness)
         {
+            Thickness = Math.Max(1, thickness);
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
@@ -830,7 +841,7 @@ namespace MicroApp
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            CaptureExclusion.Apply(Handle);
+            if (ExcludeFromCapture) CaptureExclusion.Apply(Handle);
         }
 
         /// <summary>Grey while paused, red while recording — same colours as the badge.</summary>

@@ -1,5 +1,35 @@
 # Changelog
 
+## 5.3.2 — 2026-10-02
+
+### Added
+
+- **Always on Top.** Press **Ctrl+Alt+W** (or tray → *Always on Top*); the pointer turns into a **+** and the
+  window under it is outlined. Click any window to keep it above all the others, and click a pinned window the
+  same way to let it go. Esc or a right-click cancels. MicroApp gives every window back as it was when it exits.
+- **AOT Setting** (tray): the hot key, the **opacity** of pinned windows (20–100 %), a 📌 in the title of pinned
+  windows, a notification or sound on pin/unpin, whether a second click unpins, and **Unpin all**.
+- **Screen capture: a timer and Save As on the frame.** Two new buttons sit beside the tick and cross:
+  - **Timer**: each click adds a second (1 click = 1 s, 2 clicks = 2 s ... up to 10, then back to 1); the
+    button shows the number. The tick (or Enter) then starts the countdown, so a menu or a hover state can
+    be opened before the shot; with no timer set the tick takes it at once. The timer wins over the delay in
+    Capture Setting for that one shot. Key: **T**.
+  - **Save As**: saves the framed area straight to a PNG, JPEG or BMP of your choosing. Cancel the dialog
+    and the frame stays where it was. Key: **Ctrl+S**.
+- **Ruler units in the image editor.** Right-click a ruler (or View → Ruler Units) for Pixels, Inches,
+  Centimeters, Millimeters, Points, Picas, Feet, Meters or Percent. The rulers and the guide read-out count
+  in that unit, using the image's resolution. **Snap to Unit** makes guides land on the ruler's marks, like a
+  grid. Both are remembered.
+- **Ruler origin, the Photoshop way.** Drag from the box where the rulers meet to put 0,0 anywhere on the
+  image; it snaps to the image's edges, centre and guides. Double-click the box, or choose
+  **Reset Ruler Origin (0, 0)** from the ruler's right-click menu, to put it back.
+
+### Changed
+
+- **The capture countdown shows the area clearly.** A heavier blue frame marks what will be taken, and it
+  now also shows in screenshots and remote-desktop views of the screen. It is gone before the shot, so it
+  never ends up in the picture.
+
 ## 5.3.1 — 2026-09-26
 
 ### Added

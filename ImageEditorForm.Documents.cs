@@ -35,6 +35,7 @@ namespace MicroApp
             public Point? CloneSource;
             public float Ppi = 72;
             public List<Guide> Guides = new List<Guide>();
+            public PointF RulerZero;
         }
 
         readonly List<DocState> _docs = new List<DocState>();
@@ -123,6 +124,7 @@ namespace MicroApp
             d.CloneSource = _cloneSource;
             d.Ppi = _ppi;
             d.Guides = _guides;
+            d.RulerZero = _rulerZero;
             _multi.Clear();
             _layers.Clear();
             _undo.Clear();
@@ -155,6 +157,7 @@ namespace MicroApp
             _cloneSource = d.CloneSource;
             _ppi = d.Ppi;
             _guides = d.Guides ?? new List<Guide>();
+            _rulerZero = d.RulerZero;
             _guideDrag = null;
             d.Selection = d.LastSelection = null;
             ShowActiveDoc();
@@ -227,6 +230,7 @@ namespace MicroApp
             _cloneSource = null;
             _ppi = 72;
             _guides = new List<Guide>();
+            _rulerZero = PointF.Empty;
             _guideDrag = null;
             return true;
         }

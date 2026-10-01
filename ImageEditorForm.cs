@@ -131,7 +131,7 @@ namespace MicroApp
         // ---- interaction state -----------------------------------------------------
         enum Drag
         {
-            None, Pan, Move, Handle, Rotate, Draw, Crop, CropAdjust, Paint, Marquee, Lasso, Gradient, Zoom, FloatMove, SelectionMove, Guide
+            None, Pan, Move, Handle, Rotate, Draw, Crop, CropAdjust, Paint, Marquee, Lasso, Gradient, Zoom, FloatMove, SelectionMove, Guide, RulerOrigin
         }
         Drag _drag = Drag.None;
         bool _dragUndoPushed;
@@ -1109,6 +1109,7 @@ namespace MicroApp
             using (var border = new Pen(Theme.Border))
                 g.DrawRectangle(border, screen.X, screen.Y, screen.Width, screen.Height);
             PaintGuides(g);
+            PaintOriginDrag(g);
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
             PaintMarqueeDraft(g);
@@ -1213,45 +1214,51 @@ namespace MicroApp
                 g.FillRectangle(bg, 0, 0, client.Width, RulerSize);
                 g.FillRectangle(bg, 0, 0, RulerSize, client.Height);
             }
-            // tick spacing: the smallest of 10/25/50/100/250/500/1000 px that is ≥ 60 screen px
-            int[] steps = { 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 };
-            int step = steps[steps.Length - 1];
-            foreach (int s in steps) if (s * _zoom >= 60) { step = s; break; }
+            // ticks in the chosen unit (right-click a ruler to change it): a labelled step of
+            // 1, 2 or 5 times a power of ten at least 60 screen px apart, split by small marks
             using (var p = new Pen(Theme.TextDim))
             using (var ink = new SolidBrush(Theme.TextDim))
             using (var f = new Font("Segoe UI", 7f))
             {
-                int first = (int)Math.Floor((RulerSize - _origin.X) / _zoom / step) * step;
-                for (int v = first; ; v += step)
+                double step; int minors;
+                RulerStep(true, out step, out minors);
+                float ppu = PixelsPerUnit(true);
+                float stepPx = (float)(step * ppu);
+                long firstI = (long)Math.Floor(((RulerSize - _origin.X) / _zoom - _rulerZero.X) / stepPx);
+                for (long i = firstI; ; i++)
                 {
-                    float x = _origin.X + v * _zoom;
+                    float x = _origin.X + (_rulerZero.X + i * stepPx) * _zoom;
                     if (x > client.Width) break;
+                    for (int m = 1; m < minors; m++)
+                    {
+                        float mx = x + m * stepPx / minors * _zoom;
+                        if (mx >= RulerSize && mx <= client.Width) g.DrawLine(p, mx, RulerSize - (minors == 8 && m == 4 ? 5 : 3), mx, RulerSize);
+                    }
                     if (x < RulerSize) continue;
                     g.DrawLine(p, x, RulerSize - 7, x, RulerSize);
-                    g.DrawString(v.ToString(), f, ink, x + 2, 1);
-                    for (int m = 1; m < 5; m++)
-                    {
-                        float mx = x + m * step / 5f * _zoom;
-                        g.DrawLine(p, mx, RulerSize - 3, mx, RulerSize);
-                    }
+                    g.DrawString(RulerLabel(i * step), f, ink, x + 2, 1);
                 }
-                first = (int)Math.Floor((RulerSize - _origin.Y) / _zoom / step) * step;
-                for (int v = first; ; v += step)
+
+                RulerStep(false, out step, out minors);
+                ppu = PixelsPerUnit(false);
+                stepPx = (float)(step * ppu);
+                firstI = (long)Math.Floor(((RulerSize - _origin.Y) / _zoom - _rulerZero.Y) / stepPx);
+                for (long i = firstI; ; i++)
                 {
-                    float y = _origin.Y + v * _zoom;
+                    float y = _origin.Y + (_rulerZero.Y + i * stepPx) * _zoom;
                     if (y > client.Height) break;
+                    for (int m = 1; m < minors; m++)
+                    {
+                        float my = y + m * stepPx / minors * _zoom;
+                        if (my >= RulerSize && my <= client.Height) g.DrawLine(p, RulerSize - (minors == 8 && m == 4 ? 5 : 3), my, RulerSize, my);
+                    }
                     if (y < RulerSize) continue;
                     g.DrawLine(p, RulerSize - 7, y, RulerSize, y);
                     GraphicsState st = g.Save();
                     g.TranslateTransform(1, y + 2);
                     g.RotateTransform(90);
-                    g.DrawString(v.ToString(), f, ink, 0, -12);
+                    g.DrawString(RulerLabel(i * step), f, ink, 0, -12);
                     g.Restore(st);
-                    for (int m = 1; m < 5; m++)
-                    {
-                        float my = y + m * step / 5f * _zoom;
-                        g.DrawLine(p, RulerSize - 3, my, RulerSize, my);
-                    }
                 }
                 g.DrawLine(p, RulerSize, RulerSize - 1, client.Width, RulerSize - 1);
                 g.DrawLine(p, RulerSize - 1, RulerSize, RulerSize - 1, client.Height);
@@ -1266,6 +1273,7 @@ namespace MicroApp
                 }
             }
             using (var corner = new SolidBrush(Theme.Surface)) g.FillRectangle(corner, 0, 0, RulerSize, RulerSize);
+            PaintRulerCorner(g);
         }
 
         // ================================================================== cursors
@@ -1427,6 +1435,7 @@ namespace MicroApp
                 if (_polyPts != null) { _polyPts = null; _canvasPanel.Invalidate(); return true; }
                 if (_cropRect.HasValue) { _cropRect = null; RelayoutOptions(); _canvasPanel.Invalidate(); return true; }
                 if (_drag == Drag.Guide) { CancelGuideDrag(); return true; }
+                if (_drag == Drag.RulerOrigin) { CancelOriginDrag(); return true; }
                 if (_drag != Drag.None) { AbortDrag(); return true; }
                 if (HasSelection) { SetSelection(null); return true; }
                 if (_sel >= 0 && _tool == Tool.Move) { _sel = -1; RefreshLayerList(); RelayoutOptions(); _canvasPanel.Invalidate(); return true; }

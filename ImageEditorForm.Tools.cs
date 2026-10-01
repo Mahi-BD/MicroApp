@@ -82,6 +82,7 @@ namespace MicroApp
         void Canvas_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || !_hasDoc) return;
+            if (OnRulerCorner(e.Location)) { ResetRulerOrigin(); return; }
             if (_tool == Tool.Hand) { FitView(); _canvasPanel.Invalidate(); return; }
             if (_xf != null && _xf.HitInside(e.Location)) { CommitTransform(); return; }
             if (_tool == Tool.PolyLasso && _polyPts != null) { ClosePolyLasso(); return; }
@@ -116,6 +117,7 @@ namespace MicroApp
             }
             if (e.Button == MouseButtons.Right)
             {
+                if (OnRulerArea(e.Location)) { ShowRulerMenu(e.Location); return; }
                 if (ShowGuideMenu(e.Location)) return;
                 ShowCanvasContextMenu(e.Location, cp);
                 return;
@@ -368,6 +370,10 @@ namespace MicroApp
                     GuideMouseMove(cp);
                     return;
 
+                case Drag.RulerOrigin:
+                    OriginMouseMove(cp);
+                    return;
+
                 case Drag.Pan:
                     _origin = new PointF(_panOrigin0.X + (e.X - _downScreen.X), _panOrigin0.Y + (e.Y - _downScreen.Y));
                     _viewFitted = false;
@@ -579,6 +585,10 @@ namespace MicroApp
             {
                 case Drag.Guide:
                     GuideMouseUp(e.Location);
+                    break;
+
+                case Drag.RulerOrigin:
+                    OriginMouseUp(e.Location);
                     break;
 
                 case Drag.Draw:

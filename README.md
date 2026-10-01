@@ -83,7 +83,14 @@ fields are never read. Use OCR instead for images, videos and remote desktops.
 
 ![Pick Text](docs/pick-text.png)
 
-### 4. Screen capture
+### 4. Always on Top
+
+Press **Ctrl+Alt+W** (or tray → *Always on Top*). The pointer turns into a **+** and the window under it is
+outlined; click any window to keep it above all the others, and click a pinned window the same way to let it
+go. **AOT Setting** sets how faded a pinned window is (opacity 20–100 %), puts a 📌 in its title, and has an
+*Unpin all* button. Every window is given back as it was when MicroApp exits.
+
+### 5. Screen capture
 
 Press **Ctrl+Alt+S** (or tray → *Screen Capture*) and drag. The screen freezes and dims so the selection
 is easy to see, and the dimming never ends up in the picture. Let go and the frame waits: drag it by
@@ -101,9 +108,12 @@ Two optional constraints:
 - **Lock ratio** — dragging snaps to 16:9, 16:10, 8:5, 4:3, 1:1, 21:9 … (or any `W:H` you type).
 - **Lock pixel size** — the box becomes an exact size, follows the pointer, and one click takes the shot.
 
+Two buttons sit beside the tick: a **timer** (each click adds a second — the tick then starts the
+countdown) and **Save As**, which writes the framed area straight to a PNG, JPEG or BMP.
+
 The image goes to the clipboard, to a PNG, or both.
 
-### 5. Record GIF
+### 6. Record GIF
 
 Press **Ctrl+Alt+G** (or tray → *Record GIF*), pick a region, and MicroApp records it. A small red badge
 shows elapsed time, placed outside the recorded area so it stays out of the frames. Stop with **Esc**,
@@ -119,7 +129,7 @@ Frames stream straight to disk while recording, so a long capture costs no more 
 GIF recording has its own hot key, frame rate, length limit, selection lock and output folder — separate
 from screen capture.
 
-### 6. Record Video
+### 7. Record Video
 
 Press **Ctrl+Alt+R** (or tray → *Record Video*), pick a region, and MicroApp records it as a small
 **MP4 (H.264 + AAC)** — with **sound** from the system, a microphone, or both mixed. A red frame marks
@@ -129,7 +139,7 @@ simply absent from the file) and **save**. There is no time limit: it records un
 or press the hot key again. Encoding uses the codecs built into Windows; the video streams to disk while
 it records.
 
-### 7. Notes
+### 8. Notes
 
 Press **Ctrl+Shift+N** (or tray → *New Note*) and a fresh note opens in front of whatever you were
 doing — every press gives a new one. A note is one window backed by one plain `.txt` file that
@@ -195,7 +205,7 @@ local-only at any time, leaving every note where it is.
 
 ---
 
-### 8. Image Editor
+### 9. Image Editor
 
 Press **Ctrl+Alt+E** (or tray → *Image Editor*) and paste any image — the window opens on whatever
 is on the clipboard. It is laid out like Photoshop, and it answers to Photoshop's keys, menus and
@@ -244,7 +254,7 @@ right-click menus (**Help → Keyboard Shortcuts** lists them all).
 
 ## Settings
 
-Six focused windows, all reachable from the tray menu:
+Seven focused windows, all reachable from the tray menu:
 
 | Window | Covers |
 |---|---|
@@ -254,6 +264,7 @@ Six focused windows, all reachable from the tray menu:
 | **GIF Setting** | GIF hot key, fps and length, selection lock, GIF output + folder |
 | **Video Setting** | Video hot key, fps, quality, sound source, selection lock, output folder |
 | **Note Setting** | Note hot key, taskbar behaviour, fixed-width text, date/time formats, AI provider + key, string.bd token, note sync |
+| **AOT Setting** | Always on Top hot key, opacity of pinned windows, title pin, notification/sound, unpin all |
 
 | | |
 |---|---|
@@ -273,6 +284,7 @@ installing and first-run setup are in **[SETUP.md](SETUP.md)**.
 | Paste as keystrokes | `Ctrl + Alt + V` |
 | Grab text (OCR) | `Ctrl + Shift + O` |
 | Pick Text | `Ctrl + Alt + T` |
+| Always on Top | `Ctrl + Alt + W` |
 | Screen capture | `Ctrl + Alt + S` |
 | Record GIF | `Ctrl + Alt + G` |
 | Record Video | `Ctrl + Alt + R` |

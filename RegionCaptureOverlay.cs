@@ -115,12 +115,15 @@ namespace MicroApp
         private const int HandleSize = 10;     // drawn size of a resize grip
         private const int HandleGrab = 16;     // its (larger) hit area
         private const int ButtonSize = 30;     // the take / cancel buttons
+        private const int ButtonGap = 8;
+        private const int MaxTimer = 10;       // the timer button wraps back to 1 after this
 
         private readonly Bitmap _screen;       // frozen copy of the whole virtual desktop
         private readonly Rectangle _virtual;   // its position in desktop coordinates
         private readonly CaptureConstraint _constraint;
         private readonly string _hint;
         private readonly bool _adjustable;     // let the frame be moved and resized before it is taken
+        private readonly bool _tools;          // offer the timer and save-as buttons next to take / cancel
 
         private Point _anchor;
         private Rectangle _selection = Rectangle.Empty;
@@ -130,8 +133,10 @@ namespace MicroApp
         private int _grab = -1;                // 0..7 = a handle, 8 = the whole frame, -1 = nothing
         private Point _grabPoint;
         private Rectangle _grabStart;
-        private Rectangle _okButton, _cancelButton;
-        private int _hotButton = -1;           // 0 = take, 1 = cancel
+        private Rectangle _okButton, _cancelButton, _timerButton, _saveButton;
+        private int _hotButton = -1;           // 0 = take, 1 = cancel, 2 = timer, 3 = save as
+        private int _timerSeconds;             // 0 = take at once; each click on the timer adds a second
+        private static string _saveFolder;     // where the last Save As went, for this session
         private bool _overFrame;               // the pointer is inside the frame, so the move icon shows
 
         /// <summary>The captured region, or null when the user cancelled.</summary>
@@ -146,9 +151,19 @@ namespace MicroApp
         /// </summary>
         public static Rectangle LastRegion { get; private set; }
 
+        /// <summary>
+        /// Seconds picked with the timer button on the most recent selection, 0 when it
+        /// was not used. The caller waits that long and grabs the region live.
+        /// </summary>
+        public static int LastDelay { get; private set; }
+
+        /// <summary>Where the most recent selection was saved with Save As, or null.</summary>
+        public static string LastSavedPath { get; private set; }
+
         private RegionCaptureOverlay(Bitmap screen, Rectangle bounds, CaptureConstraint constraint,
-                                     string hint, bool adjustable)
+                                     string hint, bool adjustable, bool tools)
         {
+            _tools = tools;
             _screen = screen;
             _virtual = bounds;
             _constraint = constraint ?? CaptureConstraint.None;
@@ -188,6 +203,18 @@ namespace MicroApp
         /// </summary>
         public static Bitmap SelectRegion(CaptureConstraint constraint, string hint, bool adjustable)
         {
+            return SelectRegion(constraint, hint, adjustable, false);
+        }
+
+        /// <summary>
+        /// As above; <paramref name="tools"/> adds a timer button (each click adds a second,
+        /// see <see cref="LastDelay"/>) and a Save As button (see <see cref="LastSavedPath"/>)
+        /// beside the take / cancel buttons.
+        /// </summary>
+        public static Bitmap SelectRegion(CaptureConstraint constraint, string hint, bool adjustable, bool tools)
+        {
+            LastDelay = 0;
+            LastSavedPath = null;
             Rectangle bounds = SystemInformation.VirtualScreen;
             Bitmap screen = new Bitmap(bounds.Width, bounds.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(screen))
@@ -195,7 +222,7 @@ namespace MicroApp
                 g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size, CopyPixelOperation.SourceCopy);
             }
 
-            using (var overlay = new RegionCaptureOverlay(screen, bounds, constraint, hint, adjustable))
+            using (var overlay = new RegionCaptureOverlay(screen, bounds, constraint, hint, adjustable, tools))
             {
                 overlay.ShowDialog();
                 var captured = overlay.Captured;
@@ -203,6 +230,8 @@ namespace MicroApp
                 {
                     var sel = overlay.Selection;
                     LastRegion = new Rectangle(bounds.X + sel.X, bounds.Y + sel.Y, sel.Width, sel.Height);
+                    LastDelay = overlay._timerSeconds;
+                    LastSavedPath = overlay._savedPath;
                 }
                 screen.Dispose();
                 return captured;
@@ -244,6 +273,16 @@ namespace MicroApp
                 Confirm();
                 return true;
             }
+            if (_tools && ctrl && key == Keys.S)
+            {
+                SaveAs();
+                return true;
+            }
+            if (_tools && key == Keys.T)
+            {
+                BumpTimer();
+                return true;
+            }
 
             int step = ctrl ? 10 : 1;
             var delta = Point.Empty;
@@ -281,8 +320,13 @@ namespace MicroApp
 
             if (_adjusting)
             {
-                if (_okButton.Contains(e.Location)) { Confirm(); return; }
-                if (_cancelButton.Contains(e.Location)) { Captured = null; Close(); return; }
+                switch (ButtonAt(e.Location))
+                {
+                    case 0: Confirm(); return;
+                    case 1: Captured = null; Close(); return;
+                    case 2: BumpTimer(); return;
+                    case 3: SaveAs(); return;
+                }
 
                 int handle = HitHandle(e.Location);
                 if (handle < 0 && _selection.Contains(e.Location)) handle = 8;   // move the whole frame
@@ -294,6 +338,7 @@ namespace MicroApp
                     return;
                 }
                 _adjusting = false;      // a drag outside the frame starts over
+                StopTimer();
             }
 
             _anchor = e.Location;
@@ -390,10 +435,111 @@ namespace MicroApp
             Close();
         }
 
+        /// <summary>
+        /// One more second on the timer: 1, 2, 3 ... up to <see cref="MaxTimer"/>, then back
+        /// to 1. It only sets the wait -- the tick (or Enter) starts it.
+        /// </summary>
+        private void BumpTimer()
+        {
+            _timerSeconds = _timerSeconds >= MaxTimer ? 1 : _timerSeconds + 1;
+            Invalidate();
+        }
+
+        private void StopTimer()
+        {
+            _timerSeconds = 0;
+        }
+
+        private string _savedPath;
+
+        /// <summary>
+        /// Save As: the framed area straight to a file of the user's choosing. The dialog
+        /// sits over the picker so the frame stays in view; cancelling it leaves the frame
+        /// where it was.
+        /// </summary>
+        private void SaveAs()
+        {
+            var rect = Rectangle.Intersect(_selection, new Rectangle(Point.Empty, _screen.Size));
+            if (rect.Width < 4 || rect.Height < 4) return;
+
+            string folder = _saveFolder;
+            if (string.IsNullOrEmpty(folder) || !System.IO.Directory.Exists(folder))
+            {
+                folder = CaptureSettingsForm.DefaultFolder();
+                try { System.IO.Directory.CreateDirectory(folder); } catch (Exception) { }
+            }
+
+            using (var sfd = new SaveFileDialog
+            {
+                Title = "Save the capture as",
+                Filter = "PNG image|*.png|JPEG image|*.jpg|Bitmap|*.bmp",
+                FileName = "MicroApp-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png",
+                InitialDirectory = folder,
+                AddExtension = true,
+                OverwritePrompt = true
+            })
+            {
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+
+                Bitmap shot = _screen.Clone(rect, _screen.PixelFormat);
+                try
+                {
+                    string ext = System.IO.Path.GetExtension(sfd.FileName).ToLowerInvariant();
+                    if (ext == ".jpg" || ext == ".jpeg")
+                    {
+                        using (var flat = Flatten(shot)) flat.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Jpeg);
+                    }
+                    else if (ext == ".bmp")
+                    {
+                        using (var flat = Flatten(shot)) flat.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Bmp);
+                    }
+                    else
+                    {
+                        shot.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Png);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    shot.Dispose();
+                    ModernDialog.Info("Could not save the capture", ex.Message);
+                    return;
+                }
+
+                _saveFolder = System.IO.Path.GetDirectoryName(sfd.FileName);
+                _savedPath = sfd.FileName;
+                _timerSeconds = 0;       // saved as it stands -- no countdown after this
+                _selection = rect;
+                Captured = shot;
+                Close();
+            }
+        }
+
+        /// <summary>A 24-bit copy, for the formats that have no alpha channel.</summary>
+        private static Bitmap Flatten(Bitmap src)
+        {
+            var flat = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(flat))
+            {
+                g.Clear(Color.White);
+                g.DrawImageUnscaled(src, 0, 0);
+            }
+            return flat;
+        }
+
+        /// <summary>Which button is under <paramref name="p"/>: 0 take, 1 cancel, 2 timer, 3 save as, -1 none.</summary>
+        private int ButtonAt(Point p)
+        {
+            if (_okButton.Contains(p)) return 0;
+            if (_cancelButton.Contains(p)) return 1;
+            if (_tools && _timerButton.Contains(p)) return 2;
+            if (_tools && _saveButton.Contains(p)) return 3;
+            return -1;
+        }
+
         /// <summary>Keeps the cursor, the button highlight and the move icon in step with the pointer.</summary>
         private void TrackHover(Point p)
         {
-            int button = _okButton.Contains(p) ? 0 : _cancelButton.Contains(p) ? 1 : -1;
+            int button = ButtonAt(p);
             int handle = button >= 0 ? -1 : HitHandle(p);
             if (button < 0 && handle < 0 && _selection.Contains(p)) handle = 8;
 
@@ -545,17 +691,25 @@ namespace MicroApp
             return new Rectangle(x, y, w, h);
         }
 
-        /// <summary>Places the take / cancel buttons under the frame, or inside it when there is no room.</summary>
+        /// <summary>Places the buttons under the frame, or inside it when there is no room.</summary>
         private void LayoutButtons()
         {
-            const int gap = 8;
-            int width = ButtonSize * 2 + gap;
+            const int gap = ButtonGap;
+            int count = _tools ? 4 : 2;
+            int width = ButtonSize * count + gap * (count - 1);
             int x = _selection.Right - width;
             int y = _selection.Bottom + gap;
             if (y + ButtonSize > _screen.Height) y = _selection.Bottom - ButtonSize - gap;
             x = Math.Max(0, Math.Min(x, _screen.Width - width));
             y = Math.Max(0, Math.Min(y, _screen.Height - ButtonSize));
 
+            // left to right: timer, save as, take, cancel
+            if (_tools)
+            {
+                _timerButton = new Rectangle(x, y, ButtonSize, ButtonSize);
+                _saveButton = new Rectangle(x + (ButtonSize + gap), y, ButtonSize, ButtonSize);
+                x += (ButtonSize + gap) * 2;
+            }
             _okButton = new Rectangle(x, y, ButtonSize, ButtonSize);
             _cancelButton = new Rectangle(x + ButtonSize + gap, y, ButtonSize, ButtonSize);
         }
@@ -676,12 +830,26 @@ namespace MicroApp
             g.SmoothingMode = SmoothingMode.AntiAlias;
             DrawButton(g, _okButton, true, _hotButton == 0);
             DrawButton(g, _cancelButton, false, _hotButton == 1);
+            if (_tools)
+            {
+                DrawTimerButton(g, _timerButton, _hotButton == 2);
+                DrawSaveButton(g, _saveButton, _hotButton == 3);
+            }
 
-            string hint = _selection.Width >= 300
-                ? "Drag to move, handles resize   -   Enter takes it"
-                : "Enter takes it";
+            string hint;
+            if (_timerSeconds > 0)
+                hint = $"Timer {_timerSeconds} s   -   click the tick (or Enter) to start";
+            else if (_hotButton == 2)
+                hint = "Timer: 1 click = 1 s, 2 clicks = 2 s ...  then the tick starts it";
+            else if (_hotButton == 3)
+                hint = "Save the area as a file  (Ctrl+S)";
+            else
+                hint = _selection.Width >= 300
+                    ? "Drag to move, handles resize   -   Enter takes it"
+                    : "Enter takes it";
+            var left = _tools ? _timerButton : _okButton;
             var size = TextRenderer.MeasureText(hint, Theme.Small);
-            var box = new Rectangle(_okButton.Left - size.Width - 22, _okButton.Y + (ButtonSize - size.Height - 8) / 2,
+            var box = new Rectangle(left.Left - size.Width - 22, left.Y + (ButtonSize - size.Height - 8) / 2,
                                     size.Width + 14, size.Height + 8);
             if (box.X < 2) return;      // no room beside the buttons, leave the hint off
 
@@ -726,6 +894,70 @@ namespace MicroApp
                     g.DrawLine(pen, cx - 6, cy - 6, cx + 6, cy + 6);
                     g.DrawLine(pen, cx + 6, cy - 6, cx - 6, cy + 6);
                 }
+            }
+        }
+
+        /// <summary>The round button behind the timer and save glyphs, same look as cancel.</summary>
+        private static void DrawToolDisc(Graphics g, Rectangle r, bool hot, bool lit)
+        {
+            Color back = lit
+                ? (hot ? Theme.Accent : Color.FromArgb(235, Theme.Accent))
+                : (hot ? Color.FromArgb(240, 58, 58, 66) : Color.FromArgb(225, 32, 32, 38));
+            using (var fill = new SolidBrush(back))
+            using (var edge = new Pen(Color.FromArgb(120, 255, 255, 255)))
+            {
+                g.FillEllipse(fill, r);
+                g.DrawEllipse(edge, r);
+            }
+        }
+
+        /// <summary>A stopwatch, or -- once clicked -- the number of seconds it is set to.</summary>
+        private void DrawTimerButton(Graphics g, Rectangle r, bool hot)
+        {
+            DrawToolDisc(g, r, hot, _timerSeconds > 0);
+            int cx = r.Left + r.Width / 2, cy = r.Top + r.Height / 2;
+
+            if (_timerSeconds > 0)
+            {
+                using (var f = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point))
+                {
+                    TextRenderer.DrawText(g, _timerSeconds.ToString(), f, r, Color.White,
+                                          TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+                                          TextFormatFlags.NoPadding);
+                }
+                return;
+            }
+
+            using (var pen = new Pen(Color.White, 1.8f))
+            {
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+                const int rad = 7;
+                g.DrawEllipse(pen, cx - rad, cy - rad + 1, rad * 2, rad * 2);
+                g.DrawLine(pen, cx, cy + 1, cx, cy - 3);              // the hand
+                g.DrawLine(pen, cx, cy + 1, cx + 3, cy + 3);
+                g.DrawLine(pen, cx - 2, cy - rad - 2, cx + 2, cy - rad - 2);   // the crown
+                g.DrawLine(pen, cx + rad - 1, cy - rad + 2, cx + rad + 1, cy - rad);
+            }
+        }
+
+        /// <summary>An arrow down into a tray: save to a file.</summary>
+        private static void DrawSaveButton(Graphics g, Rectangle r, bool hot)
+        {
+            DrawToolDisc(g, r, hot, false);
+            int cx = r.Left + r.Width / 2, cy = r.Top + r.Height / 2;
+            using (var pen = new Pen(Color.White, 2f))
+            {
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+                pen.LineJoin = LineJoin.Round;
+                g.DrawLine(pen, cx, cy - 7, cx, cy + 2);
+                g.DrawLines(pen, new[] { new Point(cx - 4, cy - 2), new Point(cx, cy + 2), new Point(cx + 4, cy - 2) });
+                g.DrawLines(pen, new[]
+                {
+                    new Point(cx - 7, cy + 2), new Point(cx - 7, cy + 7),
+                    new Point(cx + 7, cy + 7), new Point(cx + 7, cy + 2)
+                });
             }
         }
 
@@ -793,6 +1025,7 @@ namespace MicroApp
         private readonly Rectangle _region;
         private readonly Action<Bitmap> _done;
         private RecordingRegionFrame _frame;
+        private CountdownShade _shade;
         private int _left;
         private bool _finished;
 
@@ -804,6 +1037,9 @@ namespace MicroApp
         public static void Start(Rectangle region, int seconds, Action<Bitmap> done)
         {
             var badge = new CaptureCountdown(region, seconds, done);
+            // shade first, then the frame, then the badge, so each sits on top of the last
+            badge._shade.Show();
+            badge._frame.Show();
             badge.Show();
         }
 
@@ -824,7 +1060,10 @@ namespace MicroApp
             Cursor = Cursors.Hand;
             Text = "MicroApp countdown";
 
-            _frame = new RecordingRegionFrame(region);
+            // the area stays bright, the rest of the desktop dims -- the same picture as the
+            // picker had, so it is obvious what is about to be taken
+            _shade = new CountdownShade(region);
+            _frame = new RecordingRegionFrame(region, 3) { ExcludeFromCapture = false };
             _frame.BackColor = Theme.Accent;
 
             _tick.Interval = 1000;
@@ -859,7 +1098,6 @@ namespace MicroApp
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            _frame.Show();
             _tick.Start();
         }
 
@@ -884,9 +1122,10 @@ namespace MicroApp
             // both windows must be off screen before the pixels are read
             Hide();
             _frame.Hide();
+            _shade.Hide();
             Application.DoEvents();
 
-            var wait = new System.Windows.Forms.Timer { Interval = 150 };
+            var wait = new System.Windows.Forms.Timer { Interval = 250 };
             wait.Tick += (s2, e2) =>
             {
                 wait.Stop();
@@ -950,8 +1189,47 @@ namespace MicroApp
             {
                 _tick.Dispose();
                 if (_frame != null) { _frame.Close(); _frame.Dispose(); _frame = null; }
+                if (_shade != null) { _shade.Close(); _shade.Dispose(); _shade = null; }
             }
             base.Dispose(disposing);
+        }
+    }
+
+    /// <summary>
+    /// Dims the whole desktop except the region during a capture countdown. It has a hole
+    /// where the region is (so nothing of it lands in the shot) and lets every click through
+    /// to the windows underneath. It is NOT excluded from screen capture: a remote-desktop
+    /// view is a screen capture too, and the area must be visible there; it is hidden
+    /// before the shot is taken anyway.
+    /// </summary>
+    public class CountdownShade : Form
+    {
+        public CountdownShade(Rectangle region)
+        {
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.Manual;
+            TopMost = true;
+            BackColor = Color.FromArgb(12, 12, 16);
+            Opacity = 0.45;
+
+            var desktop = SystemInformation.VirtualScreen;
+            Bounds = desktop;
+            var shape = new Region(new Rectangle(0, 0, desktop.Width, desktop.Height));
+            shape.Exclude(new Rectangle(region.X - desktop.X, region.Y - desktop.Y, region.Width, region.Height));
+            Region = shape;
+        }
+
+        protected override bool ShowWithoutActivation { get { return true; } }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                cp.ExStyle |= 0x08000000 | 0x80 | 0x20 | 0x80000;   // no-activate, toolwindow, click-through, layered
+                return cp;
+            }
         }
     }
 }

@@ -92,7 +92,7 @@ namespace MicroApp
             // while dragging, the position in the ruler's units next to the pointer
             if (_guideDrag != null && _drag == Drag.Guide)
             {
-                string text = (_guideDrag.Vertical ? "X: " : "Y: ") + Math.Round(_guideDrag.Pos) + " px";
+                string text = (_guideDrag.Vertical ? "X: " : "Y: ") + FormatUnit(_guideDrag.Pos, _guideDrag.Vertical);
                 Size sz = TextRenderer.MeasureText(text, Theme.Small);
                 var box = new Rectangle(_mouseScreen.X + 14, _mouseScreen.Y + 14, sz.Width + 8, sz.Height + 4);
                 using (var bg = new SolidBrush(Color.FromArgb(230, 30, 30, 34))) g.FillRectangle(bg, box);
@@ -110,6 +110,7 @@ namespace MicroApp
         bool GuideMouseDown(MouseEventArgs e, PointF cp)
         {
             if (e.Button != MouseButtons.Left) return false;
+            if (OriginMouseDown(e.Location, cp)) return true;
             int ruler = RulerAt(e.Location);
             if (ruler != 0)
             {
@@ -139,13 +140,13 @@ namespace MicroApp
         {
             if (_guideDrag == null) return;
             float v = _guideDrag.Vertical ? cp.X : cp.Y;
-            // whole pixels, like Photoshop's guides at 100 %; Shift snaps to the ruler's ticks
-            v = (float)Math.Round(v);
-            if ((ModifierKeys & Keys.Shift) == Keys.Shift)
+            // whole pixels, like Photoshop's guides at 100 %; Snap to Unit (or Shift) locks it
+            // onto the ruler's small marks in the current unit
+            if (_snapToUnit || (ModifierKeys & Keys.Shift) == Keys.Shift)
             {
-                int tick = RulerTick() / 5;
-                if (tick > 0) v = (float)Math.Round(v / tick) * tick;
+                v = SnapToUnitMarks(v, _guideDrag.Vertical);
             }
+            else v = (float)Math.Round(v);
             _guideDrag.Pos = v;
             _canvasPanel.Invalidate();
         }
@@ -176,6 +177,7 @@ namespace MicroApp
         /// <summary>Hover feedback: the split cursor over rulers and grabbable guides. True when it applied.</summary>
         bool GuideCursor(Point screen)
         {
+            if (OnRulerCorner(screen)) { _canvasPanel.Cursor = Cursors.Cross; return true; }
             int ruler = RulerAt(screen);
             if (ruler != 0) { _canvasPanel.Cursor = ruler == 2 ? Cursors.VSplit : Cursors.HSplit; return true; }
             bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
@@ -184,14 +186,6 @@ namespace MicroApp
             if (hit == null || hit.Locked) return false;
             _canvasPanel.Cursor = hit.Vertical ? Cursors.VSplit : Cursors.HSplit;
             return true;
-        }
-
-        /// <summary>The ruler's labelled tick spacing in canvas pixels at the current zoom.</summary>
-        int RulerTick()
-        {
-            int[] steps = { 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000 };
-            foreach (int s in steps) if (s * _zoom >= 60) return s;
-            return steps[steps.Length - 1];
         }
 
         // ------------------------------------------------------------ menu
