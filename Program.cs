@@ -1369,8 +1369,8 @@ namespace MicroApp
 
             try
             {
-                // no time limit: the recording runs until it is saved or Esc is pressed
-                _videoRecorder = new VideoRecorder(region, path, fps, 0,
+                // VideoSeconds is 0 for "unlimited" (runs until saved or Esc), otherwise a hard limit
+                _videoRecorder = new VideoRecorder(region, path, fps, Properties.Settings.Default.VideoSeconds,
                     (VideoQuality)Properties.Settings.Default.VideoQuality,
                     (VideoAudioSource)Properties.Settings.Default.VideoAudioSource);
             }

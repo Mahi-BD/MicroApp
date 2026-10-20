@@ -52,13 +52,34 @@ namespace MicroApp
         /// <summary>Muted: the device keeps running (and the clock with it) but hands over silence.</summary>
         public bool Muted { get; set; }
 
+        // playback gain applied to every sample, 1 = unchanged, 2 = +6 dB ("200%"). Clamped on set.
+        private float _gain = 1f;
+
+        /// <summary>Linear gain on the captured signal: 1 = 100% (no change), 2 = 200% (hard-clamped).</summary>
+        public float Gain
+        {
+            get { return _gain; }
+            set { _gain = value < 0f ? 0f : (value > 2f ? 2f : value); }
+        }
+
+        /// <summary>A capture endpoint the user can choose: its WASAPI id and a friendly name.</summary>
+        public struct AudioDevice
+        {
+            public string Id;
+            public string Name;
+            public override string ToString() { return Name; }
+        }
+
         /// <param name="rate">0: the device's own rate when it is 44.1/48 kHz; otherwise resample to this.</param>
         /// <param name="stereo">Always hand over two channels (a mono microphone is copied to both).</param>
-        public static AudioCapture TryCreate(bool loopback, int rate = 0, bool stereo = false)
+        /// <param name="deviceId">A specific capture device (from <see cref="ListMicrophones"/>); null/empty is the default. Ignored for loopback.</param>
+        /// <param name="gainPercent">Linear gain 0-200; 100 leaves the signal untouched.</param>
+        public static AudioCapture TryCreate(bool loopback, int rate = 0, bool stereo = false,
+                                             string deviceId = null, int gainPercent = 100)
         {
             try
             {
-                return new AudioCapture(loopback, rate, stereo);
+                return new AudioCapture(loopback, rate, stereo, deviceId, gainPercent);
             }
             catch (Exception)
             {
@@ -66,13 +87,114 @@ namespace MicroApp
             }
         }
 
-        private AudioCapture(bool loopback, int rate, bool stereo)
+        /// <summary>
+        /// Every active capture endpoint (microphone / line-in), each with its WASAPI id and
+        /// friendly name. The empty list means none; the caller then falls back to the default.
+        /// Never throws: a device that cannot be read is simply skipped.
+        /// </summary>
+        public static List<AudioDevice> ListMicrophones()
         {
+            var list = new List<AudioDevice>();
+            Wasapi.IMMDeviceEnumerator enumerator = null;
+            try
+            {
+                enumerator = (Wasapi.IMMDeviceEnumerator)new Wasapi.MMDeviceEnumeratorComObject();
+                IntPtr collPtr;
+                enumerator.EnumAudioEndpoints(1 /* eCapture */, 0x1 /* DEVICE_STATE_ACTIVE */, out collPtr);
+                if (collPtr == IntPtr.Zero) return list;
+                var coll = (Wasapi.IMMDeviceCollection)Marshal.GetObjectForIUnknown(collPtr);
+                Marshal.Release(collPtr);
+                try
+                {
+                    int count;
+                    coll.GetCount(out count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        IntPtr devPtr;
+                        coll.Item(i, out devPtr);
+                        if (devPtr == IntPtr.Zero) continue;
+                        var device = (Wasapi.IMMDevice)Marshal.GetObjectForIUnknown(devPtr);
+                        Marshal.Release(devPtr);
+                        try
+                        {
+                            string id = ReadDeviceId(device);
+                            string name = ReadFriendlyName(device);
+                            if (!string.IsNullOrEmpty(id))
+                            {
+                                list.Add(new AudioDevice { Id = id, Name = string.IsNullOrEmpty(name) ? "Microphone" : name });
+                            }
+                        }
+                        finally { Mf.Release(device); }
+                    }
+                }
+                finally { Mf.Release(coll); }
+            }
+            catch (Exception)
+            {
+                // enumeration unavailable: hand back whatever we managed to collect
+            }
+            finally { Mf.Release(enumerator); }
+            return list;
+        }
+
+        private static string ReadDeviceId(Wasapi.IMMDevice device)
+        {
+            IntPtr idPtr = IntPtr.Zero;
+            try
+            {
+                device.GetId(out idPtr);
+                return idPtr == IntPtr.Zero ? null : Marshal.PtrToStringUni(idPtr);
+            }
+            catch (Exception) { return null; }
+            finally { if (idPtr != IntPtr.Zero) Marshal.FreeCoTaskMem(idPtr); }
+        }
+
+        private static string ReadFriendlyName(Wasapi.IMMDevice device)
+        {
+            IntPtr storePtr = IntPtr.Zero;
+            IntPtr pv = IntPtr.Zero;
+            try
+            {
+                device.OpenPropertyStore(0 /* STGM_READ */, out storePtr);
+                if (storePtr == IntPtr.Zero) return null;
+                var store = (Wasapi.IPropertyStore)Marshal.GetObjectForIUnknown(storePtr);
+                Marshal.Release(storePtr);
+                try
+                {
+                    pv = Marshal.AllocCoTaskMem(32);   // PROPVARIANT (16 on x86, 24 on x64; 32 is safe)
+                    for (int i = 0; i < 32; i++) Marshal.WriteByte(pv, i, 0);
+                    var key = Wasapi.PKEY_Device_FriendlyName;
+                    store.GetValue(ref key, pv);
+                    IntPtr strPtr = Marshal.ReadIntPtr(pv, 8);   // VT_LPWSTR payload
+                    return strPtr == IntPtr.Zero ? null : Marshal.PtrToStringUni(strPtr);
+                }
+                finally
+                {
+                    if (pv != IntPtr.Zero) { try { Wasapi.PropVariantClear(pv); } catch (Exception) { } Marshal.FreeCoTaskMem(pv); }
+                    Mf.Release(store);
+                }
+            }
+            catch (Exception) { return null; }
+        }
+
+        private AudioCapture(bool loopback, int rate, bool stereo, string deviceId, int gainPercent)
+        {
+            _gain = gainPercent < 0 ? 0f : (gainPercent > 200 ? 2f : gainPercent / 100f);
             var enumerator = (Wasapi.IMMDeviceEnumerator)new Wasapi.MMDeviceEnumeratorComObject();
             try
             {
                 Wasapi.IMMDevice device;
-                enumerator.GetDefaultAudioEndpoint(loopback ? 0 : 1 /* eRender : eCapture */, 0, out device);
+                if (!loopback && !string.IsNullOrEmpty(deviceId))
+                {
+                    IntPtr devPtr;
+                    enumerator.GetDevice(deviceId, out devPtr);
+                    device = (Wasapi.IMMDevice)Marshal.GetObjectForIUnknown(devPtr);
+                    Marshal.Release(devPtr);   // balance GetDevice's ref; the RCW keeps its own
+                }
+                else
+                {
+                    enumerator.GetDefaultAudioEndpoint(loopback ? 0 : 1 /* eRender : eCapture */, 0, out device);
+                }
                 try
                 {
                     object clientObj;
@@ -238,6 +360,16 @@ namespace MicroApp
                 }
             }
 
+            // digital boost/cut: scale every sample and hard-clamp so it can never wrap
+            if (_gain != 1f && !silent && !Muted)
+            {
+                for (int i = 0; i < pcm.Length; i++)
+                {
+                    int v = (int)(pcm[i] * _gain);
+                    pcm[i] = (short)(v > short.MaxValue ? short.MaxValue : v < short.MinValue ? short.MinValue : v);
+                }
+            }
+
             if (_resample) pcm = Resample(pcm, frames);
             if (pcm.Length == 0) return;
 
@@ -328,10 +460,11 @@ namespace MicroApp
         /// Both devices mixed; when only one of them is available, that one alone (at the same
         /// 48 kHz stereo), with <paramref name="micMissing"/> / <paramref name="systemMissing"/> saying which.
         /// </summary>
-        public static IAudioSource TryCreate(out bool micMissing, out bool systemMissing)
+        public static IAudioSource TryCreate(out bool micMissing, out bool systemMissing,
+                                             string micDeviceId = null, int micGain = 100)
         {
             AudioCapture system = AudioCapture.TryCreate(true, Rate, true);
-            AudioCapture mic = AudioCapture.TryCreate(false, Rate, true);
+            AudioCapture mic = AudioCapture.TryCreate(false, Rate, true, micDeviceId, micGain);
             micMissing = mic == null;
             systemMissing = system == null;
             if (system != null && mic != null) return new AudioMixer(system, mic);
@@ -416,9 +549,45 @@ namespace MicroApp
         public static readonly Guid KSDATAFORMAT_SUBTYPE_IEEE_FLOAT =
             new Guid("00000003-0000-0010-8000-00AA00389B71");
 
+        // PKEY_Device_FriendlyName — the human-readable endpoint name ("Microphone (Realtek...)").
+        public static PROPERTYKEY PKEY_Device_FriendlyName = new PROPERTYKEY
+        {
+            fmtid = new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"),
+            pid = 14
+        };
+
+        [DllImport("ole32.dll")]
+        public static extern int PropVariantClear(IntPtr pvar);
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        public struct PROPERTYKEY
+        {
+            public Guid fmtid;
+            public int pid;
+        }
+
         [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
         public class MMDeviceEnumeratorComObject
         {
+        }
+
+        [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        public interface IMMDeviceCollection
+        {
+            void GetCount(out int count);
+            void Item(int index, out IntPtr device);
+        }
+
+        [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        public interface IPropertyStore
+        {
+            void GetCount(out int count);
+            void GetAt(int index, out PROPERTYKEY key);
+            void GetValue([In] ref PROPERTYKEY key, [In] IntPtr pv);
+            void SetValue([In] ref PROPERTYKEY key, [In] IntPtr pv);
+            void Commit();
         }
 
         [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"),

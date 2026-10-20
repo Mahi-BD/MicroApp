@@ -43,6 +43,12 @@ namespace MicroApp
         private CheckBox[] _modifiers;
         private RadioButton[] _outputs;
 
+        // live microphone preview that drives the level meter while the dialog is open
+        private AudioCapture _preview;
+        private Timer _meterTimer;
+        private volatile float _previewLevel;
+        private bool _shown;
+
         public VideoSettingsForm()
         {
             InitializeComponent();
@@ -77,6 +83,10 @@ namespace MicroApp
                 mod.Checked = (0 != (Properties.Settings.Default.VideoHotKeyModifier & int.Parse(mod.Tag.ToString())));
             }
             videoFps.Text = Properties.Settings.Default.VideoFps.ToString();
+            // 0 (or less) means unlimited: show it as a blank box
+            videoLength.Text = Properties.Settings.Default.VideoSeconds <= 0
+                ? string.Empty
+                : Properties.Settings.Default.VideoSeconds.ToString();
 
             qualityBox.DropDownStyle = ComboBoxStyle.DropDownList;
             qualityBox.Items.Add("Small file");
@@ -90,6 +100,23 @@ namespace MicroApp
             soundBox.Items.Add("Microphone");
             soundBox.Items.Add("System sound + microphone");
             soundBox.SelectedIndex = Math.Max(0, Math.Min(3, Properties.Settings.Default.VideoAudioSource));
+
+            PopulateMics();
+            int gain = Math.Max(0, Math.Min(200, Properties.Settings.Default.VideoMicGain));
+            gainSlider.Value = gain;
+            UpdateGainLabel();
+
+            soundBox.SelectedIndexChanged += (s, e2) => { UpdateMicRowEnabled(); RestartPreview(); };
+            micBox.SelectedIndexChanged += (s, e2) => RestartPreview();
+
+            _meterTimer = new Timer { Interval = 40 };
+            _meterTimer.Tick += (s, e2) =>
+            {
+                micMeter.SetLevel(_previewLevel);
+                _previewLevel = 0f;
+            };
+
+            UpdateMicRowEnabled();
 
             lockCursorSize.Checked = Properties.Settings.Default.VideoLockCursorSize;
             clickGlow.Checked = Properties.Settings.Default.VideoClickGlow;
@@ -140,7 +167,8 @@ namespace MicroApp
             modifiersLabel.Font = new Font(Theme.Small, FontStyle.Bold);
             modifiersLabel.ForeColor = Theme.TextDim;
 
-            foreach (var helper in new[] { keyLabel, fpsLabel, qualityLabel, soundLabel, byLabel, pxLabel, lockNote })
+            foreach (var helper in new[] { keyLabel, fpsLabel, lengthLabel, qualityLabel, soundLabel,
+                                           micLabel, levelLabel, gainCaption, gainLabel, byLabel, pxLabel, lockNote })
             {
                 helper.Font = Theme.Base;
                 helper.ForeColor = Theme.TextDim;
@@ -218,6 +246,125 @@ namespace MicroApp
             }
         }
 
+        /// <summary>Fills the device list with "Default microphone" plus every active capture endpoint.</summary>
+        private void PopulateMics()
+        {
+            micBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            micBox.Items.Clear();
+            micBox.Items.Add(new AudioCapture.AudioDevice { Id = "", Name = "Default microphone" });
+
+            string saved = Properties.Settings.Default.VideoMicDeviceId;
+            int selIndex = 0;
+            try
+            {
+                foreach (var d in AudioCapture.ListMicrophones())
+                {
+                    int idx = micBox.Items.Add(d);
+                    if (!string.IsNullOrEmpty(saved) && d.Id == saved) selIndex = idx;
+                }
+            }
+            catch (Exception) { }
+            micBox.SelectedIndex = selIndex;
+        }
+
+        /// <summary>The WASAPI id of the chosen device, or "" for the system default.</summary>
+        private string SelectedMicId()
+        {
+            if (micBox.SelectedItem is AudioCapture.AudioDevice)
+                return ((AudioCapture.AudioDevice)micBox.SelectedItem).Id;
+            return string.Empty;
+        }
+
+        /// <summary>True when the sound mode records the microphone (Microphone or System + microphone).</summary>
+        private bool MicModeSelected()
+        {
+            return soundBox.SelectedIndex == 2 || soundBox.SelectedIndex == 3;
+        }
+
+        private void UpdateMicRowEnabled()
+        {
+            bool on = MicModeSelected();
+            micLabel.Enabled = micBox.Enabled = levelLabel.Enabled = on;
+            gainCaption.Enabled = gainLabel.Enabled = gainSlider.Enabled = on;
+            micHost.Enabled = on;
+            micHost.Invalidate();
+            if (!on) micMeter.Reset();
+        }
+
+        private void UpdateGainLabel()
+        {
+            gainLabel.Text = gainSlider.Value + "%  (100% = no change, up to 200% boost)";
+        }
+
+        private void GainSlider_Scroll(object sender, EventArgs e)
+        {
+            UpdateGainLabel();
+            // apply the new gain to the running preview at once, so the meter reflects it live
+            var preview = _preview;
+            if (preview != null) preview.Gain = gainSlider.Value / 100f;
+        }
+
+        /// <summary>Opens the chosen mic and feeds its peak level to the meter; a no-op unless a mic mode is picked.</summary>
+        private void StartPreview()
+        {
+            StopPreview();
+            if (!MicModeSelected()) return;
+            try
+            {
+                _preview = AudioCapture.TryCreate(false, 0, false, SelectedMicId(), gainSlider.Value);
+                if (_preview != null)
+                {
+                    _preview.Start((bytes, n) =>
+                    {
+                        float peak = 0f;
+                        for (int i = 0; i + 1 < n; i += 2)
+                        {
+                            short s = (short)(bytes[i] | (bytes[i + 1] << 8));
+                            float a = Math.Abs((int)s) / 32768f;
+                            if (a > peak) peak = a;
+                        }
+                        if (peak > _previewLevel) _previewLevel = peak;
+                    });
+                    if (_meterTimer != null) _meterTimer.Start();
+                }
+            }
+            catch (Exception)
+            {
+                _preview = null;   // device busy or gone: the meter just stays at rest
+            }
+        }
+
+        private void StopPreview()
+        {
+            if (_meterTimer != null) _meterTimer.Stop();
+            var preview = _preview;
+            _preview = null;
+            if (preview != null)
+            {
+                try { preview.Stop(); preview.Dispose(); } catch (Exception) { }
+            }
+            _previewLevel = 0f;
+            if (micMeter != null) micMeter.Reset();
+        }
+
+        private void RestartPreview()
+        {
+            if (_shown) StartPreview();
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            _shown = true;
+            StartPreview();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            StopPreview();
+            base.OnFormClosing(e);
+        }
+
         private void Save_Click(object sender, EventArgs e)
         {
             var letter = Video_Letter.Text;
@@ -234,8 +381,18 @@ namespace MicroApp
             int fps, w, h;
             if (int.TryParse(videoFps.Text, out fps)) Properties.Settings.Default.VideoFps = Math.Max(1, Math.Min(30, fps));
 
+            // blank, 0 or an unparseable length all mean "unlimited" (record until stopped)
+            int secs;
+            string lenText = videoLength.Text.Trim();
+            if (lenText.Length == 0 || !int.TryParse(lenText, out secs) || secs <= 0)
+                Properties.Settings.Default.VideoSeconds = 0;
+            else
+                Properties.Settings.Default.VideoSeconds = Math.Max(1, Math.Min(3600, secs));
+
             Properties.Settings.Default.VideoQuality = qualityBox.SelectedIndex;
             Properties.Settings.Default.VideoAudioSource = soundBox.SelectedIndex;
+            Properties.Settings.Default.VideoMicDeviceId = SelectedMicId();
+            Properties.Settings.Default.VideoMicGain = Math.Max(0, Math.Min(200, gainSlider.Value));
             Properties.Settings.Default.VideoLockCursorSize = lockCursorSize.Checked;
             Properties.Settings.Default.VideoClickGlow = clickGlow.Checked;
             Properties.Settings.Default.VideoActionLog = actionLog.Checked;

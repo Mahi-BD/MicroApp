@@ -177,6 +177,9 @@ namespace MicroApp
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.Manual;
             Bounds = bounds;
+            // black, not the default control grey, so a paint race can never flash grey where
+            // the snapshot has transparent (uncaptured) pixels
+            BackColor = Color.Black;
             ShowInTaskbar = false;
             TopMost = true;
             Cursor = Cursors.Cross;      // the "+" pointer
@@ -219,7 +222,27 @@ namespace MicroApp
             Bitmap screen = new Bitmap(bounds.Width, bounds.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(screen))
             {
-                g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size, CopyPixelOperation.SourceCopy);
+                // Start from solid black so any area the copy can't read (dead space between
+                // mismatched monitors, a display on another GPU, one just waking from sleep)
+                // is darkened by the dim brush instead of showing the form's grey background.
+                g.Clear(Color.Black);
+                // Copy each monitor on its own. A single blit across the whole virtual screen
+                // intermittently leaves a monitor's band blank on multi-monitor setups; per
+                // screen it is reliable and only genuine dead space stays black.
+                foreach (Screen scr in Screen.AllScreens)
+                {
+                    Rectangle sb = scr.Bounds;
+                    try
+                    {
+                        g.CopyFromScreen(sb.Location,
+                                         new Point(sb.X - bounds.X, sb.Y - bounds.Y),
+                                         sb.Size, CopyPixelOperation.SourceCopy);
+                    }
+                    catch (Exception)
+                    {
+                        // that monitor couldn't be read this time; leave it black and carry on
+                    }
+                }
             }
 
             using (var overlay = new RegionCaptureOverlay(screen, bounds, constraint, hint, adjustable, tools))

@@ -696,6 +696,74 @@ namespace MicroApp
         }
     }
 
+    /// <summary>
+    /// A horizontal audio level bar: segmented green→amber→red "LEDs" that fill to the
+    /// current <see cref="Level"/> (0..1), with a short peak-hold tick. The owner pushes a
+    /// level in (usually off a capture callback) and the control decays it on each paint so
+    /// it falls back smoothly when the sound stops. Purely a display: it captures nothing.
+    /// </summary>
+    public class LevelMeter : Control
+    {
+        private float _level;    // smoothed current level, 0..1
+        private float _peak;     // peak-hold, 0..1
+
+        public LevelMeter()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+            Height = 16;
+        }
+
+        /// <summary>Set the newest level, 0..1. Rises instantly, falls back with decay on paint.</summary>
+        public void SetLevel(float value)
+        {
+            if (value < 0f) value = 0f; else if (value > 1f) value = 1f;
+            if (value > _level) _level = value;        // attack: jump up at once
+            if (value > _peak) _peak = value;
+            Invalidate();
+        }
+
+        /// <summary>Drop to silence (e.g. when the preview is stopped).</summary>
+        public void Reset()
+        {
+            _level = 0f;
+            _peak = 0f;
+            Invalidate();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            var r = new Rectangle(0, 0, Width - 1, Height - 1);
+            using (var bg = new SolidBrush(Theme.FieldBg)) g.FillRectangle(bg, r);
+
+            const int gap = 2, seg = 6;                 // segment width and the gap between
+            int cells = Math.Max(1, (Width + gap) / (seg + gap));
+            int lit = (int)Math.Round(_level * cells);
+            int peakCell = _peak > 0 ? Math.Max(1, (int)Math.Round(_peak * cells)) : 0;
+
+            for (int i = 0; i < cells; i++)
+            {
+                float where = (i + 1) / (float)cells;    // 0..1 position of this segment
+                Color on = where > 0.85f ? Theme.Danger
+                         : where > 0.6f ? Color.FromArgb(245, 180, 60)
+                         : Color.FromArgb(70, 200, 120);
+                bool isOn = i < lit || (i + 1) == peakCell;   // the peak tick stays lit
+                Color c = isOn ? on : Color.FromArgb(40, on);
+                var cell = new Rectangle(i * (seg + gap), 2, seg, Height - 5);
+                using (var b = new SolidBrush(c)) g.FillRectangle(b, cell);
+            }
+
+            using (var pen = new Pen(Theme.FieldBorder)) g.DrawRectangle(pen, r);
+
+            // decay for the next tick: the owner's timer keeps repainting us
+            _level *= 0.82f;
+            if (_level < 0.004f) _level = 0f;
+            _peak *= 0.95f;
+            if (_peak < 0.004f) _peak = 0f;
+        }
+    }
+
     public class ModernMenuColors : ProfessionalColorTable
     {
         public override Color ToolStripDropDownBackground => Theme.Surface;

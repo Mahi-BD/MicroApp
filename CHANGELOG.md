@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.4.0 — 2026-10-21
+
+### Added
+
+- **Pick your microphone, see its level, and boost it.** Video settings now lists every microphone (not just the
+  default one). Under it a live **level meter** moves as you speak, and a **gain slider** runs from 0 to **200 %**
+  — 100 % leaves the sound untouched, higher digitally boosts a quiet mic (hard-clamped so it never wraps; very
+  high settings also raise background hiss). The choice and gain are remembered per PC.
+- **Video recording length.** A **Max length** box in Video settings: leave it blank (the default) to record until
+  you stop, or set 1–3600 seconds for a hard cap.
+
+### Fixed
+
+- **Region capture no longer shows a grey band on a multi-monitor desktop.** Pressing Ctrl+Alt+S sometimes froze
+  part of a second screen as blank grey. Each display is now captured on its own, and any area no monitor covers
+  is drawn solid black instead of showing through to the window background.
+
 ## 5.3.3 — 2026-10-02
 
 ### Fixed

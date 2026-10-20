@@ -148,17 +148,22 @@ namespace MicroApp
             _fps = Math.Max(1, Math.Min(30, fps));
             _maxSeconds = maxSeconds <= 0 ? 0 : Math.Max(1, Math.Min(3600, maxSeconds));
 
+            string micId = Properties.Settings.Default.VideoMicDeviceId;
+            int micGain = Properties.Settings.Default.VideoMicGain;
             if (audioSource == VideoAudioSource.SystemAndMicrophone)
             {
                 bool micMissing, systemMissing;
-                _audio = AudioMixer.TryCreate(out micMissing, out systemMissing);
+                _audio = AudioMixer.TryCreate(out micMissing, out systemMissing, micId, micGain);
                 AudioMissing = _audio == null;
                 MicMissing = micMissing;
                 HasMicrophone = !micMissing;
             }
             else if (audioSource != VideoAudioSource.None)
             {
-                _audio = AudioCapture.TryCreate(audioSource == VideoAudioSource.System);
+                bool system = audioSource == VideoAudioSource.System;
+                _audio = system
+                    ? AudioCapture.TryCreate(true)
+                    : AudioCapture.TryCreate(false, 0, false, micId, micGain);
                 AudioMissing = _audio == null;
                 MicMissing = audioSource == VideoAudioSource.Microphone && _audio == null;
                 HasMicrophone = audioSource == VideoAudioSource.Microphone && _audio != null;

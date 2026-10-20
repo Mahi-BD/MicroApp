@@ -241,7 +241,7 @@ namespace MicroApp.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int VideoSeconds {
             get {
                 return ((int)(this["VideoSeconds"]));
@@ -272,6 +272,30 @@ namespace MicroApp.Properties {
             }
             set {
                 this["VideoAudioSource"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VideoMicDeviceId {
+            get {
+                return ((string)(this["VideoMicDeviceId"]));
+            }
+            set {
+                this["VideoMicDeviceId"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int VideoMicGain {
+            get {
+                return ((int)(this["VideoMicGain"]));
+            }
+            set {
+                this["VideoMicGain"] = value;
             }
         }
 
