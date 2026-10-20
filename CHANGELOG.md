@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.4.1 — 2026-10-21
+
+### Fixed
+
+- **The Save button is visible again in Video settings.** The microphone/level/gain additions in 5.4.0 made the
+  window taller than some screens and pushed Save off the bottom. The settings are now laid out in **two columns**
+  (Recording and Selection lock on the left; While recording and After recording on the right), so the window is
+  much shorter and the Save / Cancel buttons always show.
+- **Unlimited recording now has its own checkbox.** Video settings has an **Unlimited** tickbox next to the length
+  box: tick it to record until you stop (the default), or untick it and type a 1–3600 second cap. This replaces the
+  "leave it blank" rule, which did not reliably switch recording to unlimited.
+
 ## 5.4.0 — 2026-10-21
 
 ### Added

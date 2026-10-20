@@ -83,10 +83,12 @@ namespace MicroApp
                 mod.Checked = (0 != (Properties.Settings.Default.VideoHotKeyModifier & int.Parse(mod.Tag.ToString())));
             }
             videoFps.Text = Properties.Settings.Default.VideoFps.ToString();
-            // 0 (or less) means unlimited: show it as a blank box
-            videoLength.Text = Properties.Settings.Default.VideoSeconds <= 0
-                ? string.Empty
-                : Properties.Settings.Default.VideoSeconds.ToString();
+            // 0 (or less) means unlimited — tick the box and keep a sensible number ready in the box
+            int savedSeconds = Properties.Settings.Default.VideoSeconds;
+            unlimitedCheck.Checked = savedSeconds <= 0;
+            videoLength.Text = (savedSeconds <= 0 ? 300 : savedSeconds).ToString();
+            unlimitedCheck.CheckedChanged += (s, e2) => UpdateLengthEnabled();
+            UpdateLengthEnabled();
 
             qualityBox.DropDownStyle = ComboBoxStyle.DropDownList;
             qualityBox.Items.Add("Small file");
@@ -246,6 +248,15 @@ namespace MicroApp
             }
         }
 
+        /// <summary>The seconds box is only live when a time limit is wanted (Unlimited unticked).</summary>
+        private void UpdateLengthEnabled()
+        {
+            bool limited = !unlimitedCheck.Checked;
+            videoLength.Enabled = lengthLabel.Enabled = limited;
+            lengthHost.Enabled = limited;
+            lengthHost.Invalidate();
+        }
+
         /// <summary>Fills the device list with "Default microphone" plus every active capture endpoint.</summary>
         private void PopulateMics()
         {
@@ -381,13 +392,18 @@ namespace MicroApp
             int fps, w, h;
             if (int.TryParse(videoFps.Text, out fps)) Properties.Settings.Default.VideoFps = Math.Max(1, Math.Min(30, fps));
 
-            // blank, 0 or an unparseable length all mean "unlimited" (record until stopped)
-            int secs;
-            string lenText = videoLength.Text.Trim();
-            if (lenText.Length == 0 || !int.TryParse(lenText, out secs) || secs <= 0)
+            // Unlimited ticked -> 0 (record until stopped); otherwise a 1-3600 s cap (300 if the box is empty/garbage)
+            if (unlimitedCheck.Checked)
+            {
                 Properties.Settings.Default.VideoSeconds = 0;
+            }
             else
-                Properties.Settings.Default.VideoSeconds = Math.Max(1, Math.Min(3600, secs));
+            {
+                int secs;
+                Properties.Settings.Default.VideoSeconds = int.TryParse(videoLength.Text.Trim(), out secs) && secs > 0
+                    ? Math.Max(1, Math.Min(3600, secs))
+                    : 300;
+            }
 
             Properties.Settings.Default.VideoQuality = qualityBox.SelectedIndex;
             Properties.Settings.Default.VideoAudioSource = soundBox.SelectedIndex;
