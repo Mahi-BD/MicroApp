@@ -61,6 +61,10 @@ namespace MicroApp
         bool _showExtras = true;           // Ctrl+H: selection edges, transform box
         Bitmap _composite;                 // the document at 1:1, rebuilt when dirty
         bool _compositeDirty = true;
+        int _compositeVersion;             // bumped on every rebuild, so caches made from it know when they are stale
+        Bitmap _viewCache;                 // the composite shrunk to the zoom, for zooms under 1:1
+        float _viewCacheZoom;
+        int _viewCacheVersion = -1;
         readonly Timer _antsTimer = new Timer { Interval = 90 };
         int _antsPhase;
         GraphicsPath _antsScreenPath;      // Outline transformed to the screen, cached
@@ -229,6 +233,7 @@ namespace MicroApp
             BuildRightSide();
             BuildSplitter();
             BuildCanvas();
+            BuildPagesPanel();
             BuildDocTabs();
             BuildStatus();
 
@@ -251,6 +256,7 @@ namespace MicroApp
             FormClosed += delegate
             {
                 _antsTimer.Stop();
+                _pageThumbTimer.Stop();
                 if (_open == this) _open = null;
                 try
                 {
@@ -262,6 +268,7 @@ namespace MicroApp
                     _undo.Clear(); _redo.Clear(); _layers.Clear();
                     ReleaseDropped(all);
                     if (_composite != null) { _composite.Dispose(); _composite = null; }
+                    if (_viewCache != null) { _viewCache.Dispose(); _viewCache = null; }
                     if (_clipBitmap != null) { _clipBitmap.Dispose(); _clipBitmap = null; }
                     GC.Collect();
                 }
@@ -359,14 +366,17 @@ namespace MicroApp
         }
 
         static readonly string OpenFilter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf|All files|*.*";
+        static readonly string OpenWithProjectsFilter =
+            "Projects and images|*.ma;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf|" + ProjectFile.Filter + "|" + OpenFilter;
 
-        /// <summary>File &gt; Open: each picture in a tab of its own (an empty tab is used up first).</summary>
+        /// <summary>File &gt; Open: each picture or .ma project in a tab of its own (an empty tab is used up first).</summary>
         void OpenFile()
         {
-            string[] files = AskImageFiles("Open");
+            string[] files = AskImageFiles("Open", true);
             if (files == null) return;
             foreach (string file in files)
             {
+                if (ProjectFile.IsProject(file)) { OpenProject(file); continue; }
                 Bitmap bmp;
                 try { bmp = AssetStore.LoadFull(file); }
                 catch (Exception ex) { ModernDialog.Info("Could not open it", Path.GetFileName(file) + "\r\n" + ex.Message); continue; }
@@ -378,7 +388,7 @@ namespace MicroApp
         /// <summary>File &gt; Add Image: the pictures become layers of the document in front.</summary>
         void AddImageFile()
         {
-            string[] files = AskImageFiles("Add Image");
+            string[] files = AskImageFiles("Add Image", false);
             if (files == null) return;
             foreach (string file in files)
             {
@@ -387,9 +397,9 @@ namespace MicroApp
             }
         }
 
-        string[] AskImageFiles(string title)
+        string[] AskImageFiles(string title, bool projects)
         {
-            using (var ofd = new OpenFileDialog { Filter = OpenFilter, Title = title, Multiselect = true })
+            using (var ofd = new OpenFileDialog { Filter = projects ? OpenWithProjectsFilter : OpenFilter, Title = title, Multiselect = true })
             {
                 if (ofd.ShowDialog(this) != DialogResult.OK || ofd.FileNames.Length == 0) return null;
                 return ofd.FileNames;
@@ -485,12 +495,13 @@ namespace MicroApp
             if (!EnsureDoc()) return;
             using (var sfd = new SaveFileDialog
             {
-                Filter = "PNG (keeps transparency)|*.png|JPEG|*.jpg|Bitmap|*.bmp|TIFF|*.tif",
+                Filter = "MicroApp Project - keeps every layer (*.ma)|*.ma|PNG (keeps transparency)|*.png|JPEG|*.jpg|Bitmap|*.bmp|TIFF|*.tif",
                 Title = "Save As",
                 FileName = _doc.Title.StartsWith("Untitled-") ? "MicroApp " + DateTime.Now.ToString("yyyy-MM-dd HHmmss") : Path.GetFileNameWithoutExtension(_doc.Title)
             })
             {
                 if (sfd.ShowDialog(this) != DialogResult.OK) return;
+                if (ProjectFile.IsProject(sfd.FileName)) { SaveProject(sfd.FileName); return; }
                 try
                 {
                     string ext = Path.GetExtension(sfd.FileName).ToLowerInvariant();
@@ -529,8 +540,7 @@ namespace MicroApp
             CommitInlineEdit();
             CommitTransform();
             if (!EnsureDoc()) return;
-            using (Bitmap flat = Flattened(true))
-                EditorPrintDialog.Run(this, flat, _ppi, _doc.Title);
+            EditorPrintDialog.Run(this, RenderPageForPrint, Pages.Select(p => p.Name).ToList(), PageIndex, _ppi, _doc.Title);
         }
 
         /// <summary>Copy Merged: the flattened picture to the clipboard (with a PNG for apps that keep alpha).</summary>
@@ -659,6 +669,7 @@ namespace MicroApp
             if (files == null) return;
             foreach (string file in files)
             {
+                if (ProjectFile.IsProject(file)) { OpenProject(file); continue; }
                 if (!AssetStore.IsSupported(file)) continue;
                 try { AddBitmapLayer(AssetStore.LoadFull(file), Path.GetFileNameWithoutExtension(file)); }
                 catch (Exception ex) { ModernDialog.Info("Could not open it", ex.Message); }
@@ -873,6 +884,7 @@ namespace MicroApp
         {
             _compositeDirty = true;
             _canvasPanel.Invalidate();
+            PageContentChanged();
         }
 
         Bitmap Composite()
@@ -881,7 +893,34 @@ namespace MicroApp
             if (_composite != null) _composite.Dispose();
             _composite = EditorRender.Compose(_layers, _canvas, _canvasBg, PreviewOf);
             _compositeDirty = false;
+            _compositeVersion++;
             return _composite;
+        }
+
+        /// <summary>
+        /// The composite at the current (under 1:1) zoom. Shrinking a multi-megapixel picture
+        /// with a quality filter is the dearest thing a repaint does, and the marching ants,
+        /// the brush cursor and panning repaint many times a second; so it is done once per
+        /// change of picture or zoom and the paint only places the result.
+        /// </summary>
+        Bitmap ScaledView()
+        {
+            Bitmap doc = Composite();
+            int w = Math.Max(1, (int)Math.Round(_canvas.Width * _zoom)), h = Math.Max(1, (int)Math.Round(_canvas.Height * _zoom));
+            if (_viewCache != null && _viewCacheVersion == _compositeVersion && _viewCacheZoom == _zoom
+                && _viewCache.Width == w && _viewCache.Height == h) return _viewCache;
+            if (_viewCache != null) _viewCache.Dispose();
+            _viewCache = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+            using (Graphics g = Graphics.FromImage(_viewCache))
+            {
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.DrawImage(doc, new Rectangle(0, 0, w, h), new Rectangle(0, 0, doc.Width, doc.Height), GraphicsUnit.Pixel);
+            }
+            _viewCacheVersion = _compositeVersion;
+            _viewCacheZoom = _zoom;
+            return _viewCache;
         }
 
         // ================================================================= view math
@@ -957,7 +996,8 @@ namespace MicroApp
             _statusLeft.Text = _hasDoc
                 ? string.Format("{0} × {1} px    {2} layer{3}{4}    {5:0} MB", _canvas.Width, _canvas.Height,
                                 layerCount, layerCount == 1 ? "" : "s",
-                                HasSelection ? "    selection " + _selection.Bounds.Width + " × " + _selection.Bounds.Height : "",
+                                (HasSelection ? "    selection " + _selection.Bounds.Width + " × " + _selection.Bounds.Height : "")
+                                + (Pages.Count > 1 ? "    page " + (PageIndex + 1) + " of " + Pages.Count + " (" + ActivePage.Name + ")" : ""),
                                 MemoryInUseBytes() / 1048576.0)
                 : "No image yet";
             if (_zoomBox != null && !_zoomBox.ContainsFocus)
@@ -1087,14 +1127,24 @@ namespace MicroApp
             // the canvas: checkerboard behind whatever transparency is left
             g.FillRectangle(Checker(), screen);
 
-            Bitmap doc = Composite();
             GraphicsState st = g.Save();
             g.SetClip(screen);
-            g.InterpolationMode = _zoom >= 2f ? InterpolationMode.NearestNeighbor
-                                : _zoom < 1f ? InterpolationMode.HighQualityBilinear : InterpolationMode.Bilinear;
             g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.DrawImage(doc, new RectangleF(_origin.X, _origin.Y, _canvas.Width * _zoom, _canvas.Height * _zoom),
-                        new RectangleF(0, 0, doc.Width, doc.Height), GraphicsUnit.Pixel);
+            if (_zoom < 1f)
+            {
+                // zoomed out: the shrunk copy is ready-made, this only places it
+                Bitmap view = ScaledView();
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.DrawImage(view, new RectangleF(screen.X, screen.Y, view.Width, view.Height),
+                            new RectangleF(0, 0, view.Width, view.Height), GraphicsUnit.Pixel);
+            }
+            else
+            {
+                Bitmap doc = Composite();
+                g.InterpolationMode = _zoom >= 2f ? InterpolationMode.NearestNeighbor : InterpolationMode.Bilinear;
+                g.DrawImage(doc, new RectangleF(_origin.X, _origin.Y, _canvas.Width * _zoom, _canvas.Height * _zoom),
+                            new RectangleF(0, 0, doc.Width, doc.Height), GraphicsUnit.Pixel);
+            }
 
             // the shape being drawn, crisp at any zoom
             if (_draft != null)

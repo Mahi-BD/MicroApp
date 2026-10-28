@@ -1093,6 +1093,18 @@ namespace MicroApp.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("196")]
+        public int EditorPagesPanelWidth {
+            get {
+                return ((int)(this["EditorPagesPanelWidth"]));
+            }
+            set {
+                this["EditorPagesPanelWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int EditorWindowWidth {
             get {

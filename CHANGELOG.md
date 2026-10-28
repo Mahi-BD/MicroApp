@@ -1,5 +1,38 @@
 # Changelog
 
+## 5.5.0 — 2026-10-29
+
+### Added
+
+- **Image editor projects (.ma).** File → Save / Save As now offers **MicroApp Project (.ma)**, a single file
+  that keeps the whole document: every layer (image layers lossless, text and shapes still editable) with its
+  name, position, rotation, skew, flip, opacity, blend mode, lock/visibility and layer style, plus the canvas,
+  background, print resolution, selection, guides and ruler origin. File → Open and drag-and-drop open it in
+  its own tab exactly as it was saved. After the first save **Ctrl+S** saves straight back to the project
+  (Save As is now **Ctrl+Shift+S**). Saving and opening run behind a **progress bar** with the layer being
+  worked on. The file is written to a temporary copy first, so a failed save never damages the old one.
+- **Pages in the image editor.** A document can now hold several pages, each with its own canvas, layers,
+  selection and history. A **Pages panel** left of the canvas shows a thumbnail and the name of each page:
+  click to switch (the Layers panel follows), double-click to rename, drag to reorder, right-click for
+  Duplicate / Rename / Delete / Move; **+** adds a page and **«** hides the panel (it shows by itself once
+  a document has two pages; **Page → Show Pages Panel** brings it back). New **Page** menu with
+  **Ctrl+PageUp / Ctrl+PageDown** for the previous / next page. The status bar shows *page 2 of 5*.
+- **Print picks the pages.** On a multi-page document File → Print offers **All pages**, **Current page** or a
+  range like `1-3, 5`, a **Preview** box to look at any page on the sheet, and sends every chosen page in one
+  print job (one page rendered at a time, so long documents do not fill the memory).
+- .ma projects store every page; projects saved before pages existed still open.
+
+### Changed
+
+- **The editor is much lighter on big pictures.** Zoomed out, the picture is shrunk to the screen once per
+  change instead of on every repaint: on an A4 300 ppi document that shrink cost about 90 ms, and the
+  marching ants alone asked for it eleven times a second, so a selection kept a whole CPU core busy. Stacks of
+  blend-mode or layer-style layers are composed in a single pixel pass (one copy out and back, not one per
+  layer). Page and print-preview thumbnails are made with a parallel area average, about twice as fast as the
+  bicubic filter used before.
+- **Saving a project needs far less memory.** One layer's pixels are copied and encoded at a time, instead of
+  a copy of every layer of every page being taken up front.
+
 ## 5.4.1 — 2026-10-21
 
 ### Fixed

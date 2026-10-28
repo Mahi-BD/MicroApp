@@ -1288,4 +1288,86 @@ namespace MicroApp
             return result;
         }
     }
+
+    /// <summary>
+    /// A determinate progress window: the work runs on a pool thread and reports 0..1 plus a
+    /// line of text; the bar and the percentage follow it. Used by project save / open.
+    /// </summary>
+    class ProgressDialog : PixelPerfectForm
+    {
+        readonly string _title;
+        string _detail = "";
+        float _fraction;
+
+        ProgressDialog(string title)
+        {
+            Theme.Init(ThemeHelper.IsDarkMode);
+            _title = title;
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.CenterParent;
+            ClientSize = new Size(380, 104);
+            BackColor = Theme.Surface;
+            Font = Theme.Base;
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.Clear(Theme.Surface);
+            using (var border = new Pen(Theme.Border)) g.DrawRectangle(border, 0, 0, Width - 1, Height - 1);
+            int pct = (int)Math.Round(_fraction * 100);
+            TextRenderer.DrawText(g, _title, Theme.Strong, new Rectangle(20, 16, Width - 100, 22), Theme.Text,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            TextRenderer.DrawText(g, pct + " %", Theme.Strong, new Rectangle(Width - 80, 16, 60, 22), Theme.Text,
+                TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            var track = new Rectangle(20, 48, Width - 40, 8);
+            using (var tb = new SolidBrush(Theme.FieldBg)) g.FillRectangle(tb, track);
+            var bar = new Rectangle(track.X, track.Y, (int)(track.Width * _fraction), track.Height);
+            if (bar.Width > 0) using (var ab = new SolidBrush(Theme.Accent)) g.FillRectangle(ab, bar);
+            TextRenderer.DrawText(g, _detail, Theme.Small, new Rectangle(20, 66, Width - 40, 20), Theme.TextDim,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        }
+
+        void Set(float fraction, string detail)
+        {
+            _fraction = Math.Max(0f, Math.Min(1f, fraction));
+            if (detail != null) _detail = detail;
+            Invalidate();
+        }
+
+        /// <summary>Runs <paramref name="work"/> off the UI thread behind a modal progress window.</summary>
+        public static T Run<T>(IWin32Window owner, string title, Func<Action<float, string>, T> work)
+        {
+            T result = default(T);
+            Exception error = null;
+            using (var d = new ProgressDialog(title))
+            {
+                int lastPct = -1;
+                string lastDetail = null;
+                Action<float, string> report = (f, text) =>
+                {
+                    // only cross threads when something visible changed
+                    int pct = (int)(Math.Max(0f, Math.Min(1f, f)) * 100);
+                    if (pct == lastPct && (text == null || text == lastDetail)) return;
+                    lastPct = pct;
+                    if (text != null) lastDetail = text;
+                    try { d.BeginInvoke(new Action(() => d.Set(f, text))); } catch { }
+                };
+                d.Shown += delegate
+                {
+                    System.Threading.ThreadPool.QueueUserWorkItem(delegate
+                    {
+                        try { result = work(report); }
+                        catch (Exception ex) { error = ex; }
+                        try { d.BeginInvoke(new Action(() => { d.Set(1f, null); d.Update(); d.Close(); })); } catch { }
+                    });
+                };
+                d.ShowDialog(owner);
+            }
+            if (error != null) throw error;
+            return result;
+        }
+    }
 }

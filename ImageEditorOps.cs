@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace MicroApp
 {
@@ -39,6 +40,73 @@ namespace MicroApp
         }
 
         public int Index(int x, int y) { return y * Stride + x * 4; }
+
+        /// <summary>
+        /// Shrinks a bitmap by averaging every source pixel that lands in each destination
+        /// pixel - alpha-weighted, so transparent pixels never tint their neighbours. On a
+        /// multi-megapixel picture this is several times faster than GDI+'s high-quality
+        /// modes (the rows run in parallel), and a box average is the right filter for a
+        /// thumbnail anyway. Anything that is not a shrink goes through GDI+.
+        /// </summary>
+        public static Bitmap Downscale(Bitmap src, int w, int h)
+        {
+            w = Math.Max(1, w);
+            h = Math.Max(1, h);
+            if (w >= src.Width || h >= src.Height)
+            {
+                var b = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+                using (Graphics g = Graphics.FromImage(b))
+                {
+                    g.CompositingMode = CompositingMode.SourceCopy;
+                    g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    g.DrawImage(src, new Rectangle(0, 0, w, h), new Rectangle(0, 0, src.Width, src.Height), GraphicsUnit.Pixel);
+                }
+                return b;
+            }
+            Pixels s = From(src);
+            var d = new Pixels(w, h);
+            int sw = s.Width, sh = s.Height;
+            // the source columns of each destination column, the same for every row
+            var x0 = new int[w];
+            var x1 = new int[w];
+            for (int x = 0; x < w; x++)
+            {
+                x0[x] = (int)((long)x * sw / w);
+                x1[x] = Math.Max(x0[x] + 1, (int)((long)(x + 1) * sw / w));
+            }
+            byte[] sd = s.Data, dd = d.Data;
+            int sStride = s.Stride, dStride = d.Stride;
+            Parallel.For(0, h, y =>
+            {
+                int y0 = (int)((long)y * sh / h), y1 = Math.Max(y0 + 1, (int)((long)(y + 1) * sh / h));
+                for (int x = 0; x < w; x++)
+                {
+                    long a = 0, r = 0, g = 0, b = 0;
+                    int n = 0;
+                    for (int sy = y0; sy < y1; sy++)
+                    {
+                        int i = sy * sStride + x0[x] * 4;
+                        for (int sx = x0[x]; sx < x1[x]; sx++, i += 4)
+                        {
+                            int pa = sd[i + 3];
+                            b += sd[i] * pa;
+                            g += sd[i + 1] * pa;
+                            r += sd[i + 2] * pa;
+                            a += pa;
+                            n++;
+                        }
+                    }
+                    if (a == 0) continue;   // fully transparent: stays 0,0,0,0
+                    int o = y * dStride + x * 4;
+                    dd[o] = (byte)(b / a);
+                    dd[o + 1] = (byte)(g / a);
+                    dd[o + 2] = (byte)(r / a);
+                    dd[o + 3] = (byte)(a / n);
+                }
+            });
+            return d.ToBitmap();
+        }
 
         public static Pixels From(Bitmap bmp)
         {

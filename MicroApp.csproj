@@ -138,6 +138,12 @@
     <Compile Include="ImageEditorForm.Guides.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="ImageEditorForm.Project.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ImageEditorForm.Pages.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ImageEditorForm.Documents.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -151,6 +157,7 @@
     <Compile Include="ImageEditorDialogs.cs" />
     <Compile Include="ImageEditorControls.cs" />
     <Compile Include="ImageEditorAssets.cs" />
+    <Compile Include="ImageEditorProject.cs" />
     <Compile Include="ShortcutSettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>

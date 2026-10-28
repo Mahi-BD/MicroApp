@@ -438,6 +438,21 @@ editor remembers it, along with its window size). Every tool answers to Photosho
 shortcut, and right-clicking the canvas or a layer opens the menu you would expect there.
 **Help → Keyboard Shortcuts** lists them all.
 
+### Pages
+
+A document can hold several **pages**, like a booklet: each page has its own canvas size, layers,
+selection and history. **Page → New Page** (or the **+** at the top of the Pages panel) adds one the
+same size as the page in front. The **Pages panel** left of the canvas shows a thumbnail and the name of
+every page - click a page to work on it (the Layers and History panels switch to that page), double-click
+to rename it, drag to reorder, right-click for Duplicate / Rename / Delete / Move. **Ctrl+PageUp** /
+**Ctrl+PageDown** step through the pages. The panel appears by itself once a document has two pages; hide
+or show it with the **«** button or **Page → Show Pages Panel**. The status bar shows *page 2 of 5*.
+
+A **.ma** project keeps every page. **File → Print** on a multi-page document asks what to print -
+**All pages**, the **Current page**, or **Pages…** with a range such as `1-3, 5` - and a **Preview** box
+shows any page on the sheet; each page prints on its own sheet. Save As PNG / JPG, Copy Merged and the
+filters work on the page in front.
+
 ### Documents and tabs
 
 Several images can be open at once, each in its own **tab** above the canvas, as in Photoshop.
@@ -675,7 +690,13 @@ also fill it straight from Explorer.
 
 ### Getting the picture out
 
-- **File → Save As** (**Ctrl+S**) - PNG keeps transparency, JPG (over white) for mail, BMP or TIFF.
+- **File → Save** (**Ctrl+S**) / **Save As** (**Ctrl+Shift+S**) - choose **MicroApp Project (.ma)** to keep the
+  whole document in one file: every layer with its name, position, rotation, opacity, blend mode and
+  layer style, text and shapes still editable, plus the selection, guides and print resolution. Open it again
+  with **File → Open** (or drag it onto the editor) and it comes back exactly as it was. Once a document is a
+  project, **Ctrl+S** saves straight back to it. Saving and opening show a progress bar. (The undo
+  history is not stored in the file.)
+- The same Save As also exports a flat picture - PNG keeps transparency, JPG (over white) for mail, BMP or TIFF.
 - **Shift+Ctrl+C** (Copy Merged) - puts the flattened result, or just the selected part of it,
   straight back on the clipboard.
 

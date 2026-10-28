@@ -607,8 +607,12 @@ namespace MicroApp
         {
             Bitmap bmp = new Bitmap(Math.Max(1, canvas.Width), Math.Max(1, canvas.Height), PixelFormat.Format32bppArgb);
             // GDI+ refuses LockBits while a Graphics is attached to the bitmap, so the
-            // Graphics is opened for runs of plain layers and closed before any pixel work
+            // Graphics is opened for runs of plain layers and closed before any pixel work.
+            // Likewise the pixel buffer stays open across a run of blend / style layers and
+            // is written back only when a plain layer follows (or at the end): a stack of
+            // five Multiply layers costs one copy out and one copy in, not five of each.
             Graphics g = null;
+            Pixels composite = null;
             try
             {
                 if (background.A > 0)
@@ -625,6 +629,7 @@ namespace MicroApp
 
                     if (!layer.NeedsPixelPath)
                     {
+                        if (composite != null) { composite.WriteTo(bmp); composite = null; }
                         if (g == null) { g = Graphics.FromImage(bmp); Prepare(g); }
                         if (preview == null) layer.Draw(g);
                         else DrawWithOpacity(g, preview, layer.Opacity);   // a plain preview bitmap: opacity only
@@ -635,13 +640,13 @@ namespace MicroApp
                     Bitmap alone = preview != null
                         ? (layer.Fx != null && layer.Fx.Any ? ApplyEffects(preview, layer.Fx) : preview)
                         : layer.CachedRender(canvas);
-                    Pixels composite = Pixels.From(bmp);
+                    if (composite == null) composite = Pixels.From(bmp);
                     PixelOps.BlendOver(composite, Pixels.From(alone), layer.Blend, layer.Opacity / 100f);
-                    composite.WriteTo(bmp);
                     if (alone != preview && preview != null) alone.Dispose();
                 }
             }
             finally { if (g != null) g.Dispose(); }
+            if (composite != null) composite.WriteTo(bmp);
             return bmp;
         }
 

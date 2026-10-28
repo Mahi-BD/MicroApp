@@ -39,8 +39,8 @@ namespace MicroApp
             file.DropDownItems.Add(Item("Open…", Keys.Control | Keys.O, delegate { OpenFile(); }));
             file.DropDownItems.Add(Item("Add Image…", Keys.Control | Keys.Shift | Keys.O, delegate { AddImageFile(); }));
             file.DropDownItems.Add(new ToolStripSeparator());
+            file.DropDownItems.Add(Item("Save", Keys.Control | Keys.S, delegate { Save(); }));
             file.DropDownItems.Add(Item("Save As…", Keys.Control | Keys.Shift | Keys.S, delegate { SaveAs(); }));
-            file.DropDownItems.Add(Item("Save", Keys.Control | Keys.S, delegate { SaveAs(); }));
             file.DropDownItems.Add(Item("Copy Merged to Clipboard", Keys.Control | Keys.Shift | Keys.C, delegate { CopyResult(); }));
             file.DropDownItems.Add(new ToolStripSeparator());
             file.DropDownItems.Add(Item("Print…", Keys.Control | Keys.P, delegate { PrintImage(); }));
@@ -254,6 +254,7 @@ namespace MicroApp
             _menu.Items.Add(edit);
             _menu.Items.Add(image);
             _menu.Items.Add(layer);
+            _menu.Items.Add(BuildPageMenu());
             _menu.Items.Add(select);
             _menu.Items.Add(filter);
             _menu.Items.Add(view);
@@ -1228,7 +1229,7 @@ namespace MicroApp
             row("Guides: show / lock / snap", "Ctrl+; / Alt+Ctrl+; / Shift+Ctrl+;"); row("New guide / move / delete", "drag from a ruler / drag with Move / drag onto a ruler"); row("Hide extras", "Ctrl+H"); row("Pan", "Space+drag or the middle button");
             group("Edit");
             row("Undo / Redo", "Ctrl+Z / Shift+Ctrl+Z (Ctrl+Y)"); row("Cut / Copy / Paste", "Ctrl+X / Ctrl+C / Ctrl+V"); row("Copy Merged / Paste in Place", "Shift+Ctrl+C / Shift+Ctrl+V");
-            row("Save As / Print / Exit", "Ctrl+S / Ctrl+P / Ctrl+Q");
+            row("Save / Save As / Print / Exit", "Ctrl+S / Ctrl+Shift+S / Ctrl+P / Ctrl+Q");
             group("Documents");
             row("New document (presets) / Open in a new tab", "Ctrl+N / Ctrl+O"); row("Add Image to this document", "Shift+Ctrl+O");
             row("Next / previous tab", "Ctrl+Tab / Shift+Ctrl+Tab"); row("Close tab / Close all", "Ctrl+W (or middle-click) / Alt+Ctrl+W");

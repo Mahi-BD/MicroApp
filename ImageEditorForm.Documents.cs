@@ -19,6 +19,9 @@ namespace MicroApp
         class DocState
         {
             public string Title;
+            public string ProjectPath;                 // the .ma file this document was opened from / saved to
+            public List<PageState> Pages = new List<PageState> { new PageState { Name = "Page 1" } };
+            public int PageIndex;                      // the page in front; its content is in the fields above / the form's
             public List<EditorLayer> Layers;           // null while this document is in front
             public Size Canvas;
             public Color CanvasBg;
@@ -52,6 +55,7 @@ namespace MicroApp
             _docTabs = new DocTabStrip(this) { Dock = DockStyle.Top };
             _docArea = new Panel { Dock = DockStyle.Fill, BackColor = _canvasPanel.BackColor };
             _docArea.Controls.Add(_canvasPanel);
+            _docArea.Controls.Add(_pagesPanel);   // docks after the tabs: under them, left of the canvas
             _docArea.Controls.Add(_docTabs);
         }
 
@@ -169,6 +173,8 @@ namespace MicroApp
             _antsScreenPath = null;
             _antsFor = null;
             _compositeDirty = true;
+            UpdatePagesPanel();
+            ActivePage.ThumbStale = true;
             if (_hasDoc && _viewFitted) FitView();
             AfterDocumentChange();
             RefreshHistoryList();
@@ -214,6 +220,14 @@ namespace MicroApp
                 ReleaseDropped(old);
             }
             _doc.Title = string.IsNullOrWhiteSpace(title) ? NextUntitled() : title.Trim();
+            _doc.ProjectPath = null;
+            if (_doc.Pages.Count != 1 || _doc.PageIndex != 0)
+            {
+                ReleaseDropped(DetachParkedPages(_doc));
+                _doc.Pages = new List<PageState> { new PageState { Name = "Page 1" } };
+                _doc.PageIndex = 0;
+            }
+            _doc.Pages[0].ThumbStale = true;
             _layers.Clear();
             _canvas = Size.Empty;
             _canvasBg = Color.Transparent;
@@ -265,6 +279,7 @@ namespace MicroApp
                 d.Layers = null; d.Undo = null; d.Redo = null;
             }
             dropped.Add(new Snapshot { Name = "closed", Layers = layers.ToArray() });
+            dropped.AddRange(DetachParkedPages(d));
             foreach (EditorLayer l in layers) l.DropCache();
 
             int index = _docs.IndexOf(d);
@@ -318,6 +333,12 @@ namespace MicroApp
         {
             foreach (DocState d in _docs)
             {
+                foreach (PageState p in d.Pages)
+                {
+                    if (p.Layers != null) foreach (EditorLayer l in p.Layers) AddRaster(live, l);
+                    if (p.Undo != null) foreach (Snapshot s in p.Undo) foreach (EditorLayer l in s.Layers) AddRaster(live, l);
+                    if (p.Redo != null) foreach (Snapshot s in p.Redo) foreach (EditorLayer l in s.Layers) AddRaster(live, l);
+                }
                 if (d == _doc) continue;
                 if (d.Layers != null) foreach (EditorLayer l in d.Layers) AddRaster(live, l);
                 if (d.Undo != null) foreach (Snapshot s in d.Undo) foreach (EditorLayer l in s.Layers) AddRaster(live, l);
@@ -337,6 +358,7 @@ namespace MicroApp
             var all = new List<Snapshot>();
             foreach (DocState d in _docs)
             {
+                all.AddRange(DetachParkedPages(d));
                 if (d == _doc) continue;
                 if (d.Undo != null) all.AddRange(d.Undo);
                 if (d.Redo != null) all.AddRange(d.Redo);

@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Globalization;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace MicroApp
@@ -25,8 +26,12 @@ namespace MicroApp
         static bool _lastLandscape;
         static int _lastUnits;
 
-        readonly Bitmap _image;          // the flattened document (the caller owns it)
-        readonly Bitmap _thumb;          // a small copy for the preview
+        Bitmap _image;                   // the flattened page being previewed (owned here)
+        Bitmap _thumb;                   // a small copy for the preview
+        readonly Func<int, Bitmap> _render;   // flattens page i (0-based) of the document
+        readonly IList<string> _pageNames;
+        readonly int _currentPage;
+        int _previewPage;
         readonly float _ppi;
         readonly string _docName;
         readonly PrinterSettings _ps = new PrinterSettings();
@@ -48,28 +53,38 @@ namespace MicroApp
         readonly Label _resLbl, _status;
         readonly ModernButton _printBtn;
         readonly PagePreview _preview;
+        readonly ModernCombo _pagesCombo, _previewCombo;
+        readonly TextBox _rangeBox;
 
-        EditorPrintDialog(Bitmap image, float ppi, string docName)
+        bool MultiPage { get { return _pageNames.Count > 1; } }
+
+        EditorPrintDialog(Func<int, Bitmap> render, IList<string> pageNames, int currentPage, float ppi, string docName)
         {
             Theme.Init(ThemeHelper.IsDarkMode);
-            _image = image;
+            _render = render;
+            _pageNames = pageNames;
+            _currentPage = _previewPage = Math.Max(0, Math.Min(pageNames.Count - 1, currentPage));
+            _image = render(_previewPage);
+            Bitmap image = _image;
             _ppi = ppi > 0 ? ppi : 72;
             _docName = docName;
             _thumb = MakeThumb(image, 1400);
+            int extra = pageNames.Count > 1 ? 142 : 0;   // room for the PAGES section
+            int height = 660 + extra;
 
             Text = "Print Settings";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = MinimizeBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(1000, 660);
+            ClientSize = new Size(1000, height);
             BackColor = Theme.Bg;
             Font = Theme.Base;
 
-            _preview = new PagePreview(this) { Location = new Point(0, 0), Size = new Size(640, 660) };
+            _preview = new PagePreview(this) { Location = new Point(0, 0), Size = new Size(640, height) };
             Controls.Add(_preview);
 
-            var side = new Panel { Location = new Point(640, 0), Size = new Size(360, 660), BackColor = Theme.Surface, AutoScroll = false };
+            var side = new Panel { Location = new Point(640, 0), Size = new Size(360, height), BackColor = Theme.Surface, AutoScroll = false };
             side.Paint += delegate(object s, PaintEventArgs e) { using (var p = new Pen(Theme.Border)) e.Graphics.DrawLine(p, 0, 0, 0, side.Height); };
             Controls.Add(side);
 
@@ -93,6 +108,30 @@ namespace MicroApp
             props.Click += delegate { ShowPrinterProperties(); };
             side.Controls.Add(props); y += 46;
 
+            if (MultiPage)
+            {
+                side.Controls.Add(Heading("PAGES", x, y)); y += 28;
+                side.Controls.Add(Caption("Print", x, y));
+                side.Controls.Add(Caption("Pages (e.g. 1-3, 5)", x + 170, y)); y += 18;
+                _pagesCombo = new ModernCombo { Location = new Point(x, y + 1), Size = new Size(160, 26) };
+                _pagesCombo.Items.Add("All pages (" + pageNames.Count + ")");
+                _pagesCombo.Items.Add("Current page (" + (_currentPage + 1) + ")");
+                _pagesCombo.Items.Add("Pages…");
+                _pagesCombo.SelectedIndex = 0;
+                _rangeBox = new TextBox
+                {
+                    Location = new Point(x + 170, y + 2), Width = w - 170,
+                    BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.FieldBg, ForeColor = Theme.Text,
+                    Text = "1-" + pageNames.Count, Enabled = false
+                };
+                side.Controls.Add(_pagesCombo); side.Controls.Add(_rangeBox); y += 38;
+                side.Controls.Add(Caption("Preview", x, y)); y += 18;
+                _previewCombo = new ModernCombo { Location = new Point(x, y), Size = new Size(w, 26) };
+                for (int i = 0; i < pageNames.Count; i++) _previewCombo.Items.Add((i + 1) + "  -  " + pageNames[i]);
+                _previewCombo.SelectedIndex = _previewPage;
+                side.Controls.Add(_previewCombo); y += 40;
+            }
+
             side.Controls.Add(Heading("POSITION AND SIZE", x, y)); y += 28;
             _centerChk = new ModernCheckBox { Text = "Center", Checked = true, Location = new Point(x, y), Size = new Size(100, 22), BackColor = Theme.Surface };
             _unitCombo = new ModernCombo { Location = new Point(x + w - 130, y - 2), Size = new Size(130, 26) };
@@ -113,8 +152,8 @@ namespace MicroApp
             _status = new Label { Location = new Point(x, y), Size = new Size(w, 110), ForeColor = Theme.TextDim, Font = Theme.Small, BackColor = Theme.Surface };
             side.Controls.Add(_status);
 
-            _printBtn = new ModernButton { Text = "Print", Accent = true, Size = new Size(110, 34), Location = new Point(x + w - 110, 660 - 54), BackColor = Theme.Surface };
-            var cancel = new ModernButton { Text = "Cancel", Size = new Size(100, 34), Location = new Point(_printBtn.Left - 108, 660 - 54), DialogResult = DialogResult.Cancel, BackColor = Theme.Surface };
+            _printBtn = new ModernButton { Text = "Print", Accent = true, Size = new Size(130, 34), Location = new Point(x + w - 130, height - 54), BackColor = Theme.Surface };
+            var cancel = new ModernButton { Text = "Cancel", Size = new Size(100, 34), Location = new Point(_printBtn.Left - 108, height - 54), DialogResult = DialogResult.Cancel, BackColor = Theme.Surface };
             _printBtn.Click += delegate { DoPrint(); };
             side.Controls.Add(_printBtn); side.Controls.Add(cancel);
             CancelButton = cancel;
@@ -139,10 +178,22 @@ namespace MicroApp
             _hBox.ValueChanged += delegate { if (_syncing) return; _fit = false; _scale = FromUnits(_hBox.Value) / ActualSize().Height; ShowFields(); };
             _topBox.ValueChanged += delegate { if (_syncing) return; _center = false; _top = FromUnits(_topBox.Value); ShowFields(); };
             _leftBox.ValueChanged += delegate { if (_syncing) return; _center = false; _left = FromUnits(_leftBox.Value); ShowFields(); };
+            if (MultiPage)
+            {
+                _pagesCombo.SelectedIndexChanged += delegate
+                {
+                    _rangeBox.Enabled = _pagesCombo.SelectedIndex == 2;
+                    if (_pagesCombo.SelectedIndex == 1) ShowPreviewPage(_currentPage);
+                    if (_rangeBox.Enabled) _rangeBox.Focus();
+                    ShowFields();
+                };
+                _rangeBox.TextChanged += delegate { ShowFields(); };
+                _previewCombo.SelectedIndexChanged += delegate { if (!_syncing) ShowPreviewPage(_previewCombo.SelectedIndex); };
+            }
 
             ShowFields();
             HandleCreated += delegate { Native.SetDarkModeForWindow(Handle, ThemeHelper.IsDarkMode); };
-            FormClosed += delegate { _thumb.Dispose(); };
+            FormClosed += delegate { _thumb.Dispose(); _image.Dispose(); };
         }
 
         static Label Heading(string text, int x, int y)
@@ -164,14 +215,7 @@ namespace MicroApp
         {
             float s = Math.Min(1f, (float)max / Math.Max(src.Width, src.Height));
             int w = Math.Max(1, (int)(src.Width * s)), h = Math.Max(1, (int)(src.Height * s));
-            var b = new Bitmap(w, h);
-            using (Graphics g = Graphics.FromImage(b))
-            {
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                g.DrawImage(src, 0, 0, w, h);
-            }
-            return b;
+            return Pixels.Downscale(src, w, h);
         }
 
         // ================================================================ printer + paper
@@ -328,14 +372,90 @@ namespace MicroApp
         /// <summary>The picture at 100 %: its pixels at the document's resolution.</summary>
         SizeF ActualSize()
         {
-            return new SizeF(_image.Width / _ppi * 100f, _image.Height / _ppi * 100f);
+            return ActualSize(_image.Size);
+        }
+
+        SizeF ActualSize(Size px)
+        {
+            return new SizeF(px.Width / _ppi * 100f, px.Height / _ppi * 100f);
         }
 
         float FittedScale()
         {
+            return FittedScale(_image.Size);
+        }
+
+        float FittedScale(Size px)
+        {
             RectangleF area = Printable();
-            SizeF a = ActualSize();
+            SizeF a = ActualSize(px);
             return Math.Min(area.Width / a.Width, area.Height / a.Height);
+        }
+
+        /// <summary>
+        /// Where a page of this pixel size lands with the current settings: fitted and centred
+        /// pages each get their own fit / centre, otherwise the previewed page's scale and offset.
+        /// </summary>
+        RectangleF RectFor(Size px)
+        {
+            float scale = _fit ? FittedScale(px) : _scale;
+            SizeF a = ActualSize(px);
+            float w = a.Width * scale, h = a.Height * scale;
+            if (!_center) return new RectangleF(_left, _top, w, h);
+            SizeF page = PageSize();
+            return new RectangleF((page.Width - w) / 2f, (page.Height - h) / 2f, w, h);
+        }
+
+        /// <summary>The pages the Print button sends (0-based), or null with a reason.</summary>
+        List<int> PagesToPrint(out string error)
+        {
+            error = null;
+            if (!MultiPage) return new List<int> { 0 };
+            if (_pagesCombo.SelectedIndex == 0) return Enumerable.Range(0, _pageNames.Count).ToList();
+            if (_pagesCombo.SelectedIndex == 1) return new List<int> { _currentPage };
+            var list = new List<int>();
+            int n = _pageNames.Count;
+            foreach (string raw in _rangeBox.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string part = raw.Trim();
+                if (part.Length == 0) continue;
+                int dash = part.IndexOf('-');
+                int a, b;
+                if (dash < 0)
+                {
+                    if (!int.TryParse(part, out a)) { error = "\"" + part + "\" is not a page number."; return null; }
+                    b = a;
+                }
+                else
+                {
+                    string left = part.Substring(0, dash).Trim(), right = part.Substring(dash + 1).Trim();
+                    if (!int.TryParse(left.Length == 0 ? "1" : left, out a) || !int.TryParse(right.Length == 0 ? n.ToString() : right, out b))
+                    { error = "\"" + part + "\" is not a page range."; return null; }
+                }
+                if (a < 1 || b < 1 || a > n || b > n) { error = "Pages run from 1 to " + n + "."; return null; }
+                for (int i = a; a <= b ? i <= b : i >= b; i += a <= b ? 1 : -1)
+                    if (!list.Contains(i - 1)) list.Add(i - 1);
+            }
+            if (list.Count == 0) { error = "Type the pages to print, e.g. 1-3, 5."; return null; }
+            return list;
+        }
+
+        /// <summary>The preview (and the size fields) show another page.</summary>
+        void ShowPreviewPage(int index)
+        {
+            if (index < 0 || index >= _pageNames.Count || index == _previewPage) return;
+            Bitmap img;
+            try { img = _render(index); }
+            catch (Exception ex) { ModernDialog.Info("Could not show that page", ex.Message); return; }
+            _image.Dispose();
+            _thumb.Dispose();
+            _image = img;
+            _thumb = MakeThumb(img, 1400);
+            _previewPage = index;
+            _syncing = true;
+            _previewCombo.SelectedIndex = index;
+            _syncing = false;
+            ShowFields();
         }
 
         /// <summary>Where the picture lands on the page, in hundredths of an inch from the paper's top-left corner.</summary>
@@ -387,9 +507,15 @@ namespace MicroApp
             if (effectivePpi < 150) notes.Add("Under 150 PPI the print may look soft or pixelated.");
             RectangleF area = Printable();
             if (!area.Contains(r)) notes.Add("Part of the picture is outside the printable area and will be cut off.");
+            bool warn = notes.Count > 0 && _havePrinter;
+            string pagesError;
+            List<int> pages = PagesToPrint(out pagesError);
+            if (pagesError != null) notes.Insert(0, pagesError);
+            else if (MultiPage && pages.Count > 1) notes.Add(pages.Count + " pages will print, each on its own sheet.");
             _status.Text = string.Join("\r\n", notes);
-            _status.ForeColor = notes.Count > 0 && _havePrinter ? Theme.Danger : Theme.TextDim;
-            _printBtn.Enabled = _havePrinter;
+            _status.ForeColor = warn || pagesError != null ? Theme.Danger : Theme.TextDim;
+            _printBtn.Text = pages != null && pages.Count > 1 ? "Print " + pages.Count + " pages" : "Print";
+            _printBtn.Enabled = _havePrinter && pages != null;
             _preview.Invalidate();
         }
 
@@ -416,7 +542,12 @@ namespace MicroApp
         {
             if (!_havePrinter) return;
             _copies.Commit();
-            RectangleF r = ImageRect();
+            string error;
+            List<int> pages = PagesToPrint(out error);
+            if (pages == null) { ModernDialog.Info("Which pages?", error); return; }
+            ImageRect();   // settles the previewed page's scale and offset, which RectFor uses
+            int next = 0;
+            Bitmap current = null;
             try
             {
                 using (var doc = new PrintDocument())
@@ -424,38 +555,52 @@ namespace MicroApp
                     doc.DocumentName = _docName;
                     doc.PrinterSettings = _ps;
                     doc.PrinterSettings.Copies = (short)_copies.Value;
+                    doc.PrinterSettings.Collate = true;
                     doc.DefaultPageSettings = BuildPageSettings();
                     doc.OriginAtMargins = false;
+                    doc.BeginPrint += delegate { next = 0; };
                     doc.PrintPage += delegate(object s, PrintPageEventArgs e)
                     {
+                        // one page at a time, so a long document never holds every page in memory
+                        int index = pages[next];
+                        if (current != null && current != _image) current.Dispose();
+                        current = index == _previewPage ? _image : _render(index);
+                        RectangleF r = RectFor(current.Size);
                         Graphics g = e.Graphics;
                         g.PageUnit = GraphicsUnit.Display;   // hundredths of an inch on printers
                         g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                         g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                         // the printer's origin is its hard margin, not the paper corner
                         float hx = e.PageSettings.HardMarginX, hy = e.PageSettings.HardMarginY;
-                        g.DrawImage(_image, new RectangleF(r.X - hx, r.Y - hy, r.Width, r.Height));
-                        e.HasMorePages = false;
+                        g.DrawImage(current, new RectangleF(r.X - hx, r.Y - hy, r.Width, r.Height));
+                        next++;
+                        e.HasMorePages = next < pages.Count;
                     };
                     doc.Print();
                 }
+                if (current != null && current != _image) { current.Dispose(); current = null; }
                 _lastPrinter = _ps.PrinterName;
                 _lastPaper = CurrentPaper.PaperName;
                 _lastLandscape = _landscape;
                 _lastUnits = _units;
-                Toast.Show("Sent to " + _ps.PrinterName + ".");
+                Toast.Show((pages.Count > 1 ? pages.Count + " pages sent to " : "Sent to ") + _ps.PrinterName + ".");
                 DialogResult = DialogResult.OK;
                 Close();
             }
             catch (Exception ex)
             {
+                if (current != null && current != _image) current.Dispose();
                 ModernDialog.Info("Could not print", ex.Message);
             }
         }
 
-        public static void Run(IWin32Window owner, Bitmap image, float ppi, string docName)
+        /// <summary>
+        /// The print window for a document of <paramref name="pageNames"/>.Count pages;
+        /// <paramref name="render"/> flattens one page (the dialog disposes what it returns).
+        /// </summary>
+        public static void Run(IWin32Window owner, Func<int, Bitmap> render, IList<string> pageNames, int currentPage, float ppi, string docName)
         {
-            using (var d = new EditorPrintDialog(image, ppi, docName))
+            using (var d = new EditorPrintDialog(render, pageNames, currentPage, ppi, docName))
             {
                 d.ShowDialog(owner);
                 if (d._paper.SelectedItem != null)
