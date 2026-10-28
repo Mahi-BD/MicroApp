@@ -58,9 +58,9 @@ namespace MicroApp
                     images.Add(r != null ? r.Image : null);
                     page.PixelCounts.Add(r != null && r.Image != null ? (long)r.Image.Width * r.Image.Height : 0);
                 }
-                page.PixelsOf = i =>
+                page.PixelsOf = layerIndex =>
                 {
-                    Bitmap img = images[i];
+                    Bitmap img = images[layerIndex];
                     if (img == null) return null;
                     return (ProjectFile.PixelCopy)Invoke(new Func<ProjectFile.PixelCopy>(() => ProjectFile.CopyPixels(img)));
                 };
