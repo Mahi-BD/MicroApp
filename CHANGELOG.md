@@ -1,5 +1,27 @@
 # Changelog
 
+## 5.6.0 — 2026-11-04
+
+### Added
+
+- **Pick Color** (tray menu). A **+** crosshair with a magnified loupe of the pixels under it, the live
+  `#RRGGBB` and RGB values; click any pixel and its hex code (e.g. `#6366F1`) is copied to the clipboard.
+  Right-click or **Esc** cancels.
+- **Color Setting** (tray menu) sets the Pick Color hot key — default **Ctrl+Alt+C**; it is also in *Shortcuts*.
+  Pressing the hot key again while picking cancels.
+- **Double-click a .ma project in File Explorer** and it opens in the image editor (in a tab of its own; a
+  running MicroApp takes the file over). MicroApp registers the `.ma` file type for the current user when it
+  starts; the Store package declares it in its manifest.
+- The **"hot key is taken"** question has **Yes to all** (take every other taken hot key without asking again
+  this run) and **Don't show this again** (remember the answer). *Shortcuts* has a switch to turn the question
+  back on.
+
+### Fixed
+
+- **MicroApp could run more than once.** The one-instance lock was released by the garbage collector after a
+  while, so a later start opened a second copy, which found all of its hot keys "taken" by the first and asked
+  about each one.
+
 ## 5.5.0 — 2026-10-29
 
 ### Added

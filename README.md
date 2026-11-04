@@ -83,7 +83,13 @@ fields are never read. Use OCR instead for images, videos and remote desktops.
 
 ![Pick Text](docs/pick-text.png)
 
-### 4. Always on Top
+### 4. Pick Color
+
+Press **Ctrl+Alt+C** (or tray → *Pick Color*). A **+** crosshair with a magnified loupe of the pixels under
+it shows the live `#RRGGBB` and RGB values; one click copies the hex code (e.g. `#6366F1`) to the clipboard.
+Right-click or **Esc** cancels. **Color Setting** sets the hot key.
+
+### 5. Always on Top
 
 Press **Ctrl+Alt+W** (or tray → *Always on Top*). The pointer turns into a **+** and the window under it is
 outlined; click any window to keep it above all the others, and click a pinned window the same way to let it
@@ -254,7 +260,7 @@ right-click menus (**Help → Keyboard Shortcuts** lists them all).
 
 ## Settings
 
-Seven focused windows, all reachable from the tray menu:
+Eight focused windows, all reachable from the tray menu:
 
 | Window | Covers |
 |---|---|
@@ -265,6 +271,7 @@ Seven focused windows, all reachable from the tray menu:
 | **Video Setting** | Video hot key, fps, quality, sound source, selection lock, output folder |
 | **Note Setting** | Note hot key, taskbar behaviour, fixed-width text, date/time formats, AI provider + key, string.bd token, note sync |
 | **AOT Setting** | Always on Top hot key, opacity of pinned windows, title pin, notification/sound, unpin all |
+| **Color Setting** | Pick Color hot key |
 
 | | |
 |---|---|
@@ -284,6 +291,7 @@ installing and first-run setup are in **[SETUP.md](SETUP.md)**.
 | Paste as keystrokes | `Ctrl + Alt + V` |
 | Grab text (OCR) | `Ctrl + Shift + O` |
 | Pick Text | `Ctrl + Alt + T` |
+| Pick Color | `Ctrl + Alt + C` |
 | Always on Top | `Ctrl + Alt + W` |
 | Screen capture | `Ctrl + Alt + S` |
 | Record GIF | `Ctrl + Alt + G` |

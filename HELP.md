@@ -1,12 +1,13 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 5.3.3.
+Version 5.6.0.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
 - [Grab text (OCR)](#grab-text-ocr)
 - [Pick Text](#pick-text)
+- [Pick Color](#pick-color)
 - [Always on Top](#always-on-top)
 - [Screen capture](#screen-capture)
 - [Record GIF](#record-gif)
@@ -31,6 +32,7 @@ MicroApp runs in the notification area. There is no main window and nothing to l
 ```
 Grab text (OCR)
 Pick Text
+Pick Color
 Always on Top
 Screen Capture
 Record GIF
@@ -46,6 +48,7 @@ GIF Setting
 Video Setting
 Note Setting
 AOT Setting
+Color Setting
 ────────────────
 About
 Exit
@@ -148,6 +151,22 @@ that exposes its text to Windows. Password fields are never read.
 If the element you click carries no text of its own, MicroApp gathers the texts of everything inside
 it (one line each) — handy for lifting a whole list or dialog at once. Prefer *Grab text (OCR)* for
 images, videos and remote desktops, where there is no real text behind the pixels.
+
+---
+
+## Pick Color
+
+Copies the colour of any pixel on screen as a hex code.
+
+**How to use it**
+
+1. Press **Ctrl+Alt+C**, or tray → *Pick Color*. Press the hot key again to cancel.
+2. The pointer becomes a **+** crosshair with a loupe beside it: the pixels under the pointer magnified
+   ten times, the centre pixel outlined, its colour swatch, `#RRGGBB` and RGB values.
+3. **Click** to copy the hex code (for example `#6366F1`) to the clipboard. **Esc** or a right-click
+   cancels; the click never reaches the app underneath.
+
+Tray → *Color Setting* changes the hot key (it is also in *Shortcuts*).
 
 ---
 

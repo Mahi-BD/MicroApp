@@ -254,4 +254,10 @@ Section "Uninstall"
 
   DeleteRegKey ${REGROOT} "${UNINSTKEY}"
   DeleteRegKey ${REGROOT} "Software\${APPNAME}"
+  ; the .ma file type MicroApp registered for this user at run time
+  DeleteRegKey HKCU "Software\Classes\MicroApp.Project"
+  DeleteRegValue HKCU "Software\Classes\.ma\OpenWithProgids" "MicroApp.Project"
+  ReadRegStr $0 HKCU "Software\Classes\.ma" ""
+  StrCmp $0 "MicroApp.Project" 0 +2
+    DeleteRegKey HKCU "Software\Classes\.ma"
 SectionEnd

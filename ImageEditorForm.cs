@@ -200,6 +200,48 @@ namespace MicroApp
             }));
         }
 
+        /// <summary>
+        /// Opens files handed to MicroApp from outside (a .ma double-clicked in File Explorer):
+        /// each in a tab of its own. Starts the editor when it is not open, without the clipboard seed.
+        /// </summary>
+        public static void OpenPaths(string[] paths)
+        {
+            if (paths == null || paths.Length == 0) return;
+            var form = _open;
+            if (form == null || form.IsDisposed)
+            {
+                form = new ImageEditorForm();
+                _open = form;
+                form.TopMost = true;
+                form.Show();
+                Native.SetForegroundWindow(form.Handle);
+                form.BeginInvoke(new Action(() =>
+                {
+                    form.TopMost = false;
+                    form.OpenPathsNow(paths);
+                }));
+                return;
+            }
+            if (form.WindowState == FormWindowState.Minimized) form.WindowState = FormWindowState.Normal;
+            form.Activate();
+            Native.SetForegroundWindow(form.Handle);
+            form.OpenPathsNow(paths);
+        }
+
+        void OpenPathsNow(string[] paths)
+        {
+            foreach (string file in paths)
+            {
+                if (ProjectFile.IsProject(file)) { OpenProject(file); continue; }
+                if (!AssetStore.IsSupported(file)) continue;
+                Bitmap bmp;
+                try { bmp = AssetStore.LoadFull(file); }
+                catch (Exception ex) { ModernDialog.Info("Could not open it", Path.GetFileName(file) + "\r\n" + ex.Message); continue; }
+                if (!StartNewDocTab(Path.GetFileName(file))) { bmp.Dispose(); return; }
+                AddBitmapLayer(bmp, Path.GetFileNameWithoutExtension(file));
+            }
+        }
+
         ImageEditorForm()
         {
             Theme.Init(ThemeHelper.IsDarkMode);
