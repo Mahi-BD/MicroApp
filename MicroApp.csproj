@@ -141,6 +141,9 @@
     <Compile Include="ImageEditorForm.Project.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="ImageEditorForm.Import.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ImageEditorForm.Pages.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -158,6 +161,9 @@
     <Compile Include="ImageEditorControls.cs" />
     <Compile Include="ImageEditorAssets.cs" />
     <Compile Include="ImageEditorProject.cs" />
+    <Compile Include="ImportedDocument.cs" />
+    <Compile Include="PsdReader.cs" />
+    <Compile Include="AiReader.cs" />
     <Compile Include="ShortcutSettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>

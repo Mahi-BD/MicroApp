@@ -1,7 +1,7 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 5.6.0.
+Version 5.7.0.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
@@ -471,6 +471,24 @@ A **.ma** project keeps every page. **File → Print** on a multi-page document 
 **All pages**, the **Current page**, or **Pages…** with a range such as `1-3, 5` - and a **Preview** box
 shows any page on the sheet; each page prints on its own sheet. Save As PNG / JPG, Copy Merged and the
 filters work on the page in front.
+
+### Photoshop and Illustrator files
+
+**File → Open**, dropping a file on the editor, or *Open with → MicroApp* in Explorer also opens:
+
+- **Photoshop (.psd, .psb)** - each layer comes in as a layer of its own, with its name, position, opacity,
+  blend mode and visibility. Layer masks, vector masks and clipping masks are applied, and groups pass their
+  visibility, opacity and masks down to the layers inside. Text layers and smart objects arrive as pixels, so
+  their text is no longer editable. Adjustment layers and layer styles (drop shadows, strokes, glows...) are
+  left out, and blend modes the editor does not have are shown as Normal - a note after opening lists what
+  was left out. CMYK and grayscale colours can look a little different from Photoshop (no colour profile).
+- **Illustrator (.ai)** - each artboard becomes a page, drawn at 300 ppi on a transparent background (very
+  large artboards at a lower ppi). The artwork becomes pixels: shapes and text are not editable. This needs the
+  PDF copy Illustrator keeps inside the file - *Create PDF Compatible File* in Illustrator's save options, on by
+  default. An older .ai without it says so; re-save it from Illustrator with that option ticked.
+
+**File → Add Image** with one of these files adds its first page, flattened, as one layer. MicroApp never
+writes these formats: save your work as a **.ma** project or a picture.
 
 ### Documents and tabs
 

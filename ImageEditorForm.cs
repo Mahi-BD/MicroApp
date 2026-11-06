@@ -233,6 +233,7 @@ namespace MicroApp
             foreach (string file in paths)
             {
                 if (ProjectFile.IsProject(file)) { OpenProject(file); continue; }
+                if (IsImportFile(file)) { OpenImported(file); continue; }
                 if (!AssetStore.IsSupported(file)) continue;
                 Bitmap bmp;
                 try { bmp = AssetStore.LoadFull(file); }
@@ -407,9 +408,10 @@ namespace MicroApp
             return new Bitmap(Math.Max(1, w), Math.Max(1, h), PixelFormat.Format32bppArgb);
         }
 
-        static readonly string OpenFilter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf|All files|*.*";
+        static readonly string OpenFilter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf;" + ImportPatterns + "|" +
+            ImportFilters + "|All files|*.*";
         static readonly string OpenWithProjectsFilter =
-            "Projects and images|*.ma;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf|" + ProjectFile.Filter + "|" + OpenFilter;
+            "Projects and images|*.ma;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.wmf;*.emf;" + ImportPatterns + "|" + ProjectFile.Filter + "|" + OpenFilter;
 
         /// <summary>File &gt; Open: each picture or .ma project in a tab of its own (an empty tab is used up first).</summary>
         void OpenFile()
@@ -419,6 +421,7 @@ namespace MicroApp
             foreach (string file in files)
             {
                 if (ProjectFile.IsProject(file)) { OpenProject(file); continue; }
+                if (IsImportFile(file)) { OpenImported(file); continue; }
                 Bitmap bmp;
                 try { bmp = AssetStore.LoadFull(file); }
                 catch (Exception ex) { ModernDialog.Info("Could not open it", Path.GetFileName(file) + "\r\n" + ex.Message); continue; }
@@ -434,7 +437,7 @@ namespace MicroApp
             if (files == null) return;
             foreach (string file in files)
             {
-                try { AddBitmapLayer(AssetStore.LoadFull(file), Path.GetFileNameWithoutExtension(file)); }
+                try { AddBitmapLayer(IsImportFile(file) ? LoadImportFlat(file) : AssetStore.LoadFull(file), Path.GetFileNameWithoutExtension(file)); }
                 catch (Exception ex) { ModernDialog.Info("Could not open it", Path.GetFileName(file) + "\r\n" + ex.Message); }
             }
         }
@@ -712,6 +715,7 @@ namespace MicroApp
             foreach (string file in files)
             {
                 if (ProjectFile.IsProject(file)) { OpenProject(file); continue; }
+                if (IsImportFile(file)) { OpenImported(file); continue; }
                 if (!AssetStore.IsSupported(file)) continue;
                 try { AddBitmapLayer(AssetStore.LoadFull(file), Path.GetFileNameWithoutExtension(file)); }
                 catch (Exception ex) { ModernDialog.Info("Could not open it", ex.Message); }

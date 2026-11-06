@@ -1,5 +1,26 @@
 # Changelog
 
+## 5.7.0 — 2026-11-07
+
+### Added
+
+- **Open Photoshop files (.psd, .psb) in the image editor** — File → Open, drag and drop, or *Open with*
+  MicroApp. Every pixel layer comes in as a layer of its own with its name, position, opacity, blend mode and
+  visibility. Layer masks, vector masks and clipping masks are applied (mask density included); groups pass their
+  visibility, opacity and masks down to the layers inside; Solid Color fill and shape layers saved without
+  pixels are drawn from their colour and path. RGB, grayscale, indexed, CMYK, Lab, duotone and bitmap documents,
+  1/8/16/32 bits per channel. Text layers and smart objects arrive as pixels. Not reproduced (MicroApp says
+  which after opening): adjustment layers, layer styles (shadows, strokes, glows), gradient/pattern fills saved
+  without pixels, and blend modes the editor lacks (Dissolve, Lighter/Darker Color, Vivid/Linear/Pin Light,
+  Hard Mix, Subtract, Divide). CMYK and grayscale colours are converted without the document's colour profile.
+- **Open Illustrator files (.ai)** — the artwork is drawn by the PDF renderer built into Windows from the PDF
+  copy Illustrator saves inside every .ai ("Create PDF Compatible File", on by default). Each artboard becomes a
+  page, at 300 ppi (large artboards lower, up to 36 megapixels a page), on a transparent background. Shapes and
+  text become pixels. Older PostScript-only .ai files and SVG files renamed to .ai get a message saying how to
+  re-save them.
+- **File → Add Image** also takes .psd/.psb/.ai: the first page, flattened into one layer.
+- Opening is read-only: save the result as a MicroApp project (.ma) or a picture.
+
 ## 5.6.0 — 2026-11-04
 
 ### Added
