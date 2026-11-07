@@ -164,6 +164,8 @@
     <Compile Include="ImportedDocument.cs" />
     <Compile Include="PsdReader.cs" />
     <Compile Include="AiReader.cs" />
+    <Compile Include="SvgReader.cs" />
+    <Compile Include="EpsReader.cs" />
     <Compile Include="ShortcutSettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -238,6 +240,10 @@
     <!-- Remove Background: runs the embedded U2-Netp model offline (copies onnxruntime.dll next to the exe) -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime">
       <Version>1.20.1</Version>
+    </PackageReference>
+    <!-- Image editor: opens .svg files (MS-PL; brings ExCSS.dll, MIT) -->
+    <PackageReference Include="Svg">
+      <Version>3.4.8</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

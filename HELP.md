@@ -1,7 +1,7 @@
 # MicroApp — Help
 
 Everything MicroApp does, with every setting and the things that commonly go wrong.
-Version 5.7.0.
+Version 5.8.0.
 
 - [Getting started](#getting-started)
 - [Paste as keystrokes](#paste-as-keystrokes)
@@ -486,6 +486,14 @@ filters work on the page in front.
   large artboards at a lower ppi). The artwork becomes pixels: shapes and text are not editable. This needs the
   PDF copy Illustrator keeps inside the file - *Create PDF Compatible File* in Illustrator's save options, on by
   default. An older .ai without it says so; re-save it from Illustrator with that option ticked.
+
+- **SVG (.svg, .svgz)** - drawn at 300 ppi on a transparent background (small icons at least 1024 px wide).
+  The drawing becomes pixels. Some SVG filter effects (blurs, lighting) may look different from a browser.
+  MicroApp never fetches anything from the internet for an SVG.
+- **EPS (.eps)** - drawn at 300 ppi when **Ghostscript** is installed (free from ghostscript.com; MicroApp finds
+  it by itself). Without Ghostscript, MicroApp opens the small preview picture saved inside the EPS, when there
+  is one, and says so. With Ghostscript installed, older PostScript-only .ai files are drawn too. To use a
+  portable Ghostscript, set the environment variable `MICROAPP_GHOSTSCRIPT` to its `gswin64c.exe`.
 
 **File → Add Image** with one of these files adds its first page, flattened, as one layer. MicroApp never
 writes these formats: save your work as a **.ma** project or a picture.

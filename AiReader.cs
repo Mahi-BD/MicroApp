@@ -29,12 +29,8 @@ namespace MicroApp
 
         public static ImportedDocument Load(string path, Action<float, string> report)
         {
-            // runs on a worker thread (ProgressDialog), so blocking on the WinRT calls is safe
-            return LoadAsync(path, report ?? delegate { }).GetAwaiter().GetResult();
-        }
-
-        static async Task<ImportedDocument> LoadAsync(string path, Action<float, string> report)
-        {
+            if (report == null) report = delegate { };
+            // the file type is settled here, before any Windows Runtime type is touched
             byte[] bytes = File.ReadAllBytes(path);
             string head = Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 1024));
             if (head.IndexOf("%PDF-", StringComparison.Ordinal) < 0)
@@ -44,12 +40,43 @@ namespace MicroApp
                         "This file is an SVG picture with an .ai name, not an Illustrator file.\r\n" +
                         "Open it in a browser or Inkscape and export a PNG, then open that.");
                 if (head.IndexOf("%!PS-Adobe", StringComparison.Ordinal) >= 0 || (bytes.Length > 4 && bytes[0] == 0xC5 && bytes[1] == 0xD0))
+                {
+                    // an older, PostScript-only .ai: Ghostscript can draw it when it is installed
+                    string gsError = null;
+                    try
+                    {
+                        report(0.1f, "Drawing it with Ghostscript");
+                        float gsPpi;
+                        Bitmap drawn = EpsReader.RenderPostScriptFile(path, out gsPpi);
+                        if (drawn != null)
+                        {
+                            drawn.SetResolution(gsPpi, gsPpi);
+                            var legacy = new ImportedDocument { Ppi = gsPpi };
+                            var pg = new ImportedPage { Name = "Artboard", Width = drawn.Width, Height = drawn.Height };
+                            pg.Layers.Add(new ImportedLayer { Name = Path.GetFileNameWithoutExtension(path), Image = drawn, Bounds = new Rectangle(0, 0, drawn.Width, drawn.Height) });
+                            legacy.Pages.Add(pg);
+                            legacy.Notes.Add("This older Illustrator file opens as pixels at " + gsPpi + " ppi (drawn by Ghostscript) - shapes and text are not editable.");
+                            report(1f, null);
+                            return legacy;
+                        }
+                    }
+                    catch (Exception ex) when (!(ex is OutOfMemoryException)) { gsError = ex.Message.Trim(); }
                     throw new InvalidDataException(
                         "This Illustrator file has no PDF copy inside (it is an older or PostScript-only .ai).\r\n" +
-                        "In Illustrator choose File > Save As > Adobe Illustrator (.ai), tick \"Create PDF Compatible File\", then open it again.");
+                        "In Illustrator choose File > Save As > Adobe Illustrator (.ai), tick \"Create PDF Compatible File\", then open it again." +
+                        (gsError != null
+                            ? "\r\nGhostscript could not draw it either: " + gsError
+                            : "\r\nOr install Ghostscript (free, ghostscript.com) and MicroApp will draw it."));
+                }
                 throw new InvalidDataException("This is not an Illustrator file MicroApp can read.");
             }
 
+            // runs on a worker thread (ProgressDialog), so blocking on the WinRT calls is safe
+            return LoadAsync(path, bytes, report).GetAwaiter().GetResult();
+        }
+
+        static async Task<ImportedDocument> LoadAsync(string path, byte[] bytes, Action<float, string> report)
+        {
             report(0.05f, "Reading the artwork");
             var doc = new ImportedDocument { Ppi = RenderPpi };
             try

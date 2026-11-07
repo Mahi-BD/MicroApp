@@ -8,22 +8,27 @@ namespace MicroApp
 {
     /// <summary>
     /// Opening other programs' files: Photoshop (.psd/.psb) comes in layer by layer,
-    /// Illustrator (.ai) one page per artboard. Both are read-only imports - the result
-    /// saves as a MicroApp project or a picture, never back to the original format.
+    /// Illustrator (.ai) one page per artboard, SVG and EPS as one picture. All are
+    /// read-only imports - the result saves as a MicroApp project or a picture, never back
+    /// to the original format.
     /// </summary>
     partial class ImageEditorForm
     {
-        const string ImportPatterns = "*.psd;*.psb;*.ai";
-        const string ImportFilters = "Photoshop (*.psd, *.psb)|*.psd;*.psb|Illustrator (*.ai)|*.ai";
+        const string ImportPatterns = "*.psd;*.psb;*.ai;*.svg;*.svgz;*.eps;*.epsf;*.epsi";
+        const string ImportFilters = "Photoshop (*.psd, *.psb)|*.psd;*.psb|Illustrator (*.ai)|*.ai|" +
+                                     "SVG (*.svg, *.svgz)|*.svg;*.svgz|EPS (*.eps)|*.eps;*.epsf;*.epsi";
 
         static bool IsImportFile(string file)
         {
-            return PsdReader.IsPsd(file) || AiReader.IsAi(file);
+            return PsdReader.IsPsd(file) || AiReader.IsAi(file) || SvgReader.IsSvg(file) || EpsReader.IsEps(file);
         }
 
         static ImportedDocument LoadImport(string file, Action<float, string> report)
         {
-            return AiReader.IsAi(file) ? AiReader.Load(file, report) : PsdReader.Load(file, report);
+            if (AiReader.IsAi(file)) return AiReader.Load(file, report);
+            if (SvgReader.IsSvg(file)) return SvgReader.Load(file, report);
+            if (EpsReader.IsEps(file)) return EpsReader.Load(file, report);
+            return PsdReader.Load(file, report);
         }
 
         /// <summary>A Photoshop or Illustrator file in a tab of its own, with its layers (and artboards as pages).</summary>

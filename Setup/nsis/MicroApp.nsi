@@ -129,6 +129,9 @@ Section "MicroApp (required)" SecApp
   File "${SRC}\msvcp140_1.dll"
   File "${SRC}\vcruntime140.dll"
   File "${SRC}\vcruntime140_1.dll"
+  ; image editor: opens .svg files (Svg.NET and its CSS parser)
+  File "${SRC}\Svg.dll"
+  File "${SRC}\ExCSS.dll"
   ; Remove Background's IS-Net model
   SetOutPath "$INSTDIR\Models"
   File "${SRC}\Models\isnet-general-use.onnx"
@@ -234,6 +237,8 @@ Section "Uninstall"
   Delete "$INSTDIR\msvcp140_1.dll"
   Delete "$INSTDIR\vcruntime140.dll"
   Delete "$INSTDIR\vcruntime140_1.dll"
+  Delete "$INSTDIR\Svg.dll"
+  Delete "$INSTDIR\ExCSS.dll"
   Delete "$INSTDIR\Models\isnet-general-use.onnx"
   RMDir "$INSTDIR\Models"
   Delete "$INSTDIR\AutoIt_License.html"

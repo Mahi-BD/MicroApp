@@ -1,5 +1,23 @@
 # Changelog
 
+## 5.8.0 — 2026-11-07
+
+### Added
+
+- **Open SVG drawings (.svg, .svgz)** in the image editor (File → Open, drag and drop, *Open with*), drawn by
+  Svg.NET at 300 ppi on a transparent background - small icons at least 1024 px, very large drawings up to
+  36 megapixels. Shapes and text become pixels. Some SVG filter effects (blurs, lighting) are not drawn, or
+  drawn differently from a browser. Nothing outside the file is fetched: no web addresses and no external XML
+  entities (entities declared inside the file still work), and entity expansion is capped.
+- **Open EPS files (.eps, .epsf, .epsi).** When **Ghostscript** is installed (free, ghostscript.com - it cannot be
+  bundled with MicroApp) it draws the file at 300 ppi on a transparent background, always with `-dSAFER`.
+  Without it, the preview picture many EPS files carry inside (TIFF or WMF in a DOS EPS header, or an EPSI
+  bitmap) is opened, and MicroApp says it is only a preview; with neither, the message says how to get
+  Ghostscript. A portable Ghostscript can be used by pointing the `MICROAPP_GHOSTSCRIPT` environment variable
+  at its `gswin64c.exe`.
+- **Older PostScript-only Illustrator files (.ai)** are drawn by Ghostscript too, when it is installed and can draw
+  them (files that need Illustrator's own PostScript routines still get the re-save message).
+
 ## 5.7.0 — 2026-11-07
 
 ### Added
