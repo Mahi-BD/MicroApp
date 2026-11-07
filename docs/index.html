@@ -245,12 +245,12 @@
 <header>
   <div class="wrap bar">
     <span class="mark"><img src="icon.png" alt="" width="24" height="24">MicroApp</span>
-    <span class="ver">5.5.0</span>
+    <span class="ver">5.8.0</span>
     <nav>
       <a href="#editor" class="hide-sm">Image editor</a>
       <a href="#features" class="hide-sm">Features</a>
       <a href="https://github.com/Mahi-BD/MicroApp" class="hide-sm">Source</a>
-      <a class="btn-sm" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.5.0/MicroApp-5.5.0-setup.exe">Download</a>
+      <a class="btn-sm" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.8.0/MicroApp-5.8.0-setup.exe">Download</a>
     </nav>
   </div>
 </header>
@@ -265,11 +265,11 @@
     consoles, remote desktops, KVM and IPMI windows, and any field that refuses Ctrl+V. Every script, Bangla included.
   </p>
   <div class="actions">
-    <a class="btn" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.5.0/MicroApp-5.5.0-setup.exe">Download for Windows</a>
-    <a class="btn-2" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.5.0/MicroApp-5.5.0-win-x64.zip">Portable zip, no install</a>
+    <a class="btn" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.8.0/MicroApp-5.8.0-setup.exe">Download for Windows</a>
+    <a class="btn-2" href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.8.0/MicroApp-5.8.0-win-x64.zip">Portable zip, no install</a>
   </div>
   <dl class="spec">
-    <div><dt>Version</dt><dd>5.5.0</dd></div>
+    <div><dt>Version</dt><dd>5.8.0</dd></div>
     <div><dt>Download</dt><dd>164 MB</dd></div>
     <div><dt>Runs on</dt><dd>Windows 10, 11</dd></div>
     <div><dt>Licence</dt><dd>BSD 3-Clause</dd></div>
@@ -292,14 +292,16 @@
 
 <section class="band" id="editor">
   <div class="wrap">
-    <h2>New in 5.5: projects that keep every layer, documents with pages, and printing that picks the pages</h2>
+    <h2>New in 5.8: open Photoshop, Illustrator, SVG and EPS files in the editor</h2>
     <p>
       <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">E</kbd></span>
       opens on whatever image is on the clipboard. The tools, the keys, the menus and the right-click menus follow
       Photoshop, so what you already know works here — and a screenshot goes from paste to annotated PNG without
-      leaving the tray. Version 5.5 saves a whole document as one <b>.ma project</b> file, lets a document hold several
-      <b>pages</b>, prints the pages you pick, and is far lighter on big pictures. 5.4 gave the screen recorder a
-      microphone picker with a live level meter and gain. The editor keeps several documents open in tabs, starts new
+      leaving the tray. Version 5.8 opens <b>SVG</b> and <b>EPS</b> drawings, and 5.7 opens <b>Photoshop</b> files layer
+      by layer and <b>Illustrator</b> files one page per artboard. 5.6 added <b>Pick Color</b> to the tray and made .ma
+      projects open with a double-click in File Explorer. 5.5 saves a whole document as one <b>.ma project</b> file, lets a
+      document hold several <b>pages</b> and prints the pages you pick; 5.4 gave the screen recorder a microphone picker
+      with a live level meter and gain. The editor keeps several documents open in tabs, starts new
       ones from Photoshop-style presets (A4, A3, 16:9, 21:9 and dozens more), removes a photo's background with an AI
       model that runs on your PC, and prints with a preview.
     </p>
@@ -310,6 +312,8 @@
 
     <div class="editor-grid">
       <ul class="edit-list">
+        <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">O</kbd></span>
+          <b>Open Photoshop, Illustrator, SVG and EPS files.<span>A PSD comes in layer by layer, with names, positions, opacity, blend modes, masks and groups. An Illustrator file opens one page per artboard, and SVG and EPS drawings open sharp at 300 ppi on a transparent background (EPS needs the free Ghostscript; without it MicroApp opens the preview picture inside the file). Everything becomes editable pixels; save the result as a .ma project or a picture.</span></b></li>
         <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">S</kbd></span>
           <b>Save the whole document as a project.<span>A .ma file keeps every page and every layer with its position, rotation, opacity, blend mode and layer style; text and shapes stay editable; the selection, guides and print resolution come back too. Open it from File → Open or by dropping it on the editor, and it is exactly as you left it. Saving and opening show a progress bar.</span></b></li>
         <li><span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">PgDn</kbd></span>
@@ -378,7 +382,8 @@
       <h3>Capture a region</h3>
       <p>The screen freezes, you drag a frame, and the handles let you fix it before you take it. Lock the ratio or the exact
         pixel size when you need every capture to match. A timer button gives you a few seconds to open a menu first, and
-        Save As writes the area straight to a file.</p>
+        Save As writes the area straight to a file. <span class="combo"><kbd class="cap">Ctrl</kbd><i>+</i><kbd class="cap">Alt</kbd><i>+</i><kbd class="cap">C</kbd></span>
+        picks a colour instead: a magnified loupe follows the cursor, and a click copies that pixel's hex code.</p>
     </div>
     <figure><img src="capture-overlay.png" alt="The capture frame with its size read-out and the buttons that take or cancel the shot." width="289" height="212" loading="lazy"></figure>
   </div>
@@ -410,22 +415,22 @@
 
 <section class="band" id="download">
   <div class="wrap">
-    <h2>Download 5.5.0</h2>
+    <h2>Download 5.8.0</h2>
     <p>Free. The download includes the offline AI model for background removal. Installing over an older version keeps your settings and notes.</p>
     <ul class="files">
       <li>
-        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.5.0/MicroApp-5.5.0-setup.exe">MicroApp-5.5.0-setup.exe</a>
-        <span class="size">163.8 MB</span>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.8.0/MicroApp-5.8.0-setup.exe">MicroApp-5.8.0-setup.exe</a>
+        <span class="size">164.1 MB</span>
         <span class="what">Installs for everyone, into Program Files. Needs an administrator.</span>
       </li>
       <li>
-        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.5.0/MicroApp-5.5.0-peruser-setup.exe">MicroApp-5.5.0-peruser-setup.exe</a>
-        <span class="size">163.8 MB</span>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.8.0/MicroApp-5.8.0-peruser-setup.exe">MicroApp-5.8.0-peruser-setup.exe</a>
+        <span class="size">164.1 MB</span>
         <span class="what">Installs for you only. No administrator needed.</span>
       </li>
       <li>
-        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.5.0/MicroApp-5.5.0-win-x64.zip">MicroApp-5.5.0-win-x64.zip</a>
-        <span class="size">166.0 MB</span>
+        <a href="https://github.com/Mahi-BD/MicroApp/releases/download/v5.8.0/MicroApp-5.8.0-win-x64.zip">MicroApp-5.8.0-win-x64.zip</a>
+        <span class="size">166.3 MB</span>
         <span class="what">Portable. Unzip it anywhere and run MicroApp.exe.</span>
       </li>
     </ul>
